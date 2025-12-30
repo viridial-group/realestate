@@ -11,24 +11,38 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/identity/**
-          filters:
-            - StripPrefix=1
         
         - id: organization-service
           uri: http://localhost:8082
           predicates:
             - Path=/api/organizations/**
-          filters:
-            - StripPrefix=1
         
         - id: property-service
           uri: http://localhost:8083
           predicates:
             - Path=/api/properties/**
-          filters:
-            - StripPrefix=1
+        
+        - id: resource-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/resources/**
+        
+        - id: document-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/documents/**
+        
+        - id: workflow-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/workflows/**
+        
+        - id: notification-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/notifications/**
 
-management:
+      management:
   endpoints:
     web:
       exposure:

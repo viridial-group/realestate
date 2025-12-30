@@ -16,16 +16,17 @@
     <description>Spring Cloud Gateway - Point d'entrée unique</description>
 
     <dependencies>
+        <!-- Common Library (Security, Redis) -->
+        <dependency>
+            <groupId>com.realestate</groupId>
+            <artifactId>common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Cloud Gateway -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
-        </dependency>
-
-        <!-- Spring Security WebFlux (pour Spring Cloud Gateway) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
         <!-- Actuator -->

@@ -24,11 +24,11 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 1 : Setup & Infrastructure 🚧
 
 ### 1.1 Configuration du Projet
-- [x] ✅ Créer la structure de projet (monorepo ou multi-repo)
-- [x] ✅ Initialiser Git et configurer .gitignore
-- [ ] ⏳ Configurer Maven parent POM avec BOM Spring Cloud
-- [ ] ⏳ Configurer les modules pour chaque microservice
-- [x] ✅ Configurer les profils Spring (local, dev, staging, pre-prod, prod)
+1. [x] ✅ Créer la structure de projet (monorepo ou multi-repo)
+2. [x] ✅ Initialiser Git et configurer .gitignore
+3. [ ] ⏳ Configurer Maven parent POM avec BOM Spring Cloud
+4. [ ] ⏳ Configurer les modules pour chaque microservice
+5. [x] ✅ Configurer les profils Spring (local, dev, staging, pre-prod, prod)
 
 **Critères de validation :**
 - ✅ Structure de projet créée
@@ -39,12 +39,12 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 1.2 Configuration Docker
-- [x] ✅ Créer Dockerfiles pour tous les microservices (multi-stage) - Templates créés
-- [x] ✅ Créer docker-compose.yml pour développement - Template créé
-- [x] ✅ Créer docker-compose.prod.yml pour production - Template créé
-- [x] ✅ Configurer les health checks pour tous les services - Documenté
-- [x] ✅ Configurer les volumes pour persistance des données - Documenté
-- [ ] ⏳ Tester l'environnement Docker local - À faire lors de l'implémentation
+6. [x] ✅ Créer Dockerfiles pour tous les microservices (multi-stage) - Templates créés
+7. [x] ✅ Créer docker-compose.yml pour développement - Template créé
+8. [x] ✅ Créer docker-compose.prod.yml pour production - Template créé
+9. [x] ✅ Configurer les health checks pour tous les services - Documenté
+10. [x] ✅ Configurer les volumes pour persistance des données - Documenté
+11. [ ] ⏳ Tester l'environnement Docker local - À faire lors de l'implémentation
 
 **Critères de validation :**
 - ⏳ Tous les services démarrent avec docker-compose (à tester)
@@ -55,11 +55,11 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 1.3 Infrastructure de Base
-- [ ] ⏳ Configurer PostgreSQL 17.2 (schémas, utilisateurs)
-- [ ] ⏳ Configurer Redis 7.2.4
-- [ ] ⏳ Configurer Kafka 3.6.1 (topics, partitions)
-- [ ] ⏳ Configurer Elasticsearch 8.15.0 (indexes, mappings)
-- [ ] ⏳ Configurer le stockage fichiers sur VPS (/var/realestate/storage)
+12. [ ] ⏳ Configurer PostgreSQL 17.2 (schémas, utilisateurs)
+13. [ ] ⏳ Configurer Redis 7.2.4
+14. [ ] ⏳ Configurer Kafka 3.6.1 (topics, partitions)
+15. [ ] ⏳ Configurer Elasticsearch 8.15.0 (indexes, mappings)
+16. [ ] ⏳ Configurer le stockage fichiers sur VPS (/var/realestate/storage)
 
 **Critères de validation :**
 - ✅ Toutes les bases de données accessibles
@@ -72,17 +72,17 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 2 : Services Core ✅
 
 ### 2.1 Identity & Auth Service
-- [ ] ⏳ Créer le module identity-service
-- [ ] ⏳ Implémenter les entités JPA (User, Role, Permission, etc.)
-- [ ] ⏳ Implémenter Spring Security avec JWT
-- [ ] ⏳ Implémenter OAuth2 Resource Server
-- [ ] ⏳ Implémenter RBAC (Role-Based Access Control)
-- [ ] ⏳ Implémenter ACL (Access Control List)
-- [ ] ⏳ Implémenter la délégation de rôles
-- [ ] ⏳ Créer les REST APIs (register, login, refresh token)
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API (OpenAPI/Swagger)
+17. [ ] ⏳ Créer le module identity-service
+18. [ ] ⏳ Implémenter les entités JPA (User, Role, Permission, etc.)
+19. [ ] ⏳ Implémenter Spring Security avec JWT
+20. [ ] ⏳ Implémenter OAuth2 Resource Server
+21. [ ] ⏳ Implémenter RBAC (Role-Based Access Control)
+22. [ ] ⏳ Implémenter ACL (Access Control List)
+23. [ ] ⏳ Implémenter la délégation de rôles
+24. [ ] ⏳ Créer les REST APIs (register, login, refresh token)
+25. [ ] ⏳ Tests unitaires (couverture > 80%)
+26. [ ] ⏳ Tests d'intégration
+27. [ ] ⏳ Documentation API (OpenAPI/Swagger)
 
 **Critères de validation :**
 - ✅ Authentification JWT fonctionnelle
@@ -93,15 +93,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 2.2 Organization & Team Service
-- [ ] ⏳ Créer le module organization-service
-- [ ] ⏳ Implémenter les entités (Organization, Team, OrganizationUser)
-- [ ] ⏳ Implémenter la hiérarchie d'organisations (parent/filiales)
-- [ ] ⏳ Implémenter la gestion des teams
-- [ ] ⏳ Implémenter les rôles personnalisables par organisation
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+28. [ ] ⏳ Créer le module organization-service
+29. [ ] ⏳ Implémenter les entités (Organization, Team, OrganizationUser)
+30. [ ] ⏳ Implémenter la hiérarchie d'organisations (parent/filiales)
+31. [ ] ⏳ Implémenter la gestion des teams
+32. [ ] ⏳ Implémenter les rôles personnalisables par organisation
+33. [ ] ⏳ Créer les REST APIs
+34. [ ] ⏳ Tests unitaires (couverture > 80%)
+35. [ ] ⏳ Tests d'intégration
+36. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Multi-tenant fonctionnel
@@ -112,14 +112,14 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 2.3 Resource Service
-- [ ] ⏳ Créer le module resource-service
-- [ ] ⏳ Implémenter les entités (Domain, Resource, ResourceAccess, Tag)
-- [ ] ⏳ Implémenter la gestion générique de Resource
-- [ ] ⏳ Implémenter le partage inter-organisation
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+37. [ ] ⏳ Créer le module resource-service
+38. [ ] ⏳ Implémenter les entités (Domain, Resource, ResourceAccess, Tag)
+39. [ ] ⏳ Implémenter la gestion générique de Resource
+40. [ ] ⏳ Implémenter le partage inter-organisation
+41. [ ] ⏳ Créer les REST APIs
+42. [ ] ⏳ Tests unitaires (couverture > 80%)
+43. [ ] ⏳ Tests d'intégration
+44. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Resource générique fonctionnel
@@ -132,16 +132,16 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 3 : Services Métier ✅
 
 ### 3.1 Property Service
-- [ ] ⏳ Créer le module property-service
-- [ ] ⏳ Implémenter les entités (Property, PropertyAccess)
-- [ ] ⏳ Implémenter la logique métier Property
-- [ ] ⏳ Intégrer avec Resource Service
-- [ ] ⏳ Intégrer avec Identity Service (RBAC + ACL)
-- [ ] ⏳ Intégrer avec Billing Service (feature flags)
-- [ ] ⏳ Créer les REST APIs (CRUD complet)
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+45. [ ] ⏳ Créer le module property-service
+46. [ ] ⏳ Implémenter les entités (Property, PropertyAccess)
+47. [ ] ⏳ Implémenter la logique métier Property
+48. [ ] ⏳ Intégrer avec Resource Service
+49. [ ] ⏳ Intégrer avec Identity Service (RBAC + ACL)
+50. [ ] ⏳ Intégrer avec Billing Service (feature flags)
+51. [ ] ⏳ Créer les REST APIs (CRUD complet)
+52. [ ] ⏳ Tests unitaires (couverture > 80%)
+53. [ ] ⏳ Tests d'intégration
+54. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ CRUD Property fonctionnel
@@ -152,15 +152,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 3.2 Document Service
-- [ ] ⏳ Créer le module document-service
-- [ ] ⏳ Implémenter les entités (Document, Storage)
-- [ ] ⏳ Implémenter l'upload sécurisé de fichiers
-- [ ] ⏳ Implémenter le stockage fichiers avec VPS File System
-- [ ] ⏳ Implémenter la validation de fichiers (type, taille)
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+55. [ ] ⏳ Créer le module document-service
+56. [ ] ⏳ Implémenter les entités (Document, Storage)
+57. [ ] ⏳ Implémenter l'upload sécurisé de fichiers
+58. [ ] ⏳ Implémenter le stockage fichiers avec VPS File System
+59. [ ] ⏳ Implémenter la validation de fichiers (type, taille)
+60. [ ] ⏳ Créer les REST APIs
+61. [ ] ⏳ Tests unitaires (couverture > 80%)
+62. [ ] ⏳ Tests d'intégration
+63. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Upload/download de fichiers fonctionnel
@@ -171,15 +171,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 3.3 Workflow Engine Service
-- [ ] ⏳ Créer le module workflow-service
-- [ ] ⏳ Implémenter les entités (ApprovalWorkflow, Task)
-- [ ] ⏳ Implémenter le moteur de workflow multi-étapes
-- [ ] ⏳ Implémenter l'assignation aux rôles/utilisateurs
-- [ ] ⏳ Intégrer avec Kafka pour événements
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+64. [ ] ⏳ Créer le module workflow-service
+65. [ ] ⏳ Implémenter les entités (ApprovalWorkflow, Task)
+66. [ ] ⏳ Implémenter le moteur de workflow multi-étapes
+67. [ ] ⏳ Implémenter l'assignation aux rôles/utilisateurs
+68. [ ] ⏳ Intégrer avec Kafka pour événements
+69. [ ] ⏳ Créer les REST APIs
+70. [ ] ⏳ Tests unitaires (couverture > 80%)
+71. [ ] ⏳ Tests d'intégration
+72. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Workflows multi-étapes fonctionnels
@@ -192,14 +192,14 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 4 : Services Support ✅
 
 ### 4.1 Audit Service
-- [ ] ⏳ Créer le module audit-service
-- [ ] ⏳ Implémenter les entités (AuditLog)
-- [ ] ⏳ Implémenter le logging de toutes actions critiques
-- [ ] ⏳ Intégrer avec Elasticsearch pour recherche
-- [ ] ⏳ Créer les REST APIs (recherche, reporting)
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+73. [ ] ⏳ Créer le module audit-service
+74. [ ] ⏳ Implémenter les entités (AuditLog)
+75. [ ] ⏳ Implémenter le logging de toutes actions critiques
+76. [ ] ⏳ Intégrer avec Elasticsearch pour recherche
+77. [ ] ⏳ Créer les REST APIs (recherche, reporting)
+78. [ ] ⏳ Tests unitaires (couverture > 80%)
+79. [ ] ⏳ Tests d'intégration
+80. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Audit logging fonctionnel
@@ -210,15 +210,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 4.2 Notification Service
-- [ ] ⏳ Créer le module notification-service
-- [ ] ⏳ Implémenter les entités (Notification)
-- [ ] ⏳ Implémenter notifications push, in-app, SMS
-- [ ] ⏳ Implémenter les subscriptions par utilisateur/équipe
-- [ ] ⏳ Intégrer avec Kafka pour événements
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+81. [ ] ⏳ Créer le module notification-service
+82. [ ] ⏳ Implémenter les entités (Notification)
+83. [ ] ⏳ Implémenter notifications push, in-app, SMS
+84. [ ] ⏳ Implémenter les subscriptions par utilisateur/équipe
+85. [ ] ⏳ Intégrer avec Kafka pour événements
+86. [ ] ⏳ Créer les REST APIs
+87. [ ] ⏳ Tests unitaires (couverture > 80%)
+88. [ ] ⏳ Tests d'intégration
+89. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Notifications multi-canaux fonctionnelles
@@ -229,15 +229,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 4.3 Emailing Service
-- [ ] ⏳ Créer le module emailing-service
-- [ ] ⏳ Implémenter les entités (Email, EmailTemplate)
-- [ ] ⏳ Implémenter les templates multi-tenant
-- [ ] ⏳ Intégrer avec Hostinger SMTP (open source, gratuit)
-- [ ] ⏳ Intégrer avec Kafka pour événements
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+90. [ ] ⏳ Créer le module emailing-service
+91. [ ] ⏳ Implémenter les entités (Email, EmailTemplate)
+92. [ ] ⏳ Implémenter les templates multi-tenant
+93. [ ] ⏳ Intégrer avec Hostinger SMTP (open source, gratuit)
+94. [ ] ⏳ Intégrer avec Kafka pour événements
+95. [ ] ⏳ Créer les REST APIs
+96. [ ] ⏳ Tests unitaires (couverture > 80%)
+97. [ ] ⏳ Tests d'intégration
+98. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Envoi d'emails fonctionnel
@@ -248,15 +248,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 4.4 Billing / Plan Service
-- [ ] ⏳ Créer le module billing-service
-- [ ] ⏳ Implémenter les entités (Plan, Subscription)
-- [ ] ⏳ Implémenter la gestion des plans et abonnements
-- [ ] ⏳ Implémenter les feature flags par plan
-- [ ] ⏳ Intégrer avec Organization Service
-- [ ] ⏳ Créer les REST APIs
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+99. [ ] ⏳ Créer le module billing-service
+100. [ ] ⏳ Implémenter les entités (Plan, Subscription)
+101. [ ] ⏳ Implémenter la gestion des plans et abonnements
+102. [ ] ⏳ Implémenter les feature flags par plan
+103. [ ] ⏳ Intégrer avec Organization Service
+104. [ ] ⏳ Créer les REST APIs
+105. [ ] ⏳ Tests unitaires (couverture > 80%)
+106. [ ] ⏳ Tests d'intégration
+107. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Gestion des plans fonctionnelle
@@ -269,15 +269,15 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 5 : API Gateway & Frontend ✅
 
 ### 5.1 API Gateway
-- [ ] ⏳ Créer le module gateway
-- [ ] ⏳ Configurer Spring Cloud Gateway
-- [ ] ⏳ Configurer le routage vers tous les microservices
-- [ ] ⏳ Implémenter l'authentification centralisée (JWT)
-- [ ] ⏳ Implémenter le rate limiting
-- [ ] ⏳ Implémenter le circuit breaker
-- [ ] ⏳ Tests unitaires (couverture > 80%)
-- [ ] ⏳ Tests d'intégration
-- [ ] ⏳ Documentation API
+108. [ ] ⏳ Créer le module gateway
+109. [ ] ⏳ Configurer Spring Cloud Gateway
+110. [ ] ⏳ Configurer le routage vers tous les microservices
+111. [ ] ⏳ Implémenter l'authentification centralisée (JWT)
+112. [ ] ⏳ Implémenter le rate limiting
+113. [ ] ⏳ Implémenter le circuit breaker
+114. [ ] ⏳ Tests unitaires (couverture > 80%)
+115. [ ] ⏳ Tests d'intégration
+116. [ ] ⏳ Documentation API
 
 **Critères de validation :**
 - ✅ Routage vers tous les services fonctionnel
@@ -288,17 +288,17 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 5.2 Frontend Vue.js
-- [ ] ⏳ Initialiser le projet Vue.js 3.4.27 avec Vite
-- [ ] ⏳ Configurer Vue Router
-- [ ] ⏳ Configurer Pinia (state management)
-- [ ] ⏳ Créer les composants d'authentification
-- [ ] ⏳ Créer les composants Property (CRUD)
-- [ ] ⏳ Créer les composants Document
-- [ ] ⏳ Créer les composants Workflow
-- [ ] ⏳ Intégrer avec l'API Gateway
-- [ ] ⏳ Tests unitaires (Jest/Vitest)
-- [ ] ⏳ Tests E2E (Cypress/Playwright)
-- [ ] ⏳ Documentation
+117. [ ] ⏳ Initialiser le projet Vue.js 3.4.27 avec Vite
+118. [ ] ⏳ Configurer Vue Router
+119. [ ] ⏳ Configurer Pinia (state management)
+120. [ ] ⏳ Créer les composants d'authentification
+121. [ ] ⏳ Créer les composants Property (CRUD)
+122. [ ] ⏳ Créer les composants Document
+123. [ ] ⏳ Créer les composants Workflow
+124. [ ] ⏳ Intégrer avec l'API Gateway
+125. [ ] ⏳ Tests unitaires (Jest/Vitest)
+126. [ ] ⏳ Tests E2E (Cypress/Playwright)
+127. [ ] ⏳ Documentation
 
 **Critères de validation :**
 - ✅ Application frontend fonctionnelle
@@ -311,11 +311,11 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 6 : Observabilité & Monitoring ✅
 
 ### 6.1 Métriques
-- [ ] ⏳ Configurer Micrometer dans tous les services
-- [ ] ⏳ Configurer Prometheus
-- [ ] ⏳ Configurer Grafana avec dashboards
-- [ ] ⏳ Créer des alertes (CPU, mémoire, erreurs)
-- [ ] ⏳ Tests
+128. [ ] ⏳ Configurer Micrometer dans tous les services
+129. [ ] ⏳ Configurer Prometheus
+130. [ ] ⏳ Configurer Grafana avec dashboards
+131. [ ] ⏳ Créer des alertes (CPU, mémoire, erreurs)
+132. [ ] ⏳ Tests
 
 **Critères de validation :**
 - ✅ Métriques collectées pour tous les services
@@ -325,10 +325,10 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 6.2 Logs
-- [ ] ⏳ Configurer ELK Stack (Elasticsearch, Logstash, Kibana)
-- [ ] ⏳ Configurer la centralisation des logs
-- [ ] ⏳ Créer des dashboards Kibana
-- [ ] ⏳ Tests
+133. [ ] ⏳ Configurer ELK Stack (Elasticsearch, Logstash, Kibana)
+134. [ ] ⏳ Configurer la centralisation des logs
+135. [ ] ⏳ Créer des dashboards Kibana
+136. [ ] ⏳ Tests
 
 **Critères de validation :**
 - ✅ Logs centralisés pour tous les services
@@ -337,10 +337,10 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 6.3 Tracing
-- [ ] ⏳ Configurer Micrometer Tracing
-- [ ] ⏳ Configurer Zipkin
-- [ ] ⏳ Tracer les requêtes cross-services
-- [ ] ⏳ Tests
+137. [ ] ⏳ Configurer Micrometer Tracing
+138. [ ] ⏳ Configurer Zipkin
+139. [ ] ⏳ Tracer les requêtes cross-services
+140. [ ] ⏳ Tests
 
 **Critères de validation :**
 - ✅ Tracing distribué fonctionnel
@@ -351,12 +351,12 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 7 : Tests & Qualité ✅
 
 ### 7.1 Tests Unitaires
-- [ ] ⏳ Configurer JUnit 5 et Mockito
-- [ ] ⏳ Atteindre > 80% de couverture de code pour tous les services
-- [ ] ⏳ Tests des services métier
-- [ ] ⏳ Tests des repositories
-- [ ] ⏳ Tests des controllers
-- [ ] ⏳ Tests des services de sécurité
+141. [ ] ⏳ Configurer JUnit 5 et Mockito
+142. [ ] ⏳ Atteindre > 80% de couverture de code pour tous les services
+143. [ ] ⏳ Tests des services métier
+144. [ ] ⏳ Tests des repositories
+145. [ ] ⏳ Tests des controllers
+146. [ ] ⏳ Tests des services de sécurité
 
 **Critères de validation :**
 - ✅ Couverture > 80% pour tous les services
@@ -365,11 +365,11 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 7.2 Tests d'Intégration
-- [ ] ⏳ Configurer Testcontainers (PostgreSQL, Redis, Kafka)
-- [ ] ⏳ Tests d'intégration pour chaque microservice
-- [ ] ⏳ Tests d'intégration cross-services
-- [ ] ⏳ Tests de workflows complets
-- [ ] ⏳ Tests de performance (load testing)
+147. [ ] ⏳ Configurer Testcontainers (PostgreSQL, Redis, Kafka)
+148. [ ] ⏳ Tests d'intégration pour chaque microservice
+149. [ ] ⏳ Tests d'intégration cross-services
+150. [ ] ⏳ Tests de workflows complets
+151. [ ] ⏳ Tests de performance (load testing)
 
 **Critères de validation :**
 - ✅ Tous les tests d'intégration passent
@@ -378,9 +378,9 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 7.3 Tests E2E
-- [ ] ⏳ Configurer Cypress ou Playwright
-- [ ] ⏳ Tests E2E des scénarios critiques
-- [ ] ⏳ Tests de workflows utilisateur complets
+152. [ ] ⏳ Configurer Cypress ou Playwright
+153. [ ] ⏳ Tests E2E des scénarios critiques
+154. [ ] ⏳ Tests de workflows utilisateur complets
 
 **Critères de validation :**
 - ✅ Tous les tests E2E passent
@@ -390,12 +390,12 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 8 : CI/CD & Déploiement ✅
 
 ### 8.1 CI/CD
-- [ ] ⏳ Configurer GitHub Actions
-- [ ] ⏳ Pipeline de build (Maven, tests)
-- [ ] ⏳ Pipeline de build Docker
-- [ ] ⏳ Pipeline de déploiement (dev, staging, pre-prod, prod)
-- [ ] ⏳ Tests automatisés dans le pipeline
-- [ ] ⏳ Quality gates (SonarQube)
+155. [ ] ⏳ Configurer GitHub Actions
+156. [ ] ⏳ Pipeline de build (Maven, tests)
+157. [ ] ⏳ Pipeline de build Docker
+158. [ ] ⏳ Pipeline de déploiement (dev, staging, pre-prod, prod)
+159. [ ] ⏳ Tests automatisés dans le pipeline
+160. [ ] ⏳ Quality gates (SonarQube)
 
 **Critères de validation :**
 - ✅ Pipeline CI/CD fonctionnel
@@ -404,12 +404,12 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 8.2 Déploiement
-- [ ] ⏳ Configurer Kubernetes (dev, staging, pre-prod, prod)
-- [ ] ⏳ Créer les manifests Kubernetes
-- [ ] ⏳ Configurer Helm charts
-- [ ] ⏳ Configurer les secrets (Kubernetes Secrets)
-- [ ] ⏳ Configurer les ingress
-- [ ] ⏳ Tests de déploiement
+161. [ ] ⏳ Configurer Kubernetes (dev, staging, pre-prod, prod)
+162. [ ] ⏳ Créer les manifests Kubernetes
+163. [ ] ⏳ Configurer Helm charts
+164. [ ] ⏳ Configurer les secrets (Kubernetes Secrets)
+165. [ ] ⏳ Configurer les ingress
+166. [ ] ⏳ Tests de déploiement
 
 **Critères de validation :**
 - ✅ Déploiement Kubernetes fonctionnel
@@ -420,11 +420,11 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ## Phase 9 : Documentation & Finalisation 🚧
 
 ### 9.1 Documentation
-- [ ] ⏳ Documentation API complète (OpenAPI/Swagger) - À faire lors de l'implémentation
-- [x] ✅ Documentation technique - Architecture complète
-- [x] ✅ Guide de déploiement - Docker documenté
-- [x] ✅ Guide de développement - TODO et guides créés
-- [x] ✅ README principal - Créé
+167. [ ] ⏳ Documentation API complète (OpenAPI/Swagger) - À faire lors de l'implémentation
+168. [x] ✅ Documentation technique - Architecture complète
+169. [x] ✅ Guide de déploiement - Docker documenté
+170. [x] ✅ Guide de développement - TODO et guides créés
+171. [x] ✅ README principal - Créé
 
 **Critères de validation :**
 - ✅ Documentation d'architecture à jour
@@ -433,11 +433,11 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 ---
 
 ### 9.2 Finalisation
-- [x] ✅ Code review complet - Documentation revue
-- [x] ✅ Nettoyage du code - Fichiers inutiles supprimés
-- [x] ✅ Suppression des fichiers inutiles - Fait
-- [x] ✅ Préparation pour production - Documentation prête
-- [ ] ⏳ Push sur GitHub - À faire
+172. [x] ✅ Code review complet - Documentation revue
+173. [x] ✅ Nettoyage du code - Fichiers inutiles supprimés
+174. [x] ✅ Suppression des fichiers inutiles - Fait
+175. [x] ✅ Préparation pour production - Documentation prête
+176. [ ] ⏳ Push sur GitHub - À faire
 
 **Critères de validation :**
 - ✅ Code propre et documenté (documentation)
@@ -448,10 +448,10 @@ Ce document liste toutes les étapes d'implémentation du projet SaaS Immobilier
 
 ## 📊 Statistiques Globales
 
-- **Total d'étapes :** 100+
+- **Total d'étapes :** 176
 - **Étapes finalisées :** 8
 - **Étapes en cours :** 2
-- **Étapes à faire :** 90+
+- **Étapes à faire :** 166
 
 ### ✅ Étapes Finalisées (Phase Documentation)
 

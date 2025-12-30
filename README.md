@@ -27,6 +27,15 @@ Plateforme SaaS complète pour la gestion immobilière basée sur une architectu
 
 ---
 
+## ⚙️ Prérequis
+
+- **Java 21** (requis pour les tests unitaires)
+  - Installer: `./scripts/setup-java21.sh`
+  - Ou voir [SETUP-JAVA21.md](./SETUP-JAVA21.md) pour les instructions détaillées
+- **Maven 3.9+**
+- **PostgreSQL 17.2**
+- **Redis 7.2.4**
+
 ## 🚀 Quick Start
 
 ### Prérequis
