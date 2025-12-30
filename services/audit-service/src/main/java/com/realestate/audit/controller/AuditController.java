@@ -1,7 +1,10 @@
 package com.realestate.audit.controller;
 
+import com.realestate.audit.dto.AuditLogDTO;
 import com.realestate.audit.entity.AuditLog;
+import com.realestate.audit.mapper.AuditLogMapper;
 import com.realestate.audit.service.AuditService;
+import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/audit")
@@ -24,21 +27,24 @@ import java.util.Optional;
 public class AuditController {
 
     private final AuditService auditService;
+    private final AuditLogMapper auditLogMapper;
 
-    public AuditController(AuditService auditService) {
+    public AuditController(AuditService auditService, AuditLogMapper auditLogMapper) {
         this.auditService = auditService;
+        this.auditLogMapper = auditLogMapper;
     }
 
     @PostMapping
     @Operation(summary = "Create audit log", description = "Creates a new audit log entry")
-    public ResponseEntity<AuditLog> createAuditLog(@Valid @RequestBody AuditLog auditLog) {
+    public ResponseEntity<AuditLogDTO> createAuditLog(@Valid @RequestBody AuditLogDTO auditLogDTO) {
+        AuditLog auditLog = auditLogMapper.toEntity(auditLogDTO);
         AuditLog created = auditService.createAuditLog(auditLog);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(auditLogMapper.toDTO(created));
     }
 
     @PostMapping("/log")
     @Operation(summary = "Log action", description = "Logs an action with all relevant details")
-    public ResponseEntity<AuditLog> logAction(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<AuditLogDTO> logAction(@RequestBody Map<String, Object> request) {
         try {
             Long actorId = request.containsKey("actorId") ? Long.valueOf(request.get("actorId").toString()) : null;
             String actorEmail = request.containsKey("actorEmail") ? request.get("actorEmail").toString() : null;
@@ -57,7 +63,7 @@ public class AuditController {
             AuditLog logged = auditService.logAction(
                     actorId, actorEmail, organizationId, action, targetType, targetId,
                     status, description, ipAddress, userAgent, requestMethod, requestPath, metadata);
-            return ResponseEntity.status(HttpStatus.CREATED).body(logged);
+            return ResponseEntity.status(HttpStatus.CREATED).body(auditLogMapper.toDTO(logged));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -65,15 +71,15 @@ public class AuditController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get audit log by ID", description = "Returns audit log information for a specific audit log ID")
-    public ResponseEntity<AuditLog> getAuditLogById(@PathVariable Long id) {
-        return auditService.getAuditLogById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<AuditLogDTO> getAuditLogById(@PathVariable Long id) {
+        AuditLog auditLog = auditService.getAuditLogById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AuditLog", id));
+        return ResponseEntity.ok(auditLogMapper.toDTO(auditLog));
     }
 
     @GetMapping
     @Operation(summary = "List audit logs", description = "Returns a paginated list of audit logs with various filters")
-    public ResponseEntity<Page<AuditLog>> getAuditLogs(
+    public ResponseEntity<Page<AuditLogDTO>> getAuditLogs(
             @RequestParam Long organizationId,
             @RequestParam(required = false) Long actorId,
             @RequestParam(required = false) String action,
@@ -97,16 +103,19 @@ public class AuditController {
             auditLogs = auditService.getAuditLogsByOrganizationId(organizationId, pageable);
         }
 
-        return ResponseEntity.ok(auditLogs);
+        Page<AuditLogDTO> auditLogDTOs = auditLogs.map(auditLogMapper::toDTO);
+        return ResponseEntity.ok(auditLogDTOs);
     }
 
     @GetMapping("/target")
     @Operation(summary = "Get audit logs by target", description = "Returns all audit logs for a specific target (e.g., a property, resource)")
-    public ResponseEntity<List<AuditLog>> getAuditLogsByTarget(
+    public ResponseEntity<List<AuditLogDTO>> getAuditLogsByTarget(
             @RequestParam String targetType,
             @RequestParam Long targetId) {
         List<AuditLog> auditLogs = auditService.getAuditLogsByTarget(targetType, targetId);
-        return ResponseEntity.ok(auditLogs);
+        List<AuditLogDTO> auditLogDTOs = auditLogs.stream()
+                .map(auditLogMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(auditLogDTOs);
     }
 }
-

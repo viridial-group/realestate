@@ -1,55 +1,62 @@
 package com.realestate.organization.controller;
 
+import com.realestate.organization.dto.TeamDTO;
 import com.realestate.organization.entity.Team;
+import com.realestate.organization.mapper.TeamMapper;
 import com.realestate.organization.service.TeamService;
+import com.realestate.common.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/organizations/{organizationId}/teams")
 public class TeamController {
 
     private final TeamService teamService;
+    private final TeamMapper teamMapper;
 
-    public TeamController(TeamService teamService) {
+    public TeamController(TeamService teamService, TeamMapper teamMapper) {
         this.teamService = teamService;
+        this.teamMapper = teamMapper;
     }
 
     @PostMapping
-    public ResponseEntity<Team> createTeam(
+    public ResponseEntity<TeamDTO> createTeam(
             @PathVariable Long organizationId,
-            @Valid @RequestBody Team team) {
+            @Valid @RequestBody TeamDTO teamDTO) {
+        Team team = teamMapper.toEntity(teamDTO);
         Team created = teamService.createTeam(organizationId, team);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(teamMapper.toDTO(created));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Team> getTeamById(@PathVariable Long id) {
-        return teamService.getTeamById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<TeamDTO> getTeamById(@PathVariable Long id) {
+        Team team = teamService.getTeamById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", id));
+        return ResponseEntity.ok(teamMapper.toDTO(team));
     }
 
     @GetMapping
-    public ResponseEntity<List<Team>> getTeamsByOrganization(@PathVariable Long organizationId) {
+    public ResponseEntity<List<TeamDTO>> getTeamsByOrganization(@PathVariable Long organizationId) {
         List<Team> teams = teamService.getTeamsByOrganizationId(organizationId);
-        return ResponseEntity.ok(teams);
+        List<TeamDTO> teamDTOs = teams.stream()
+                .map(teamMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(teamDTOs);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Team> updateTeam(
+    public ResponseEntity<TeamDTO> updateTeam(
             @PathVariable Long id,
-            @Valid @RequestBody Team teamDetails) {
-        try {
-            Team updated = teamService.updateTeam(id, teamDetails);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody TeamDTO teamDTO) {
+        Team team = teamMapper.toEntity(teamDTO);
+        Team updated = teamService.updateTeam(id, team);
+        return ResponseEntity.ok(teamMapper.toDTO(updated));
     }
 
     @DeleteMapping("/{id}")

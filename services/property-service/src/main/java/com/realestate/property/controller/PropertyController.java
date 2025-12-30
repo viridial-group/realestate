@@ -1,8 +1,10 @@
 package com.realestate.property.controller;
 
+import com.realestate.property.dto.PropertyDTO;
 import com.realestate.property.entity.Property;
-import com.realestate.property.entity.PropertyFeature;
+import com.realestate.property.mapper.PropertyMapper;
 import com.realestate.property.service.PropertyService;
+import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/properties")
@@ -21,37 +23,40 @@ import java.util.Optional;
 public class PropertyController {
 
     private final PropertyService propertyService;
+    private final PropertyMapper propertyMapper;
 
-    public PropertyController(PropertyService propertyService) {
+    public PropertyController(PropertyService propertyService, PropertyMapper propertyMapper) {
         this.propertyService = propertyService;
+        this.propertyMapper = propertyMapper;
     }
 
     @PostMapping
     @Operation(summary = "Create property", description = "Creates a new real estate property")
-    public ResponseEntity<Property> createProperty(@Valid @RequestBody Property property) {
+    public ResponseEntity<PropertyDTO> createProperty(@Valid @RequestBody PropertyDTO propertyDTO) {
+        Property property = propertyMapper.toEntity(propertyDTO);
         Property created = propertyService.createProperty(property);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(propertyMapper.toDTO(created));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get property by ID", description = "Returns property information for a specific property ID")
-    public ResponseEntity<Property> getPropertyById(@PathVariable Long id) {
-        return propertyService.getPropertyById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PropertyDTO> getPropertyById(@PathVariable Long id) {
+        Property property = propertyService.getPropertyById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Property", id));
+        return ResponseEntity.ok(propertyMapper.toDTO(property));
     }
 
     @GetMapping("/reference/{reference}")
     @Operation(summary = "Get property by reference", description = "Returns property information for a specific property reference")
-    public ResponseEntity<Property> getPropertyByReference(@PathVariable String reference) {
-        return propertyService.getPropertyByReference(reference)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PropertyDTO> getPropertyByReference(@PathVariable String reference) {
+        Property property = propertyService.getPropertyByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Property", reference));
+        return ResponseEntity.ok(propertyMapper.toDTO(property));
     }
 
     @GetMapping
     @Operation(summary = "List properties", description = "Returns a list of properties filtered by various criteria")
-    public ResponseEntity<List<Property>> getProperties(
+    public ResponseEntity<List<PropertyDTO>> getProperties(
             @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) Long assignedUserId,
             @RequestParam(required = false) Long teamId,
@@ -89,31 +94,27 @@ public class PropertyController {
             return ResponseEntity.badRequest().build();
         }
 
-        return ResponseEntity.ok(properties);
+        List<PropertyDTO> propertyDTOs = properties.stream()
+                .map(propertyMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(propertyDTOs);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update property", description = "Updates property information for a specific property ID")
-    public ResponseEntity<Property> updateProperty(
+    public ResponseEntity<PropertyDTO> updateProperty(
             @PathVariable Long id,
-            @Valid @RequestBody Property propertyDetails) {
-        try {
-            Property updated = propertyService.updateProperty(id, propertyDetails);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody PropertyDTO propertyDTO) {
+        Property property = propertyMapper.toEntity(propertyDTO);
+        Property updated = propertyService.updateProperty(id, property);
+        return ResponseEntity.ok(propertyMapper.toDTO(updated));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete property", description = "Deletes a property from the database by ID")
     public ResponseEntity<Void> deleteProperty(@PathVariable Long id) {
-        try {
-            propertyService.deleteProperty(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        propertyService.deleteProperty(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/share")
@@ -121,33 +122,25 @@ public class PropertyController {
     public ResponseEntity<com.realestate.property.entity.PropertyAccess> shareProperty(
             @PathVariable Long id,
             @RequestBody Map<String, Object> shareRequest) {
-        try {
-            Long organizationId = Long.valueOf(shareRequest.get("organizationId").toString());
-            Long userId = shareRequest.containsKey("userId") ? Long.valueOf(shareRequest.get("userId").toString()) : null;
-            Boolean canRead = shareRequest.containsKey("canRead") ? (Boolean) shareRequest.get("canRead") : true;
-            Boolean canWrite = shareRequest.containsKey("canWrite") ? (Boolean) shareRequest.get("canWrite") : false;
-            Boolean canDelete = shareRequest.containsKey("canDelete") ? (Boolean) shareRequest.get("canDelete") : false;
-            Long grantedBy = shareRequest.containsKey("grantedBy") ? Long.valueOf(shareRequest.get("grantedBy").toString()) : null;
+        Long organizationId = Long.valueOf(shareRequest.get("organizationId").toString());
+        Long userId = shareRequest.containsKey("userId") ? Long.valueOf(shareRequest.get("userId").toString()) : null;
+        Boolean canRead = shareRequest.containsKey("canRead") ? (Boolean) shareRequest.get("canRead") : true;
+        Boolean canWrite = shareRequest.containsKey("canWrite") ? (Boolean) shareRequest.get("canWrite") : false;
+        Boolean canDelete = shareRequest.containsKey("canDelete") ? (Boolean) shareRequest.get("canDelete") : false;
+        Long grantedBy = shareRequest.containsKey("grantedBy") ? Long.valueOf(shareRequest.get("grantedBy").toString()) : null;
 
-            com.realestate.property.entity.PropertyAccess shared = propertyService.sharePropertyWithOrganization(
-                    id, organizationId, userId, canRead, canWrite, canDelete, grantedBy);
-            return ResponseEntity.ok(shared);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        com.realestate.property.entity.PropertyAccess shared = propertyService.sharePropertyWithOrganization(
+                id, organizationId, userId, canRead, canWrite, canDelete, grantedBy);
+        return ResponseEntity.ok(shared);
     }
 
     @PostMapping("/{id}/features")
     @Operation(summary = "Add feature to property", description = "Adds or updates a feature for a property")
-    public ResponseEntity<PropertyFeature> addFeatureToProperty(
+    public ResponseEntity<com.realestate.property.entity.PropertyFeature> addFeatureToProperty(
             @PathVariable Long id,
-            @Valid @RequestBody PropertyFeature feature) {
-        try {
-            PropertyFeature added = propertyService.addFeatureToProperty(id, feature);
-            return ResponseEntity.ok(added);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody com.realestate.property.entity.PropertyFeature feature) {
+        com.realestate.property.entity.PropertyFeature added = propertyService.addFeatureToProperty(id, feature);
+        return ResponseEntity.ok(added);
     }
 
     @DeleteMapping("/{id}/features/{key}")
@@ -155,12 +148,7 @@ public class PropertyController {
     public ResponseEntity<Void> removeFeatureFromProperty(
             @PathVariable Long id,
             @PathVariable String key) {
-        try {
-            propertyService.removeFeatureFromProperty(id, key);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        propertyService.removeFeatureFromProperty(id, key);
+        return ResponseEntity.noContent().build();
     }
 }
-

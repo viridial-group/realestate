@@ -1,7 +1,7 @@
 # 🎯 Prochaines Étapes - Real Estate Platform
 
 **Date:** 30 Décembre 2025  
-**Statut actuel:** ✅ Identity, Organization, Resource, Property, Document, Workflow & Notification Services créés et fonctionnels
+**Statut actuel:** ✅ Tous les services créés (Identity, Organization, Resource, Property, Document, Workflow, Notification, Emailing, Audit, Billing) avec DTOs et Mappers implémentés
 
 ---
 
@@ -93,66 +93,126 @@
 
 ---
 
-## 📋 Prochaines Étapes Recommandées
+## ✅ Dernière Mise à Jour : DTOs, Mappers et Tests
 
-### Option 1 : Emailing Service (Recommandé) 📧
-**Pourquoi maintenant ?**
-- Complément naturel du Notification Service
-- Envoi d'emails automatiques (confirmations, rappels, alertes)
-- Templates d'emails multi-tenant personnalisables
-- Intégration avec Hostinger SMTP (open source, gratuit)
-- Intégration avec Workflow (emails d'approbation)
-- Intégration avec Notification Service (canal EMAIL)
+**Date:** 30 Décembre 2025  
+**Statut:** ✅ Tous les services utilisent maintenant des DTOs et des Mappers, tests corrigés
 
-**Fonctionnalités à implémenter :**
-- Entités : `Email`, `EmailTemplate`
-- Templates d'emails multi-tenant
-- Intégration Hostinger SMTP
-- Envoi asynchrone d'emails
-- Historique et logs d'envoi
-- Intégration avec Kafka pour événements
-- Tests unitaires et d'intégration
-
-### Option 2 : Audit Service 📝
-**Pourquoi utile ?**
-- Traçabilité complète de toutes les actions critiques
-- Conformité et sécurité
-- Recherche avancée avec Elasticsearch
-- Reporting et analytics
-- Intégration avec tous les services existants
-
-**Fonctionnalités à implémenter :**
-- Entités : `AuditLog`
-- Logging automatique des actions critiques
-- Intégration Elasticsearch pour recherche
-- Filtrage par acteur, organisation, action, date
-- Export de rapports
-- Tests unitaires et d'intégration
+### Ce qui a été fait :
+- ✅ DTOs créés pour tous les services (UserDTO, OrganizationDTO, PropertyDTO, etc.)
+- ✅ Mappers créés pour tous les services (composants Spring @Component)
+- ✅ Tous les controllers mis à jour pour utiliser les DTOs
+- ✅ Gestion d'erreurs améliorée avec `ResourceNotFoundException` et `GlobalExceptionHandler`
+- ✅ Évite le lazy loading en mappant les relations en IDs ou noms
+- ✅ Sécurité améliorée (pas d'exposition de mots de passe)
+- ✅ **Corrections des DTOs** : PermissionDTO (name/resource/action), RoleDTO (permissionNames), PropertyMapper (features), EmailTemplateMapper (availableVariables)
+- ✅ **Tests Identity Service corrigés** : 45/46 tests passent (97.8%)
+  - ✅ 9/9 tests UserControllerTest
+  - ✅ 7/7 tests AuthControllerTest
+  - ✅ 10/10 tests UserServiceTest
+  - ✅ 10/10 tests AuthServiceTest
+  - ✅ 9/9 tests JwtServiceTest
+  - ⚠️ 1 test d'intégration AuthIntegrationTest à vérifier
 
 ---
 
-## 🚀 Plan d'Action Recommandé
+## 📋 Prochaines Étapes Recommandées
 
-### Phase 1 : Emailing Service (1-2 jours) 📧
-1. Créer le module `emailing-service`
-2. Implémenter les entités JPA (`Email`, `EmailTemplate`)
-3. Configurer Hostinger SMTP
-4. Implémenter le service d'envoi d'emails
-5. Créer les templates multi-tenant
-6. Intégrer avec Notification Service
-7. Créer les controllers REST
-8. Tests unitaires et d'intégration
-9. Documentation Swagger
+### Option 1 : Tests et Validation (En cours) ✅
+**Statut actuel :**
+- ✅ Tous les services compilent correctement avec les DTOs
+- ✅ Tests Identity Service : 45/46 tests passent (97.8%)
+- ✅ DTOs et mappers corrigés et alignés avec les entités
+- ⚠️ 1 test d'intégration à vérifier (AuthIntegrationTest)
 
-### Phase 2 : Audit Service (1-2 jours) 📝
-1. Créer le module `audit-service`
-2. Implémenter l'entité `AuditLog`
-3. Configurer Elasticsearch
-4. Implémenter le logging automatique
-5. Créer les APIs de recherche
-6. Intégrer avec tous les services existants
-7. Tests unitaires et d'intégration
-8. Documentation Swagger
+**Actions restantes :**
+1. ✅ Compiler tous les services : `mvn clean install` - **FAIT**
+2. ✅ Exécuter les tests Identity Service : `mvn test -pl services/identity-service` - **FAIT**
+3. ⏳ Vérifier et corriger le test d'intégration AuthIntegrationTest
+4. ⏳ Exécuter tous les tests des autres services : `mvn test`
+5. ⏳ Tester les APIs avec Swagger
+6. ⏳ Valider que tous les services fonctionnent avec les DTOs
+
+### Option 2 : Intégrations Inter-Services (Kafka) 🔄
+**Pourquoi utile ?**
+- Communication asynchrone entre services
+- Découplage des services
+- Événements pour notifications, audit, workflow
+- Scalabilité améliorée
+
+**Fonctionnalités à implémenter :**
+- Configuration Kafka (topics, partitions)
+- Intégration dans Workflow Service (événements d'approbation)
+- Intégration dans Notification Service (événements de notification)
+- Intégration dans Audit Service (événements d'audit)
+- Intégration dans Emailing Service (événements d'email)
+- Tests d'intégration avec Kafka
+
+### Option 3 : Infrastructure (Elasticsearch, Monitoring) 📊
+**Pourquoi utile ?**
+- Recherche avancée pour Property et Audit
+- Monitoring et observabilité
+- Centralisation des logs
+- Dashboards de métriques
+
+**Fonctionnalités à implémenter :**
+- Configuration Elasticsearch (indexes, mappings)
+- Intégration dans Property Service (recherche)
+- Intégration dans Audit Service (recherche)
+- Configuration Prometheus (métriques)
+- Configuration Grafana (dashboards)
+- Configuration ELK Stack (logs)
+
+### Option 4 : Frontend Vue.js 🎨
+**Pourquoi maintenant ?**
+- Interface utilisateur complète
+- Tests end-to-end
+- Validation de l'architecture complète
+
+**Fonctionnalités à implémenter :**
+- Initialiser le projet Vue.js 3.4.27
+- Configurer Vue Router et Pinia
+- Créer les composants d'authentification
+- Créer les composants Property (CRUD)
+- Créer les composants Document
+- Intégration avec l'API Gateway
+
+---
+
+## 🚀 Plan d'Action Recommandé (Priorité)
+
+### Phase 1 : Tests et Validation (En cours) ✅
+1. ✅ Compiler tous les services : `mvn clean install` - **FAIT**
+2. ✅ Exécuter les tests Identity Service : `mvn test -pl services/identity-service` - **FAIT (45/46 tests passent)**
+3. ✅ Corriger les DTOs et mappers - **FAIT**
+4. ✅ Corriger les tests UserControllerTest et AuthControllerTest - **FAIT**
+5. ⏳ Vérifier le test d'intégration AuthIntegrationTest
+6. ⏳ Exécuter tous les tests des autres services : `mvn test`
+7. ⏳ Tester les APIs avec Swagger
+8. ⏳ Mettre à jour la documentation
+
+### Phase 2 : Intégrations Kafka (2-3 jours) 🔄
+1. Configurer Kafka (topics, partitions)
+2. Intégrer dans Workflow Service
+3. Intégrer dans Notification Service
+4. Intégrer dans Audit Service
+5. Intégrer dans Emailing Service
+6. Tests d'intégration
+
+### Phase 3 : Infrastructure (2-3 jours) 📊
+1. Configurer Elasticsearch
+2. Intégrer dans Property Service
+3. Intégrer dans Audit Service
+4. Configurer Prometheus/Grafana
+5. Configurer ELK Stack
+
+### Phase 4 : Frontend Vue.js (3-5 jours) 🎨
+1. Initialiser le projet Vue.js
+2. Configurer Vue Router et Pinia
+3. Créer les composants d'authentification
+4. Créer les composants Property
+5. Créer les composants Document
+6. Tests end-to-end
 
 ---
 
@@ -223,13 +283,13 @@ mvn spring-boot:run -pl services/new-service
 | Service | Statut | Tests | Port | Route Gateway |
 |---------|--------|-------|------|---------------|
 | **Gateway** | ✅ Déployé | - | 8080 | `/api/**` |
-| **Identity** | ✅ Créé | ✅ | 8081 | `/api/identity/**` |
+| **Identity** | ✅ Créé | ✅ 45/46 tests (97.8%) | 8081 | `/api/identity/**` |
 | **Organization** | ✅ Créé | ✅ 26 tests | 8082 | `/api/organizations/**` |
 | **Resource** | ✅ Créé | ✅ 49 tests | 8084 | `/api/resources/**` |
 | **Property** | ✅ Créé | ✅ 16 tests | 8083 | `/api/properties/**` |
 | **Document** | ✅ Créé | ✅ 16 tests | 8085 | `/api/documents/**` |
 | **Workflow** | ✅ Créé | ✅ 32 tests | 8086 | `/api/workflows/**` |
 | **Notification** | ✅ Créé | ✅ 30 tests | 8087 | `/api/notifications/**` |
-| **Emailing** | ⏳ À créer | - | 8088 | `/api/emails/**` |
-| **Audit** | ⏳ À créer | - | 8089 | `/api/audit/**` |
-| **Billing** | ⏳ À créer | - | 8090 | `/api/billing/**` |
+| **Emailing** | ✅ Créé | ✅ 22 tests | 8088 | `/api/emails/**` |
+| **Audit** | ✅ Créé | ✅ 11 tests | 8089 | `/api/audit/**` |
+| **Billing** | ✅ Créé | ✅ | 8090 | `/api/billing/**` |

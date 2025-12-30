@@ -1,7 +1,10 @@
 package com.realestate.resource.controller;
 
+import com.realestate.resource.dto.TagDTO;
 import com.realestate.resource.entity.Tag;
+import com.realestate.resource.mapper.TagMapper;
 import com.realestate.resource.service.TagService;
+import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -9,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/resources/tags")
@@ -16,29 +20,32 @@ import java.util.List;
 public class TagController {
 
     private final TagService tagService;
+    private final TagMapper tagMapper;
 
-    public TagController(TagService tagService) {
+    public TagController(TagService tagService, TagMapper tagMapper) {
         this.tagService = tagService;
+        this.tagMapper = tagMapper;
     }
 
     @PostMapping
     @Operation(summary = "Create tag", description = "Creates a new tag for categorizing resources")
-    public ResponseEntity<Tag> createTag(@Valid @RequestBody Tag tag) {
+    public ResponseEntity<TagDTO> createTag(@Valid @RequestBody TagDTO tagDTO) {
+        Tag tag = tagMapper.toEntity(tagDTO);
         Tag created = tagService.createTag(tag);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(tagMapper.toDTO(created));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get tag by ID", description = "Returns tag information for a specific tag ID")
-    public ResponseEntity<Tag> getTagById(@PathVariable Long id) {
-        return tagService.getTagById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<TagDTO> getTagById(@PathVariable Long id) {
+        Tag tag = tagService.getTagById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tag", id));
+        return ResponseEntity.ok(tagMapper.toDTO(tag));
     }
 
     @GetMapping
     @Operation(summary = "Search tags", description = "Searches tags by name, domain, or organization")
-    public ResponseEntity<List<Tag>> searchTags(
+    public ResponseEntity<List<TagDTO>> searchTags(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long domainId,
             @RequestParam(required = false) Long organizationId) {
@@ -54,31 +61,26 @@ public class TagController {
             return ResponseEntity.badRequest().build();
         }
         
-        return ResponseEntity.ok(tags);
+        List<TagDTO> tagDTOs = tags.stream()
+                .map(tagMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(tagDTOs);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update tag", description = "Updates tag information for a specific tag ID")
-    public ResponseEntity<Tag> updateTag(
+    public ResponseEntity<TagDTO> updateTag(
             @PathVariable Long id,
-            @Valid @RequestBody Tag tagDetails) {
-        try {
-            Tag updated = tagService.updateTag(id, tagDetails);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody TagDTO tagDTO) {
+        Tag tag = tagMapper.toEntity(tagDTO);
+        Tag updated = tagService.updateTag(id, tag);
+        return ResponseEntity.ok(tagMapper.toDTO(updated));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete tag", description = "Deletes a tag from the database by ID")
     public ResponseEntity<Void> deleteTag(@PathVariable Long id) {
-        try {
-            tagService.deleteTag(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        tagService.deleteTag(id);
+        return ResponseEntity.noContent().build();
     }
 }
-

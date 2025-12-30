@@ -1,8 +1,11 @@
 package com.realestate.identity.controller;
 
+import com.realestate.identity.dto.UserDTO;
 import com.realestate.identity.entity.User;
+import com.realestate.identity.mapper.UserMapper;
 import com.realestate.identity.service.JwtService;
 import com.realestate.identity.service.UserService;
+import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,7 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/identity/users")
@@ -21,22 +24,22 @@ public class UserController {
 
     private final UserService userService;
     private final JwtService jwtService;
+    private final UserMapper userMapper;
 
-    public UserController(UserService userService, JwtService jwtService) {
+    public UserController(UserService userService, JwtService jwtService, UserMapper userMapper) {
         this.userService = userService;
         this.jwtService = jwtService;
+        this.userMapper = userMapper;
     }
 
     @GetMapping("/me")
     @Operation(summary = "Get current user", description = "Returns the authenticated user's information based on the JWT token")
-    public ResponseEntity<User> getCurrentUser(@RequestHeader("Authorization") String authorization) {
+    public ResponseEntity<UserDTO> getCurrentUser(@RequestHeader("Authorization") String authorization) {
         try {
             String token = authorization.substring(7); // Remove "Bearer " prefix
             String email = jwtService.extractUsername(token);
             User user = userService.getCurrentUser(email);
-            // Don't return password
-            user.setPassword(null);
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(userMapper.toDTO(user));
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
         }
@@ -44,33 +47,28 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID", description = "Returns user information for a specific user ID")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        Optional<User> user = userService.getUserById(id);
-        if (user.isPresent()) {
-            user.get().setPassword(null); // Don't return password
-            return ResponseEntity.ok(user.get());
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        User user = userService.getUserById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        return ResponseEntity.ok(userMapper.toDTO(user));
     }
 
     @GetMapping
     @Operation(summary = "List all users", description = "Returns a list of all users in the system")
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         List<User> users = userService.getAllUsers();
-        users.forEach(user -> user.setPassword(null)); // Don't return passwords
-        return ResponseEntity.ok(users);
+        List<UserDTO> userDTOs = users.stream()
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(userDTOs);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update user", description = "Updates user information for a specific user ID")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        try {
-            User updatedUser = userService.updateUser(id, userDetails);
-            updatedUser.setPassword(null); // Don't return password
-            return ResponseEntity.ok(updatedUser);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody UserDTO userDTO) {
+        User user = userMapper.toEntity(userDTO);
+        User updatedUser = userService.updateUser(id, user);
+        return ResponseEntity.ok(userMapper.toDTO(updatedUser));
     }
 
     @DeleteMapping("/{id}")

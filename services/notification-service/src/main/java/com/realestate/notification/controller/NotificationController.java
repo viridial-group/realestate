@@ -1,7 +1,10 @@
 package com.realestate.notification.controller;
 
+import com.realestate.notification.dto.NotificationDTO;
 import com.realestate.notification.entity.Notification;
+import com.realestate.notification.mapper.NotificationMapper;
 import com.realestate.notification.service.NotificationService;
+import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -11,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -19,21 +22,24 @@ import java.util.Optional;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final NotificationMapper notificationMapper;
 
-    public NotificationController(NotificationService notificationService) {
+    public NotificationController(NotificationService notificationService, NotificationMapper notificationMapper) {
         this.notificationService = notificationService;
+        this.notificationMapper = notificationMapper;
     }
 
     @PostMapping
     @Operation(summary = "Create notification", description = "Creates a new notification")
-    public ResponseEntity<Notification> createNotification(@Valid @RequestBody Notification notification) {
+    public ResponseEntity<NotificationDTO> createNotification(@Valid @RequestBody NotificationDTO notificationDTO) {
+        Notification notification = notificationMapper.toEntity(notificationDTO);
         Notification created = notificationService.createNotification(notification);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(notificationMapper.toDTO(created));
     }
 
     @PostMapping("/send")
     @Operation(summary = "Send notification", description = "Sends a notification to a recipient")
-    public ResponseEntity<Notification> sendNotification(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<NotificationDTO> sendNotification(@RequestBody Map<String, Object> request) {
         try {
             String type = request.get("type").toString();
             String title = request.get("title").toString();
@@ -47,7 +53,7 @@ public class NotificationController {
 
             Notification sent = notificationService.sendNotification(
                     type, title, message, recipientId, organizationId, senderId, channel, targetType, targetId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(sent);
+            return ResponseEntity.status(HttpStatus.CREATED).body(notificationMapper.toDTO(sent));
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -55,15 +61,15 @@ public class NotificationController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get notification by ID", description = "Returns notification information for a specific notification ID")
-    public ResponseEntity<Notification> getNotificationById(@PathVariable Long id) {
-        return notificationService.getNotificationById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<NotificationDTO> getNotificationById(@PathVariable Long id) {
+        Notification notification = notificationService.getNotificationById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
+        return ResponseEntity.ok(notificationMapper.toDTO(notification));
     }
 
     @GetMapping
     @Operation(summary = "List notifications", description = "Returns a list of notifications for a recipient")
-    public ResponseEntity<List<Notification>> getNotifications(
+    public ResponseEntity<List<NotificationDTO>> getNotifications(
             @RequestParam Long recipientId,
             @RequestParam(required = false) Boolean unread) {
         List<Notification> notifications;
@@ -74,7 +80,10 @@ public class NotificationController {
             notifications = notificationService.getNotificationsByRecipientId(recipientId);
         }
 
-        return ResponseEntity.ok(notifications);
+        List<NotificationDTO> notificationDTOs = notifications.stream()
+                .map(notificationMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(notificationDTOs);
     }
 
     @GetMapping("/unread/count")
@@ -86,48 +95,32 @@ public class NotificationController {
 
     @PutMapping("/{id}/read")
     @Operation(summary = "Mark notification as read", description = "Marks a notification as read")
-    public ResponseEntity<Notification> markAsRead(@PathVariable Long id) {
-        try {
-            Notification updated = notificationService.markAsRead(id);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<NotificationDTO> markAsRead(@PathVariable Long id) {
+        Notification updated = notificationService.markAsRead(id);
+        return ResponseEntity.ok(notificationMapper.toDTO(updated));
     }
 
     @PutMapping("/{id}/archive")
     @Operation(summary = "Archive notification", description = "Archives a notification")
-    public ResponseEntity<Notification> markAsArchived(@PathVariable Long id) {
-        try {
-            Notification updated = notificationService.markAsArchived(id);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<NotificationDTO> markAsArchived(@PathVariable Long id) {
+        Notification updated = notificationService.markAsArchived(id);
+        return ResponseEntity.ok(notificationMapper.toDTO(updated));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update notification", description = "Updates notification information for a specific notification ID")
-    public ResponseEntity<Notification> updateNotification(
+    public ResponseEntity<NotificationDTO> updateNotification(
             @PathVariable Long id,
-            @Valid @RequestBody Notification notificationDetails) {
-        try {
-            Notification updated = notificationService.updateNotification(id, notificationDetails);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+            @Valid @RequestBody NotificationDTO notificationDTO) {
+        Notification notification = notificationMapper.toEntity(notificationDTO);
+        Notification updated = notificationService.updateNotification(id, notification);
+        return ResponseEntity.ok(notificationMapper.toDTO(updated));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete notification", description = "Deletes a notification from the database by ID")
     public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
-        try {
-            notificationService.deleteNotification(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        notificationService.deleteNotification(id);
+        return ResponseEntity.noContent().build();
     }
 }
-
