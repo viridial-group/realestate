@@ -76,13 +76,20 @@ EOF
 # ========================
 log "Déploiement des fichiers..."
 
-# Copier les JARs
-scp $PROJECT_DIR/gateway/target/*.jar $VPS_USER@$VPS_HOST:$APP_DIR/bin/gateway.jar
-scp $PROJECT_DIR/services/*/target/*.jar $VPS_USER@$VPS_HOST:$APP_DIR/bin/
+# Copier les JARs (seulement le gateway pour l'instant)
+if [ -f "$PROJECT_DIR/gateway/target"/*.jar ]; then
+    scp $PROJECT_DIR/gateway/target/*.jar $VPS_USER@$VPS_HOST:$APP_DIR/bin/gateway.jar
+    log "✅ Gateway JAR copié"
+else
+    error "Gateway JAR introuvable. Avez-vous compilé le projet?"
+fi
 
-# Copier les configurations
-scp $PROJECT_DIR/config/application-$ENVIRONMENT.yml $VPS_USER@$VPS_HOST:$APP_DIR/config/
-scp $PROJECT_DIR/config/application-$ENVIRONMENT.properties $VPS_USER@$VPS_HOST:$APP_DIR/config/
+# Copier les configurations (si elles existent)
+if [ -f "$PROJECT_DIR/gateway/src/main/resources/application-$ENVIRONMENT.yml" ]; then
+    ssh $VPS_USER@$VPS_HOST "mkdir -p $APP_DIR/config"
+    scp $PROJECT_DIR/gateway/src/main/resources/application-$ENVIRONMENT.yml $VPS_USER@$VPS_HOST:$APP_DIR/config/application-prod.yml
+    log "✅ Configuration copiée"
+fi
 
 # ========================
 # Services Systemd
@@ -91,7 +98,8 @@ log "Configuration des services systemd..."
 
 ssh $VPS_USER@$VPS_HOST << EOF
     # Gateway Service
-    cat > /etc/systemd/system/realestate-gateway.service << SERVICE
+    if [ -f "$APP_DIR/bin/gateway.jar" ]; then
+        cat > /etc/systemd/system/realestate-gateway.service << SERVICE
 [Unit]
 Description=Real Estate Gateway Service
 After=network.target postgresql.service redis.service
@@ -100,18 +108,24 @@ After=network.target postgresql.service redis.service
 Type=simple
 User=$SERVICE_USER
 WorkingDirectory=$APP_DIR
-ExecStart=/usr/bin/java -jar $APP_DIR/bin/gateway.jar --spring.config.location=$APP_DIR/config/application-$ENVIRONMENT.yml
+ExecStart=/usr/bin/java -jar $APP_DIR/bin/gateway.jar --spring.config.location=$APP_DIR/config/application-prod.yml
 Restart=always
 RestartSec=10
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 SERVICE
 
-    # Recharger systemd
-    systemctl daemon-reload
-    systemctl enable realestate-gateway
-    systemctl restart realestate-gateway
+        # Recharger systemd
+        systemctl daemon-reload
+        systemctl enable realestate-gateway
+        systemctl restart realestate-gateway
+        log "✅ Service Gateway démarré"
+    else
+        log "⚠️  Gateway JAR introuvable, service non créé"
+    fi
 EOF
 
 log "✅ Déploiement terminé avec succès!"
