@@ -38,6 +38,9 @@
         <module>services/document-service</module>
         <module>services/workflow-service</module>
         <module>services/notification-service</module>
+        <module>services/emailing-service</module>
+        <module>services/audit-service</module>
+        <module>services/billing-service</module>
         <!-- Services à créer progressivement -->
         <!-- <module>services/organization-service</module> -->
         <!-- <module>services/resource-service</module> -->
