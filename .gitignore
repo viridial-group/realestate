@@ -108,3 +108,9 @@ application-prod.yml
 *.local.properties
 *.prod.properties
 
+# ========================
+# Public Assets (keep error pages)
+# ========================
+# Keep public/404.html and public/50x.html
+# public/*
+
