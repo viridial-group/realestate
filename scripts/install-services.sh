@@ -16,11 +16,29 @@ PROJECT_DIR=/opt/source/realestate
 SYSTEMD_DIR=/etc/systemd/system
 
 # ========================
-# Vérification
+# Vérification et création de l'utilisateur
 # ========================
 if [ ! -d "$PROJECT_DIR/config/systemd" ]; then
     echo "❌ Erreur: Le répertoire $PROJECT_DIR/config/systemd n'existe pas"
     exit 1
+fi
+
+# Créer l'utilisateur realestate si nécessaire
+if ! id "realestate" &>/dev/null; then
+    echo "👤 Création de l'utilisateur realestate..."
+    useradd -r -s /bin/false -d /var/realestate -m realestate
+    
+    # Créer les répertoires
+    mkdir -p /var/realestate/{bin,config,logs,storage,backup}
+    mkdir -p /var/realestate/storage/{documents,images,temp}
+    
+    # Définir les permissions
+    chown -R realestate:realestate /var/realestate
+    chmod -R 755 /var/realestate
+    
+    echo "✅ Utilisateur et répertoires créés"
+else
+    echo "✅ Utilisateur realestate existe déjà"
 fi
 
 # ========================
