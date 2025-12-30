@@ -31,6 +31,133 @@ SERVICES=(
     "billing-service:8090"
 )
 
+# Fonction pour créer application-prod.yml
+create_prod_config() {
+    local service_name=$1
+    local port=$2
+    
+    # Déterminer le chemin de configuration sur le VPS
+    local config_file="$CONFIG_DIR/$service_name-application-prod.yml"
+    
+    # Template de configuration de base
+    local config_content="server:
+  port: $port
+
+spring:
+  application:
+    name: $service_name
+  
+  datasource:
+    url: \${SPRING_DATASOURCE_URL:jdbc:postgresql://148.230.112.148:5432/realestate_db}
+    username: \${SPRING_DATASOURCE_USERNAME:postgres}
+    password: \${SPRING_DATASOURCE_PASSWORD:123456}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  data:
+    redis:
+      host: \${SPRING_DATA_REDIS_HOST:148.230.112.148}
+      port: \${SPRING_DATA_REDIS_PORT:6379}
+      password: \${SPRING_DATA_REDIS_PASSWORD:Abcd@1984}
+      database: \${SPRING_DATA_REDIS_DATABASE:0}"
+
+    # Configuration spécifique pour gateway
+    if [ "$service_name" = "gateway" ]; then
+        config_content="server:
+  port: $port
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: identity-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/identity/**
+        - id: organization-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/organizations/**
+        - id: resource-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/resources/**
+        - id: property-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/properties/**
+        - id: document-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/documents/**
+        - id: workflow-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/workflows/**
+        - id: notification-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/notifications/**
+        - id: emailing-service
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/emails/**
+        - id: audit-service
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/audit/**
+        - id: billing-service
+          uri: http://localhost:8090
+          predicates:
+            - Path=/api/billing/**"
+    fi
+    
+    # Ajouter la section management et logging
+    config_content="$config_content
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  health:
+    liveness-state:
+      enabled: true
+    readiness-state:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.realestate: DEBUG"
+
+    # Ajouter Swagger config pour les services (pas gateway)
+    if [ "$service_name" != "gateway" ]; then
+        config_content="$config_content
+
+# Swagger/OpenAPI Configuration (désactivé en production par défaut)
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false"
+    fi
+    
+    # Écrire la configuration sur le VPS
+    ssh $VPS_USER@$VPS_HOST "cat > $config_file << 'EOF'
+$config_content
+EOF"
+}
+
 echo "🔧 Installation de tous les services sur le VPS..."
 
 # Créer les répertoires nécessaires
@@ -51,9 +178,13 @@ if [ ! -f "pom.xml" ]; then
     exit 1
 fi
 
-# Installer d'abord le parent POM et common
-echo "  → Installation du parent POM et common..."
-mvn clean install -DskipTests -pl common -am -N
+# Installer d'abord le parent POM (sans modules)
+echo "  → Installation du parent POM..."
+mvn clean install -DskipTests -N
+
+# Installer le module common
+echo "  → Installation du module common..."
+mvn clean install -DskipTests -pl common
 
 # Compiler tous les services
 echo "  → Compilation de tous les services..."
@@ -87,11 +218,18 @@ for service_info in "${SERVICES[@]}"; do
         continue
     fi
     
-    # Copier la configuration si elle existe
+    # Créer ou copier la configuration
+    ssh $VPS_USER@$VPS_HOST "mkdir -p $CONFIG_DIR"
+    
     if [ -f "$CONFIG_PATH" ]; then
-        ssh $VPS_USER@$VPS_HOST "mkdir -p $CONFIG_DIR"
+        # Copier la configuration existante
         scp "$CONFIG_PATH" $VPS_USER@$VPS_HOST:$CONFIG_DIR/$service_name-application-prod.yml
         echo "    ✅ Configuration copiée"
+    else
+        # Créer la configuration application-prod.yml
+        echo "    → Création de application-prod.yml..."
+        create_prod_config "$service_name" "$port"
+        echo "    ✅ Configuration créée"
     fi
     
     # Définir les permissions
