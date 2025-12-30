@@ -203,21 +203,32 @@ CORS_ALLOWED_ORIGINS=https://staging-app.viridial.com
 
 ## ✅ Checklist de Configuration DNS
 
-### Enregistrements DNS à créer
+### Enregistrements DNS à créer (Production - PRIORITÉ)
 
-- [ ] `app.viridial.com` → IP du VPS (A record)
-- [ ] `api.viridial.com` → IP du VPS (A record)
-- [ ] `api-docs.viridial.com` → IP du VPS (A record)
-- [ ] `staging-app.viridial.com` → IP du VPS (A record)
-- [ ] `staging-api.viridial.com` → IP du VPS (A record)
-- [ ] `preprod-app.viridial.com` → IP du VPS (A record)
-- [ ] `preprod-api.viridial.com` → IP du VPS (A record)
-- [ ] `dev-app.viridial.com` → IP du VPS (A record)
-- [ ] `dev-api.viridial.com` → IP du VPS (A record)
-- [ ] `grafana.viridial.com` → IP du VPS (A record)
-- [ ] `kibana.viridial.com` → IP du VPS (A record)
-- [ ] `prometheus.viridial.com` → IP du VPS (A record)
-- [ ] `zipkin.viridial.com` → IP du VPS (A record)
+- [ ] `api.viridial.com` → `148.230.112.148` (A record) **REQUIS**
+- [ ] `app.viridial.com` → `148.230.112.148` (A record) **REQUIS**
+- [ ] `api-docs.viridial.com` → `148.230.112.148` (A record) - Optionnel
+
+### Staging (Plus tard)
+
+- [ ] `staging-app.viridial.com` → `148.230.112.148` (A record)
+- [ ] `staging-api.viridial.com` → `148.230.112.148` (A record)
+
+### Monitoring (Optionnel)
+
+- [ ] `grafana.viridial.com` → `148.230.112.148` (A record)
+- [ ] `kibana.viridial.com` → `148.230.112.148` (A record)
+- [ ] `prometheus.viridial.com` → `148.230.112.148` (A record)
+- [ ] `zipkin.viridial.com` → `148.230.112.148` (A record)
+
+### Vérification DNS
+
+```bash
+# Vérifier que les DNS sont configurés
+./scripts/check-dns.sh
+```
+
+> 📖 Voir [Configuration DNS.md](./Configuration%20DNS.md) pour les instructions détaillées
 
 ### Certificats SSL
 

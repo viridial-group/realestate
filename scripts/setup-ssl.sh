@@ -65,26 +65,42 @@ echo "✅ Liens symboliques corrects"
 # ========================
 echo "🌐 Vérification DNS..."
 
-API_IP=$(dig +short api.viridial.com @8.8.8.8 | head -n1)
-APP_IP=$(dig +short app.viridial.com @8.8.8.8 | head -n1)
-SERVER_IP=$(curl -s ifconfig.me)
+API_IP=$(dig +short api.viridial.com @8.8.8.8 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+APP_IP=$(dig +short app.viridial.com @8.8.8.8 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ifconfig.co 2>/dev/null || echo "UNKNOWN")
 
 if [ -z "$API_IP" ] || [ -z "$APP_IP" ]; then
-    echo "⚠️  Attention: Les DNS ne semblent pas configurés correctement"
-    echo "   API IP: $API_IP"
-    echo "   APP IP: $APP_IP"
+    echo "❌ Erreur: Les DNS ne sont pas configurés correctement"
+    echo "   API IP: ${API_IP:-NON CONFIGURÉ}"
+    echo "   APP IP: ${APP_IP:-NON CONFIGURÉ}"
     echo "   Server IP: $SERVER_IP"
     echo ""
-    read -p "Continuer quand même? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+    echo "📝 Instructions:"
+    echo "1. Configurez les DNS pour api.viridial.com et app.viridial.com"
+    echo "2. Les deux doivent pointer vers l'IP: $SERVER_IP"
+    echo "3. Vérifiez avec: ./scripts/check-dns.sh"
+    echo "4. Puis réessayez: ./scripts/setup-ssl.sh"
+    echo ""
+    echo "💡 Pour vérifier les DNS, exécutez:"
+    echo "   ./scripts/check-dns.sh"
+    exit 1
 else
     echo "✅ DNS configurés"
     echo "   API IP: $API_IP"
     echo "   APP IP: $APP_IP"
     echo "   Server IP: $SERVER_IP"
+    
+    # Vérifier que les IP correspondent
+    if [ "$API_IP" != "$SERVER_IP" ] || [ "$APP_IP" != "$SERVER_IP" ]; then
+        echo "⚠️  Attention: Les IP DNS ne correspondent pas à l'IP du serveur"
+        echo "   Vérifiez que les DNS pointent vers: $SERVER_IP"
+        echo ""
+        read -p "Continuer quand même? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
 fi
 
 # ========================
