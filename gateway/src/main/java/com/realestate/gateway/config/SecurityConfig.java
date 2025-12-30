@@ -15,12 +15,8 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeExchange(exchanges -> exchanges
-                // Actuator endpoints publics (pour monitoring)
-                .pathMatchers("/actuator/**").permitAll()
-                // Routes API publiques pour l'instant (sera sécurisé plus tard)
-                .pathMatchers("/api/**").permitAll()
-                // Toutes les autres routes nécessitent une authentification
-                .anyExchange().authenticated()
+                // Tout est public pour l'instant (sera sécurisé plus tard)
+                .anyExchange().permitAll()
             );
         
         return http.build();
