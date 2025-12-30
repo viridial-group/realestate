@@ -230,23 +230,57 @@ CORS_ALLOWED_ORIGINS=https://staging-app.viridial.com
 
 ### Configuration Nginx sur VPS
 
+#### Option 1 : Scripts Automatiques (Recommandé)
+
 ```bash
 # 1. Installer Nginx
+apt-get install -y nginx
+
+# 2. Configuration Nginx avec les scripts
+./scripts/setup-nginx.sh
+
+# 3. Configuration SSL avec Let's Encrypt
+./scripts/setup-ssl.sh
+```
+
+#### Option 2 : Configuration Manuelle
+
+```bash
+# 1. Installer Nginx et Certbot
 apt-get install -y nginx certbot python3-certbot-nginx
 
 # 2. Copier les configurations
 cp config/nginx/*.conf /etc/nginx/sites-available/
 
-# 3. Activer les sites
-ln -s /etc/nginx/sites-available/api.viridial.com /etc/nginx/sites-enabled/
-ln -s /etc/nginx/sites-available/app.viridial.com /etc/nginx/sites-enabled/
+# 3. Activer les sites (IMPORTANT: avec .conf)
+ln -s /etc/nginx/sites-available/api.viridial.com.conf /etc/nginx/sites-enabled/api.viridial.com.conf
+ln -s /etc/nginx/sites-available/app.viridial.com.conf /etc/nginx/sites-enabled/app.viridial.com.conf
 
-# 4. Obtenir les certificats SSL
-certbot --nginx -d api.viridial.com -d app.viridial.com
-
-# 5. Tester et recharger
+# 4. Tester la configuration
 nginx -t
+
+# 5. Recharger Nginx
 systemctl reload nginx
+
+# 6. Obtenir les certificats SSL
+certbot --nginx -d api.viridial.com -d app.viridial.com
+```
+
+#### Correction des Liens (si erreur)
+
+Si vous avez créé les liens sans `.conf`, exécutez :
+
+```bash
+# Supprimer les liens incorrects
+rm /etc/nginx/sites-enabled/api.viridial.com
+rm /etc/nginx/sites-enabled/app.viridial.com
+
+# Créer les liens corrects (avec .conf)
+ln -s /etc/nginx/sites-available/api.viridial.com.conf /etc/nginx/sites-enabled/api.viridial.com.conf
+ln -s /etc/nginx/sites-available/app.viridial.com.conf /etc/nginx/sites-enabled/app.viridial.com.conf
+
+# Ou utiliser le script de correction
+./scripts/fix-nginx-links.sh
 ```
 
 ---
