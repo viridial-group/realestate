@@ -8,23 +8,52 @@ set -e
 
 echo "🛑 Arrêt des services..."
 
-# Arrêter les microservices
-systemctl stop realestate-gateway
-systemctl stop realestate-identity-service
-systemctl stop realestate-organization-service
-systemctl stop realestate-property-service
-# ... autres services
+# ========================
+# Microservices
+# ========================
+echo "🚀 Arrêt des microservices..."
 
-# Arrêter Kafka
-/opt/kafka/bin/kafka-server-stop.sh
+services=(
+    "realestate-gateway"
+    "realestate-identity-service"
+    "realestate-organization-service"
+    "realestate-property-service"
+)
 
-# Arrêter Elasticsearch
-systemctl stop elasticsearch
+for service in "${services[@]}"; do
+    if systemctl is-active --quiet "$service" 2>/dev/null; then
+        systemctl stop "$service"
+        echo "✅ $service arrêté"
+    else
+        echo "ℹ️  $service déjà arrêté"
+    fi
+done
 
-# Arrêter Redis
-systemctl stop redis-server
+# ========================
+# Services Optionnels
+# ========================
+echo ""
+echo "📦 Arrêt des services optionnels..."
 
-# PostgreSQL reste actif (partagé)
+# Kafka
+if pgrep -f kafka > /dev/null; then
+    /opt/kafka/bin/kafka-server-stop.sh 2>/dev/null || true
+    echo "✅ Kafka arrêté"
+fi
 
-echo "✅ Tous les services sont arrêtés!"
+# Elasticsearch
+if systemctl is-active --quiet elasticsearch 2>/dev/null; then
+    systemctl stop elasticsearch
+    echo "✅ Elasticsearch arrêté"
+fi
+
+# Redis (optionnel - peut être partagé)
+# systemctl stop redis-server
+
+# PostgreSQL reste actif (partagé avec d'autres services)
+
+echo ""
+echo "✅ Arrêt terminé!"
+echo ""
+echo "ℹ️  PostgreSQL et Redis restent actifs (services partagés)"
 

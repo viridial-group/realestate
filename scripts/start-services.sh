@@ -7,40 +7,85 @@
 set -e
 
 ENVIRONMENT=${1:-prod}
-APP_DIR=/var/realestate
 
 echo "🚀 Démarrage des services - Environnement: $ENVIRONMENT"
 
-# Démarrer PostgreSQL
-systemctl start postgresql
-echo "✅ PostgreSQL démarré"
+# ========================
+# Services Système
+# ========================
+echo "📦 Démarrage des services système..."
 
-# Démarrer Redis
-systemctl start redis-server
-echo "✅ Redis démarré"
+# PostgreSQL
+if systemctl start postgresql; then
+    echo "✅ PostgreSQL démarré"
+else
+    echo "⚠️  PostgreSQL déjà démarré ou erreur"
+fi
 
-# Démarrer Elasticsearch
-systemctl start elasticsearch
-echo "✅ Elasticsearch démarré"
+# Redis
+if systemctl start redis-server; then
+    echo "✅ Redis démarré"
+else
+    echo "⚠️  Redis déjà démarré ou erreur"
+fi
 
-# Démarrer Kafka
-/opt/kafka/bin/kafka-server-start.sh -daemon /opt/kafka/config/server.properties
-echo "✅ Kafka démarré"
+# Elasticsearch (optionnel)
+if systemctl is-enabled elasticsearch > /dev/null 2>&1; then
+    if systemctl start elasticsearch; then
+        echo "✅ Elasticsearch démarré"
+    else
+        echo "⚠️  Elasticsearch déjà démarré ou erreur"
+    fi
+else
+    echo "ℹ️  Elasticsearch non configuré (optionnel)"
+fi
 
-# Démarrer les microservices
-systemctl start realestate-gateway
-echo "✅ Gateway démarré"
+# Kafka (optionnel)
+if [ -f /opt/kafka/bin/kafka-server-start.sh ]; then
+    if ! pgrep -f kafka > /dev/null; then
+        /opt/kafka/bin/kafka-server-start.sh -daemon /opt/kafka/config/server.properties
+        echo "✅ Kafka démarré"
+    else
+        echo "⚠️  Kafka déjà démarré"
+    fi
+else
+    echo "ℹ️  Kafka non installé (optionnel)"
+fi
 
-systemctl start realestate-identity-service
-echo "✅ Identity Service démarré"
+# ========================
+# Microservices
+# ========================
+echo ""
+echo "🚀 Démarrage des microservices..."
 
-systemctl start realestate-organization-service
-echo "✅ Organization Service démarré"
+services=(
+    "realestate-gateway"
+    "realestate-identity-service"
+    "realestate-organization-service"
+    "realestate-property-service"
+)
 
-systemctl start realestate-property-service
-echo "✅ Property Service démarré"
+for service in "${services[@]}"; do
+    if systemctl is-enabled "$service" > /dev/null 2>&1; then
+        if systemctl start "$service"; then
+            echo "✅ $service démarré"
+            # Attendre un peu pour que le service démarre
+            sleep 2
+        else
+            echo "❌ Erreur lors du démarrage de $service"
+            echo "   💡 Vérifier les logs: journalctl -u $service -n 50"
+        fi
+    else
+        echo "⚠️  $service non installé (exécutez: ./scripts/install-services.sh)"
+    fi
+done
 
-# ... autres services
-
-echo "✅ Tous les services sont démarrés!"
+echo ""
+echo "✅ Démarrage terminé!"
+echo ""
+echo "📝 Vérifier le statut:"
+echo "   ./scripts/status.sh"
+echo ""
+echo "📋 Voir les logs:"
+echo "   journalctl -u realestate-gateway -f"
 

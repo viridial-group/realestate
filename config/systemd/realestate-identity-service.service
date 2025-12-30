@@ -1,0 +1,32 @@
+[Unit]
+Description=Real Estate Identity Service
+After=network.target postgresql.service redis-server.service
+Requires=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=realestate
+Group=realestate
+WorkingDirectory=/var/realestate
+ExecStart=/usr/bin/java -jar /var/realestate/bin/identity-service.jar --spring.config.location=/var/realestate/config/application-prod.yml
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=realestate-identity-service
+
+# Environment
+Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"
+Environment="SPRING_PROFILES_ACTIVE=prod"
+Environment="SERVER_PORT=8081"
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+
