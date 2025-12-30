@@ -49,8 +49,11 @@ Ce script va :
 # Test HTTPS
 curl https://api.viridial.com/actuator/health
 
-# Diagnostic complet
-./scripts/diagnose-connection.sh
+# Test complet HTTPS
+./scripts/test-https.sh
+
+# Vérification des services
+./scripts/check-services.sh
 ```
 
 ## 🔍 Diagnostic
@@ -58,16 +61,22 @@ curl https://api.viridial.com/actuator/health
 Si vous avez des problèmes, exécutez :
 
 ```bash
-./scripts/diagnose-connection.sh
+# Test HTTPS complet
+./scripts/test-https.sh
+
+# Vérification des services
+./scripts/check-services.sh
+
+# Statut global
+./scripts/status.sh
 ```
 
-Ce script vérifie :
+Ces scripts vérifient :
 - ✅ Gateway local
-- ✅ Nginx HTTP
-- ✅ Nginx HTTPS
+- ✅ Nginx HTTP/HTTPS
 - ✅ Ports ouverts
 - ✅ DNS
-- ✅ Firewall
+- ✅ Statut des services
 
 ## 📝 Notes
 
