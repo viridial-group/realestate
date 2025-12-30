@@ -41,9 +41,22 @@ ssh $VPS_USER@$VPS_HOST "mkdir -p $BIN_DIR $CONFIG_DIR $LOG_DIR"
 echo "👤 Vérification de l'utilisateur realestate..."
 ssh $VPS_USER@$VPS_HOST "id -u realestate &>/dev/null || useradd -r -s /bin/bash -d $APP_DIR realestate"
 
-# Compiler tous les services
-echo "🔨 Compilation de tous les services..."
+# Compiler tous les services LOCALEMENT
+echo "🔨 Compilation de tous les services (localement)..."
 cd "$PROJECT_DIR"
+
+# Vérifier que nous sommes dans le bon répertoire
+if [ ! -f "pom.xml" ]; then
+    echo "❌ Erreur: pom.xml non trouvé dans $PROJECT_DIR"
+    exit 1
+fi
+
+# Installer d'abord le parent POM et common
+echo "  → Installation du parent POM et common..."
+mvn clean install -DskipTests -pl common -am -N
+
+# Compiler tous les services
+echo "  → Compilation de tous les services..."
 mvn clean package -DskipTests
 
 # Copier les JARs et configurations
@@ -62,12 +75,15 @@ for service_info in "${SERVICES[@]}"; do
         CONFIG_PATH="$PROJECT_DIR/services/$service_name/src/main/resources/application-prod.yml"
     fi
     
+    # Trouver le JAR exact (résoudre le wildcard)
+    JAR_FILE=$(ls $JAR_PATH 2>/dev/null | head -1)
+    
     # Copier le JAR
-    if ls $JAR_PATH 1> /dev/null 2>&1; then
-        scp $JAR_PATH $VPS_USER@$VPS_HOST:$BIN_DIR/$service_name.jar
-        echo "    ✅ JAR copié"
+    if [ -n "$JAR_FILE" ] && [ -f "$JAR_FILE" ]; then
+        scp "$JAR_FILE" $VPS_USER@$VPS_HOST:$BIN_DIR/$service_name.jar
+        echo "    ✅ JAR copié: $(basename $JAR_FILE)"
     else
-        echo "    ⚠️  JAR non trouvé pour $service_name"
+        echo "    ⚠️  JAR non trouvé pour $service_name (cherché: $JAR_PATH)"
         continue
     fi
     
