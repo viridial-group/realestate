@@ -1,0 +1,110 @@
+# ========================
+# IDE & Editors
+# ========================
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ========================
+# Build & Dependencies
+# ========================
+target/
+build/
+out/
+bin/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+
+# ========================
+# Environment Variables
+# ========================
+.env.local
+.env.prod
+.env
+*.env
+!.env.example
+!.env.local.example
+!.env.prod.example
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+*.log.*
+
+# ========================
+# Test Coverage
+# ========================
+.nyc_output/
+coverage/
+*.lcov
+jacoco.exec
+.jacoco/
+
+# ========================
+# Node & Frontend
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
+
+# ========================
+# Docker
+# ========================
+.dockerignore
+docker-compose.override.yml
+
+# ========================
+# Secrets & Keys
+# ========================
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+secrets/
+*.secret
+
+# ========================
+# Temporary Files
+# ========================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+
+# ========================
+# OS Files
+# ========================
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ========================
+# Application Specific
+# ========================
+application-local.yml
+application-prod.yml
+*.local.properties
+*.prod.properties
+
