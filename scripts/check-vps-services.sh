@@ -77,10 +77,12 @@ echo ""
 
 # PostgreSQL
 if command -v psql &> /dev/null; then
-    if psql -h localhost -U postgres -d realestate_db -c "SELECT 1;" &> /dev/null; then
+    # Essayer sans mot de passe (si .pgpass configuré)
+    if PGPASSWORD="${SPRING_DATASOURCE_PASSWORD:-123456}" psql -h localhost -U postgres -d realestate_db -c "SELECT 1;" &> /dev/null 2>&1; then
         echo "   ✅ PostgreSQL - Accessible"
     else
-        echo "   ❌ PostgreSQL - Non accessible"
+        echo "   ⚠️  PostgreSQL - Vérification nécessite un mot de passe"
+        echo "      💡 Configurez .pgpass ou SPRING_DATASOURCE_PASSWORD"
     fi
 else
     echo "   ⚠️  PostgreSQL - psql non installé"
@@ -152,18 +154,26 @@ for i in "${!ports[@]}"; do
     port=${ports[$i]}
     name=${service_names[$i]}
     
-    health=$(curl -s http://localhost:$port/actuator/health 2>/dev/null | grep -o '"status":"[^"]*"' | cut -d'"' -f4 || echo "DOWN")
+    health_response=$(curl -s http://localhost:$port/actuator/health 2>/dev/null || echo "")
+    health=$(echo "$health_response" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 || echo "UNKNOWN")
     
     if [ "$health" = "UP" ]; then
         echo "   ✅ Port $port ($name) - UP"
     elif [ "$health" = "DOWN" ]; then
         echo "   ⚠️  Port $port ($name) - DOWN"
-    else
+        # Afficher les détails si disponibles
+        components=$(echo "$health_response" | grep -o '"components":{[^}]*}' | head -1 || echo "")
+        if [ -n "$components" ]; then
+            echo "      Détails: $components"
+        fi
+    elif [ "$health" = "UNKNOWN" ]; then
         if lsof -i :$port > /dev/null 2>&1 || netstat -tuln 2>/dev/null | grep -q ":$port "; then
-            echo "   ⚠️  Port $port ($name) - Répond mais health check échoue"
+            echo "   ⚠️  Port $port ($name) - Répond mais health check inaccessible"
         else
             echo "   ❌ Port $port ($name) - Non accessible"
         fi
+    else
+        echo "   ⚠️  Port $port ($name) - Status: $health"
     fi
 done
 
