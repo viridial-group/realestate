@@ -1,5 +1,6 @@
 package com.realestate.document.service;
 
+import com.realestate.common.event.DocumentUploadedEvent;
 import com.realestate.document.entity.Document;
 import com.realestate.document.entity.Storage;
 import com.realestate.document.repository.DocumentRepository;
@@ -23,6 +24,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final StorageRepository storageRepository;
+    private final DocumentEventProducer eventProducer;
 
     @Value("${storage.base-path:/var/realestate/storage}")
     private String baseStoragePath;
@@ -32,9 +34,11 @@ public class DocumentService {
 
     public DocumentService(
             DocumentRepository documentRepository,
-            StorageRepository storageRepository) {
+            StorageRepository storageRepository,
+            DocumentEventProducer eventProducer) {
         this.documentRepository = documentRepository;
         this.storageRepository = storageRepository;
+        this.eventProducer = eventProducer;
     }
 
     @Transactional
@@ -96,7 +100,24 @@ public class DocumentService {
         document.setResourceId(resourceId);
         document.setActive(true);
 
-        return documentRepository.save(document);
+        Document saved = documentRepository.save(document);
+        
+        // Publish event to Kafka
+        String targetType = propertyId != null ? "PROPERTY" : (resourceId != null ? "RESOURCE" : "OTHER");
+        Long targetId = propertyId != null ? propertyId : resourceId;
+        DocumentUploadedEvent event = new DocumentUploadedEvent(
+                organizationId,
+                createdBy,
+                saved.getId(),
+                saved.getName(),
+                saved.getType(),
+                saved.getFileSize(),
+                targetType,
+                targetId
+        );
+        eventProducer.publishDocumentUploaded(event);
+        
+        return saved;
     }
 
     @Transactional(readOnly = true)

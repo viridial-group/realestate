@@ -48,5 +48,23 @@ public class CommonAutoConfiguration {
     @Import(RedisConfig.class)
     static class RedisAutoConfiguration {
     }
+
+    /**
+     * Configuration Resilience4j - activée si Resilience4j est disponible
+     */
+    @Configuration
+    @ConditionalOnClass(name = "io.github.resilience4j.circuitbreaker.CircuitBreakerConfig")
+    @Import(Resilience4jConfig.class)
+    static class Resilience4jAutoConfiguration {
+    }
+
+    /**
+     * Configuration Elasticsearch - activée si Elasticsearch est configuré
+     */
+    @Configuration
+    @ConditionalOnClass(name = "org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration")
+    @Import(ElasticsearchConfig.class)
+    static class ElasticsearchAutoConfiguration {
+    }
 }
 

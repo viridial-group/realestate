@@ -38,6 +38,9 @@ public class ApprovalWorkflow {
     @Column(name = "organization_id", nullable = false)
     private Long organizationId;
 
+    @Column(name = "created_by", nullable = false)
+    private Long createdBy; // Utilisateur qui a créé le workflow
+
     @Column(name = "target_type", nullable = false)
     @Size(max = 100)
     private String targetType; // PROPERTY, RESOURCE, DOCUMENT, etc.
@@ -57,6 +60,10 @@ public class ApprovalWorkflow {
 
     @Column(nullable = false)
     private Boolean isDefault = false; // Workflow par défaut pour cette action
+
+    @Size(max = 50)
+    @Column(nullable = false)
+    private String status = "PENDING"; // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
 
     // Relations
     @OneToMany(mappedBy = "workflow", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -122,6 +129,14 @@ public class ApprovalWorkflow {
         this.organizationId = organizationId;
     }
 
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
+    }
+
     public String getTargetType() {
         return targetType;
     }
@@ -168,6 +183,14 @@ public class ApprovalWorkflow {
 
     public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public List<Task> getTasks() {

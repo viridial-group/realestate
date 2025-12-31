@@ -23,6 +23,12 @@
         <spring-boot.version>3.3.1</spring-boot.version>
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         
+        <!-- Kafka -->
+        <spring-kafka.version>3.1.1</spring-kafka.version>
+        
+        <!-- Elasticsearch -->
+        <elasticsearch.version>8.15.0</elasticsearch.version>
+        
         <!-- Testing -->
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.7.0</mockito.version>
@@ -69,6 +75,13 @@
                 <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            
+            <!-- Spring Kafka -->
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+                <version>${spring-kafka.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

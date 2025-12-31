@@ -1,49 +1,62 @@
 #!/bin/bash
 
-# Script de vérification du statut de tous les services
-# Usage: ./scripts/status-all-services.sh
+# ========================
+# Script de Statut de Tous les Services
+# ========================
 
-VPS_USER="root"
-VPS_HOST="148.230.112.148"
+set -e
 
-# Services à vérifier
-SERVICES=(
-    "realestate-gateway:8080"
-    "realestate-identity-service:8081"
-    "realestate-organization-service:8082"
-    "realestate-property-service:8083"
-    "realestate-resource-service:8084"
-    "realestate-document-service:8085"
-    "realestate-workflow-service:8086"
-    "realestate-notification-service:8087"
-    "realestate-emailing-service:8088"
-    "realestate-audit-service:8089"
-    "realestate-billing-service:8090"
-)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+LOGS_DIR="$PROJECT_ROOT/logs"
 
-echo "📊 Statut de tous les services..."
+echo "📊 Statut des Services"
 echo ""
 
-for service_info in "${SERVICES[@]}"; do
-    IFS=':' read -r service_name port <<< "$service_info"
+if [ ! -d "$LOGS_DIR" ]; then
+    echo "ℹ️  Aucun service démarré (répertoire logs introuvable)"
+    exit 0
+fi
+
+services=(
+    "gateway:8080"
+    "identity-service:8081"
+    "organization-service:8082"
+    "resource-service:8084"
+    "property-service:8083"
+    "document-service:8085"
+    "workflow-service:8086"
+    "notification-service:8087"
+    "emailing-service:8088"
+    "audit-service:8089"
+    "billing-service:8090"
+)
+
+echo "Service Name              | Port  | Status    | PID"
+echo "-------------------------|-------|-----------|------"
+
+for service_config in "${services[@]}"; do
+    IFS=':' read -r service_name port <<< "$service_config"
+    pid_file="$LOGS_DIR/${service_name}.pid"
     
-    # Vérifier le statut systemd
-    status=$(ssh $VPS_USER@$VPS_HOST "systemctl is-active $service_name" 2>/dev/null || echo "inactive")
-    
-    # Vérifier si le port est ouvert
-    port_check=$(ssh $VPS_USER@$VPS_HOST "netstat -tuln | grep :$port" 2>/dev/null && echo "open" || echo "closed")
-    
-    # Afficher le statut
-    if [ "$status" = "active" ] && [ "$port_check" = "open" ]; then
-        echo "  ✅ $service_name (port $port): ACTIF"
-    elif [ "$status" = "active" ]; then
-        echo "  ⚠️  $service_name (port $port): ACTIF mais port fermé"
+    if [ -f "$pid_file" ]; then
+        pid=$(cat "$pid_file")
+        if ps -p $pid > /dev/null 2>&1; then
+            # Vérifier si le port est en écoute
+            if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+                status="✅ Running"
+            else
+                status="⚠️  No Port"
+            fi
+            printf "%-24s | %-5s | %-9s | %s\n" "$service_name" "$port" "$status" "$pid"
+        else
+            printf "%-24s | %-5s | ❌ Stopped | -\n" "$service_name" "$port"
+            rm -f "$pid_file"
+        fi
     else
-        echo "  ❌ $service_name (port $port): INACTIF"
+        printf "%-24s | %-5s | ⚪ Not Run | -\n" "$service_name" "$port"
     fi
 done
 
 echo ""
-echo "📋 Détails systemd:"
-ssh $VPS_USER@$VPS_HOST "systemctl status realestate-* --no-pager | grep -E '(●|Active|Main PID|Tasks|Memory)' | head -44"
-
+echo "📁 Logs disponibles dans: $LOGS_DIR"

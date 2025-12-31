@@ -34,6 +34,14 @@ public class Task {
     @Size(max = 2000)
     private String description;
 
+    @Size(max = 100)
+    @Column(nullable = false)
+    private String type = "REVIEW"; // REVIEW, APPROVAL, DOCUMENT_REVIEW, etc.
+
+    @Size(max = 50)
+    @Column(nullable = false)
+    private String priority = "MEDIUM"; // LOW, MEDIUM, HIGH, URGENT
+
     @NotNull
     @Column(nullable = false)
     private Integer stepNumber; // Numéro de l'étape dans le workflow (1, 2, 3, etc.)
@@ -118,6 +126,22 @@ public class Task {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 
     public Integer getStepNumber() {

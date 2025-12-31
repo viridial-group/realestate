@@ -9,6 +9,7 @@
         <groupId>com.realestate</groupId>
         <artifactId>realestate-platform</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>audit-service</artifactId>
@@ -75,11 +76,17 @@
             <version>2.3.0</version>
         </dependency>
 
-        <!-- Elasticsearch (optional, for future integration) -->
-        <!-- <dependency>
+        <!-- Spring Kafka (Consumer) -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
+        <!-- Spring Data Elasticsearch -->
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
-        </dependency> -->
+        </dependency>
 
         <!-- Testing -->
         <dependency>

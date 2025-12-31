@@ -94,6 +94,9 @@ public class Property {
     @Column(name = "assigned_user_id")
     private Long assignedUserId; // Utilisateur assigné à la propriété
 
+    @Column(name = "created_by", nullable = false)
+    private Long createdBy; // Utilisateur qui a créé la propriété
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -295,6 +298,14 @@ public class Property {
 
     public void setAssignedUserId(Long assignedUserId) {
         this.assignedUserId = assignedUserId;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 
     public Boolean getActive() {

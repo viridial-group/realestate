@@ -1,13 +1,21 @@
 package com.realestate.property.service;
 
+import com.realestate.common.client.IdentityServiceClient;
+import com.realestate.common.client.ResourceServiceClient;
+import com.realestate.common.client.dto.UserInfoDTO;
+import com.realestate.common.event.PropertyCreatedEvent;
+import com.realestate.common.event.PropertyUpdatedEvent;
 import com.realestate.property.entity.Property;
 import com.realestate.property.entity.PropertyAccess;
 import com.realestate.property.entity.PropertyFeature;
 import com.realestate.property.repository.PropertyAccessRepository;
 import com.realestate.property.repository.PropertyFeatureRepository;
 import com.realestate.property.repository.PropertyRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,22 +25,82 @@ import java.util.Set;
 @Service
 public class PropertyService {
 
+    private static final Logger logger = LoggerFactory.getLogger(PropertyService.class);
+
     private final PropertyRepository propertyRepository;
     private final PropertyAccessRepository propertyAccessRepository;
     private final PropertyFeatureRepository propertyFeatureRepository;
+    private final PropertyEventProducer eventProducer;
+    private final IdentityServiceClient identityServiceClient;
+    private final ResourceServiceClient resourceServiceClient;
 
     public PropertyService(
             PropertyRepository propertyRepository,
             PropertyAccessRepository propertyAccessRepository,
-            PropertyFeatureRepository propertyFeatureRepository) {
+            PropertyFeatureRepository propertyFeatureRepository,
+            PropertyEventProducer eventProducer,
+            IdentityServiceClient identityServiceClient,
+            ResourceServiceClient resourceServiceClient) {
         this.propertyRepository = propertyRepository;
         this.propertyAccessRepository = propertyAccessRepository;
         this.propertyFeatureRepository = propertyFeatureRepository;
+        this.eventProducer = eventProducer;
+        this.identityServiceClient = identityServiceClient;
+        this.resourceServiceClient = resourceServiceClient;
     }
 
     @Transactional
-    public Property createProperty(Property property) {
-        return propertyRepository.save(property);
+    public Property createProperty(Property property, String authToken) {
+        // Optional: Validate permissions before creating (async validation)
+        if (authToken != null && property.getCreatedBy() != null) {
+            try {
+                Boolean hasPermission = validateCreatePermission(
+                        property.getCreatedBy(), 
+                        property.getOrganizationId(), 
+                        authToken
+                ).block(); // Blocking call - in production, consider making this fully async
+                
+                if (hasPermission == null || !hasPermission) {
+                    logger.warn("User {} does not have permission to create properties", property.getCreatedBy());
+                    throw new RuntimeException("User does not have permission to create properties");
+                }
+            } catch (Exception e) {
+                logger.error("Error validating permission for property creation", e);
+                // In production, you might want to fail here or log and continue
+                // For now, we'll log and continue
+            }
+        }
+
+        Property saved = propertyRepository.save(property);
+        
+        // Publish event to Kafka
+        PropertyCreatedEvent event = new PropertyCreatedEvent(
+                saved.getOrganizationId(),
+                saved.getCreatedBy(),
+                saved.getId(),
+                saved.getReference(),
+                saved.getTitle(),
+                saved.getType(),
+                saved.getPrice(),
+                saved.getCity(),
+                saved.getCountry()
+        );
+        eventProducer.publishPropertyCreated(event);
+        
+        return saved;
+    }
+
+    /**
+     * Validate that user has permission to create properties
+     */
+    private Mono<Boolean> validateCreatePermission(Long userId, Long organizationId, String authToken) {
+        return identityServiceClient.checkPermission(
+                userId,
+                "property:create",
+                "Property",
+                null,
+                authToken
+        );
     }
 
     @Transactional(readOnly = true)
@@ -151,7 +219,24 @@ public class PropertyService {
             property.setFeatures(propertyDetails.getFeatures());
         }
 
-        return propertyRepository.save(property);
+        Property updated = propertyRepository.save(property);
+        
+        // Publish event to Kafka
+        PropertyUpdatedEvent event = new PropertyUpdatedEvent(
+                updated.getOrganizationId(),
+                updated.getCreatedBy(),
+                updated.getId(),
+                updated.getReference(),
+                updated.getTitle(),
+                updated.getType(),
+                updated.getPrice(),
+                updated.getStatus(),
+                updated.getCity(),
+                updated.getCountry()
+        );
+        eventProducer.publishPropertyUpdated(event);
+        
+        return updated;
     }
 
     @Transactional

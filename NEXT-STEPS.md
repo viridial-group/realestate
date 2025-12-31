@@ -191,13 +191,14 @@
 7. ⏳ Tester les APIs avec Swagger
 8. ⏳ Mettre à jour la documentation
 
-### Phase 2 : Intégrations Kafka (2-3 jours) 🔄
-1. Configurer Kafka (topics, partitions)
-2. Intégrer dans Workflow Service
-3. Intégrer dans Notification Service
-4. Intégrer dans Audit Service
-5. Intégrer dans Emailing Service
-6. Tests d'intégration
+### Phase 2 : Intégrations Kafka (2-3 jours) ✅ TERMINÉ
+1. ✅ Configurer Kafka (topics, partitions) - **FAIT**
+2. ✅ Intégrer dans Workflow Service - **FAIT**
+3. ✅ Intégrer dans Notification Service - **FAIT**
+4. ✅ Intégrer dans Audit Service - **FAIT**
+5. ✅ Intégrer dans Emailing Service - **FAIT**
+6. ✅ Scripts de gestion Kafka créés - **FAIT**
+7. ⏳ Tests d'intégration complets
 
 ### Phase 3 : Infrastructure (2-3 jours) 📊
 1. Configurer Elasticsearch

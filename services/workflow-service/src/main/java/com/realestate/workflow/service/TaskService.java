@@ -1,5 +1,7 @@
 package com.realestate.workflow.service;
 
+import com.realestate.common.event.WorkflowTaskCompletedEvent;
+import com.realestate.common.event.WorkflowTaskCreatedEvent;
 import com.realestate.workflow.entity.Task;
 import com.realestate.workflow.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -13,14 +15,35 @@ import java.util.Optional;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final WorkflowEventProducer eventProducer;
 
-    public TaskService(TaskRepository taskRepository) {
+    public TaskService(TaskRepository taskRepository, WorkflowEventProducer eventProducer) {
         this.taskRepository = taskRepository;
+        this.eventProducer = eventProducer;
     }
 
     @Transactional
     public Task createTask(Task task) {
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        
+        // Publish event to Kafka
+        if (saved.getWorkflow() != null) {
+            WorkflowTaskCreatedEvent event = new WorkflowTaskCreatedEvent(
+                    saved.getWorkflow().getOrganizationId(),
+                    saved.getWorkflow().getCreatedBy(),
+                    saved.getId(),
+                    saved.getWorkflow().getId(),
+                    saved.getType(),
+                    saved.getStatus(),
+                    saved.getAssignedTo(),
+                    saved.getAssignedRole(),
+                    saved.getWorkflow().getTargetType(),
+                    saved.getWorkflow().getTargetId()
+            );
+            eventProducer.publishTaskCreated(event);
+        }
+        
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -90,7 +113,25 @@ public class TaskService {
             task.setComments(comments);
         }
 
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        
+        // Publish event to Kafka
+        if (saved.getWorkflow() != null) {
+            WorkflowTaskCompletedEvent event = new WorkflowTaskCompletedEvent(
+                    saved.getWorkflow().getOrganizationId(),
+                    completedBy,
+                    saved.getId(),
+                    saved.getWorkflow().getId(),
+                    "APPROVED",
+                    comments,
+                    completedBy,
+                    saved.getWorkflow().getTargetType(),
+                    saved.getWorkflow().getTargetId()
+            );
+            eventProducer.publishTaskCompleted(event);
+        }
+        
+        return saved;
     }
 
     @Transactional
@@ -105,7 +146,25 @@ public class TaskService {
             task.setComments(comments);
         }
 
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+        
+        // Publish event to Kafka
+        if (saved.getWorkflow() != null) {
+            WorkflowTaskCompletedEvent event = new WorkflowTaskCompletedEvent(
+                    saved.getWorkflow().getOrganizationId(),
+                    completedBy,
+                    saved.getId(),
+                    saved.getWorkflow().getId(),
+                    "REJECTED",
+                    comments,
+                    completedBy,
+                    saved.getWorkflow().getTargetType(),
+                    saved.getWorkflow().getTargetId()
+            );
+            eventProducer.publishTaskCompleted(event);
+        }
+        
+        return saved;
     }
 
     @Transactional

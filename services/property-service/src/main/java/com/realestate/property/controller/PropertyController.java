@@ -32,9 +32,14 @@ public class PropertyController {
 
     @PostMapping
     @Operation(summary = "Create property", description = "Creates a new real estate property")
-    public ResponseEntity<PropertyDTO> createProperty(@Valid @RequestBody PropertyDTO propertyDTO) {
+    public ResponseEntity<PropertyDTO> createProperty(
+            @Valid @RequestBody PropertyDTO propertyDTO,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         Property property = propertyMapper.toEntity(propertyDTO);
-        Property created = propertyService.createProperty(property);
+        String token = authorization != null && authorization.startsWith("Bearer ") 
+                ? authorization.substring(7) 
+                : null;
+        Property created = propertyService.createProperty(property, token);
         return ResponseEntity.status(HttpStatus.CREATED).body(propertyMapper.toDTO(created));
     }
 

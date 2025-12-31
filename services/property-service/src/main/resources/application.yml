@@ -26,6 +26,19 @@ spring:
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
       database: ${SPRING_DATA_REDIS_DATABASE:0}
+  
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_GROUP_ID:property-service-group}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    connection-timeout: 5s
+    socket-timeout: 60s
 
 management:
   endpoints:
@@ -50,4 +63,35 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+
+# Inter-Service Communication
+services:
+  identity:
+    url: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+  resource:
+    url: ${RESOURCE_SERVICE_URL:http://localhost:8084}
+
+# Resilience4j Configuration
+resilience4j:
+  enabled: true
+  circuitbreaker:
+    instances:
+      identityService:
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+      resourceService:
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+  retry:
+    instances:
+      identityService:
+        maxAttempts: 3
+        waitDuration: 500ms
+      resourceService:
+        maxAttempts: 3
+        waitDuration: 500ms
 
