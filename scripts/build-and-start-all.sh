@@ -62,7 +62,17 @@ start_service() {
     
     # Vérifier si le port est déjà utilisé
     if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+        # Vérifier si c'est notre service via PID file
+        pid_file="$LOGS_DIR/${service_name}.pid"
+        if [ -f "$pid_file" ]; then
+            existing_pid=$(cat "$pid_file" 2>/dev/null || echo "")
+            if [ -n "$existing_pid" ] && ps -p $existing_pid > /dev/null 2>&1; then
+                echo "✅ $service_name est déjà démarré (PID: $existing_pid, Port: $port)"
+                return 0
+            fi
+        fi
         echo "⚠️  Port $port déjà utilisé pour $service_name - Service peut-être déjà démarré"
+        echo "   💡 Utilisez: ./scripts/stop-all-services.sh pour arrêter tous les services"
         return 1
     fi
     
