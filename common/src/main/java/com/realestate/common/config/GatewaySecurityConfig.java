@@ -25,9 +25,14 @@ public class GatewaySecurityConfig {
                 .pathMatchers("/actuator/**").permitAll()
                 // Routes API publiques pour l'instant (sera sécurisé plus tard avec JWT)
                 .pathMatchers("/api/**").permitAll()
-                // Toutes les autres routes nécessitent une authentification
-                .anyExchange().authenticated()
-            );
+                // Swagger/OpenAPI publics
+                .pathMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                // Toutes les autres routes sont publiques aussi (pour le moment)
+                .anyExchange().permitAll()
+            )
+            // Désactiver la redirection vers la page de login
+            .formLogin(formLogin -> formLogin.disable())
+            .httpBasic(httpBasic -> httpBasic.disable());
         
         return http.build();
     }
