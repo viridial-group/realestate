@@ -7,9 +7,13 @@
         <p class="text-muted-foreground mt-1">Gérez toutes les organisations de la plateforme</p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" @click="exportData" :disabled="loading">
+        <Button variant="outline" @click="exportToCSV" :disabled="loading">
           <Download class="mr-2 h-4 w-4" />
-          Exporter
+          Export CSV
+        </Button>
+        <Button variant="outline" @click="exportToExcel" :disabled="loading">
+          <Download class="mr-2 h-4 w-4" />
+          Export Excel
         </Button>
         <Button @click="openCreateDialog" size="lg">
           <Plus class="mr-2 h-4 w-4" />
@@ -19,7 +23,7 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('ACTIVE')">
         <CardHeader class="pb-2">
           <CardDescription>Organisations Actives</CardDescription>
@@ -38,15 +42,6 @@
           <p class="text-xs text-muted-foreground mt-1">Inactives</p>
         </CardContent>
       </Card>
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('SUSPENDED')">
-        <CardHeader class="pb-2">
-          <CardDescription>Suspendues</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold text-red-600">{{ stats.suspended || 0 }}</div>
-          <p class="text-xs text-muted-foreground mt-1">Suspendues</p>
-        </CardContent>
-      </Card>
       <Card>
         <CardHeader class="pb-2">
           <CardDescription>Total</CardDescription>
@@ -61,7 +56,7 @@
     <!-- Filtres Avancés -->
     <Card>
       <CardContent class="p-4">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="space-y-2">
             <Label>Recherche</Label>
             <Input
@@ -81,25 +76,9 @@
                 <SelectValue placeholder="Tous les statuts" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem :value="null">Tous</SelectItem>
                 <SelectItem value="ACTIVE">Actif</SelectItem>
                 <SelectItem value="INACTIVE">Inactif</SelectItem>
-                <SelectItem value="SUSPENDED">Suspendu</SelectItem>
-                <SelectItem value="PENDING">En attente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="space-y-2">
-            <Label>Type</Label>
-            <Select v-model="selectedType" @update:model-value="handleFilter">
-              <SelectTrigger>
-                <SelectValue placeholder="Tous les types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
-                <SelectItem value="AGENCY">Agence</SelectItem>
-                <SelectItem value="FREELANCE">Freelance</SelectItem>
-                <SelectItem value="COMPANY">Entreprise</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -110,7 +89,7 @@
                 <SelectValue placeholder="Période" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Toutes</SelectItem>
+                <SelectItem :value="null">Toutes</SelectItem>
                 <SelectItem value="today">Aujourd'hui</SelectItem>
                 <SelectItem value="week">Cette semaine</SelectItem>
                 <SelectItem value="month">Ce mois</SelectItem>
@@ -131,12 +110,35 @@
     <!-- Table avec Actions Rapides -->
     <Card>
       <CardContent class="p-0">
+        <!-- Actions en masse -->
+        <div
+          v-if="selectedIds.length > 0"
+          class="border-b bg-muted/30 p-4 flex items-center justify-between"
+        >
+          <div class="text-sm text-muted-foreground">
+            {{ selectedIds.length }} organisation(s) sélectionnée(s)
+          </div>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" @click="bulkActivate" :disabled="loading">
+              <CheckCircle class="mr-2 h-4 w-4" />
+              Activer
+            </Button>
+            <Button variant="outline" size="sm" @click="bulkSuspend" :disabled="loading">
+              <Ban class="mr-2 h-4 w-4" />
+              Désactiver
+            </Button>
+            <Button variant="outline" size="sm" @click="bulkDelete" class="text-destructive" :disabled="loading">
+              <Trash2 class="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead class="bg-muted/50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  <Checkbox v-model:checked="selectAll" @update:checked="toggleSelectAll" />
+                  <Checkbox v-model="selectAll" />
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Organisation
@@ -159,16 +161,30 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-border">
+              <tr v-if="loading">
+                <td colspan="7" class="text-center py-8">
+                  <div class="flex items-center justify-center">
+                    <Loader2 class="h-6 w-6 animate-spin mr-2" />
+                    Chargement...
+                  </div>
+                </td>
+              </tr>
+              <tr v-else-if="filteredOrganizations.length === 0">
+                <td colspan="7" class="text-center py-8 text-muted-foreground">
+                  Aucune organisation trouvée
+                </td>
+              </tr>
               <tr
-                v-for="org in filteredOrganizations"
+                v-else
+                v-for="org in paginatedOrganizations"
                 :key="org.id"
                 class="hover:bg-muted/50 transition-colors cursor-pointer"
                 @click="viewOrganization(Number(org.id))"
               >
                 <td class="px-6 py-4 whitespace-nowrap" @click.stop>
                   <Checkbox
-                    :checked="selectedIds.includes(Number(org.id))"
-                    @update:checked="toggleSelect(Number(org.id))"
+                    :model-value="selectedIds.includes(Number(org.id))"
+                    @update:model-value="(val) => handleOrganizationCheckboxChange(Number(org.id), Boolean(val))"
                   />
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -178,21 +194,21 @@
                     </div>
                     <div class="ml-4">
                       <div class="text-sm font-medium">{{ org.name }}</div>
-                      <div class="text-sm text-muted-foreground">{{ org.type }}</div>
+                      <div class="text-sm text-muted-foreground">{{ org.domain || 'Sans domaine' }}</div>
                     </div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm">{{ org.email }}</div>
-                  <div class="text-sm text-muted-foreground">{{ org.phone }}</div>
+                  <div class="text-sm">{{ org.description || 'Aucune description' }}</div>
+                  <div class="text-sm text-muted-foreground">{{ org.parentId ? `Parent: ${org.parentId}` : 'Organisation racine' }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium">{{ org.userCount || 0 }}</div>
+                  <div class="text-sm font-medium">-</div>
                   <div class="text-xs text-muted-foreground">utilisateurs</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <Badge :variant="getStatusVariant(org.status)">
-                    {{ getStatusLabel(org.status) }}
+                  <Badge :variant="org.active ? 'default' : 'secondary'">
+                    {{ org.active ? 'Actif' : 'Inactif' }}
                   </Badge>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
@@ -215,14 +231,14 @@
                         Modifier
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        v-if="org.status === 'ACTIVE'"
+                        v-if="org.active"
                         @click.stop="suspendOrganization(Number(org.id))"
                       >
                         <Ban class="mr-2 h-4 w-4" />
-                        Suspendre
+                        Désactiver
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        v-if="org.status === 'SUSPENDED'"
+                        v-if="!org.active"
                         @click.stop="activateOrganization(Number(org.id))"
                       >
                         <CheckCircle class="mr-2 h-4 w-4" />
@@ -242,30 +258,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <!-- Actions en masse -->
-        <div
-          v-if="selectedIds.length > 0"
-          class="border-t bg-muted/30 p-4 flex items-center justify-between"
-        >
-          <div class="text-sm text-muted-foreground">
-            {{ selectedIds.length }} organisation(s) sélectionnée(s)
-          </div>
-          <div class="flex gap-2">
-            <Button variant="outline" size="sm" @click="bulkActivate">
-              <CheckCircle class="mr-2 h-4 w-4" />
-              Activer
-            </Button>
-            <Button variant="outline" size="sm" @click="bulkSuspend">
-              <Ban class="mr-2 h-4 w-4" />
-              Suspendre
-            </Button>
-            <Button variant="outline" size="sm" @click="bulkDelete" class="text-destructive">
-              <Trash2 class="mr-2 h-4 w-4" />
-              Supprimer
-            </Button>
-          </div>
         </div>
 
         <!-- Pagination -->
@@ -295,8 +287,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/components/ui/toast'
 import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -323,20 +315,20 @@ import {
   Edit,
   Ban,
   CheckCircle,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-vue-next'
 import OrganizationDialog from './OrganizationDialog.vue'
 import { organizationService, type Organization } from '@viridial/shared'
 
 const router = useRouter()
+const route = useRoute()
 const { toast } = useToast()
 const loading = ref(false)
 const searchQuery = ref('')
-const selectedStatus = ref('')
-const selectedType = ref('')
-const dateFilter = ref('')
+const selectedStatus = ref<string | null>(null)
+const dateFilter = ref<string | null>(null)
 const selectedIds = ref<number[]>([])
-const selectAll = ref(false)
 const currentPage = ref(1)
 const pageSize = 10
 
@@ -347,12 +339,60 @@ const statsData = ref({ total: 0, active: 0, inactive: 0, suspended: 0 })
 
 const stats = computed(() => statsData.value)
 
-const filteredOrganizations = computed(() => organizations.value)
+const filteredOrganizations = computed(() => {
+  let filtered = organizations.value
 
-const total = computed(() => organizations.value.length)
+  if (selectedStatus.value) {
+    if (selectedStatus.value === 'ACTIVE') {
+      filtered = filtered.filter(org => org.active)
+    } else if (selectedStatus.value === 'INACTIVE') {
+      filtered = filtered.filter(org => !org.active)
+    }
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(
+      org =>
+        org.name.toLowerCase().includes(query) ||
+        org.description?.toLowerCase().includes(query) ||
+        org.domain?.toLowerCase().includes(query)
+    )
+  }
+
+  // Date filter
+  if (dateFilter.value) {
+    const now = new Date()
+    filtered = filtered.filter(org => {
+      const createdAt = new Date(org.createdAt)
+      switch (dateFilter.value) {
+        case 'today':
+          return createdAt.toDateString() === now.toDateString()
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          return createdAt >= weekAgo
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          return createdAt >= monthAgo
+        case 'year':
+          const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+          return createdAt >= yearAgo
+        default:
+          return true
+      }
+    })
+  }
+
+  return filtered
+})
+
+const total = computed(() => filteredOrganizations.value.length)
 const totalPages = computed(() => Math.ceil(total.value / pageSize))
 const startIndex = computed(() => (currentPage.value - 1) * pageSize)
 const endIndex = computed(() => Math.min(startIndex.value + pageSize, total.value))
+const paginatedOrganizations = computed(() => {
+  return filteredOrganizations.value.slice(startIndex.value, endIndex.value)
+})
 
 const handleSearch = () => {
   currentPage.value = 1
@@ -366,32 +406,55 @@ const handleFilter = () => {
 
 const resetFilters = () => {
   searchQuery.value = ''
-  selectedStatus.value = ''
-  selectedType.value = ''
-  dateFilter.value = ''
-  currentPage.value = 1
-}
-
-const filterByStatus = (status: string) => {
-  selectedStatus.value = status
+  selectedStatus.value = null
+  dateFilter.value = null
   currentPage.value = 1
   loadOrganizations()
 }
 
-const toggleSelect = (id: number) => {
-  const index = selectedIds.value.indexOf(id)
-  if (index > -1) {
-    selectedIds.value.splice(index, 1)
-  } else {
-    selectedIds.value.push(id)
-  }
+const filterByStatus = (status: string) => {
+  selectedStatus.value = status || null
+  currentPage.value = 1
+  loadOrganizations()
 }
 
-const toggleSelectAll = (checked: boolean) => {
+const selectAll = computed({
+  get: (): boolean | 'indeterminate' => {
+    if (paginatedOrganizations.value.length === 0) return false
+    if (selectedIds.value.length === 0) return false
+    const pageIds = paginatedOrganizations.value.map(org => Number(org.id))
+    const allSelected = pageIds.every(id => selectedIds.value.includes(id))
+    const someSelected = pageIds.some(id => selectedIds.value.includes(id))
+    if (allSelected) return true
+    if (someSelected) return 'indeterminate'
+    return false
+  },
+  set: (value: boolean | 'indeterminate') => {
+    const pageIds = paginatedOrganizations.value.map(org => Number(org.id))
+    if (value === true || value === 'indeterminate') {
+      // Add all page items that aren't already selected
+      pageIds.forEach(id => {
+        if (!selectedIds.value.includes(id)) {
+          selectedIds.value.push(id)
+        }
+      })
+    } else {
+      // Remove all page items from selection
+      selectedIds.value = selectedIds.value.filter(id => !pageIds.includes(id))
+    }
+  }
+})
+
+const handleOrganizationCheckboxChange = (id: number, checked: boolean) => {
   if (checked) {
-    selectedIds.value = filteredOrganizations.value.map((org) => org.id)
+    if (!selectedIds.value.includes(id)) {
+      selectedIds.value.push(id)
+    }
   } else {
-    selectedIds.value = []
+    const index = selectedIds.value.indexOf(id)
+    if (index > -1) {
+      selectedIds.value.splice(index, 1)
+    }
   }
 }
 
@@ -420,10 +483,10 @@ const viewOrganization = (id: number) => {
 const suspendOrganization = async (id: number) => {
   loading.value = true
   try {
-    await organizationService.suspend(id)
+    await organizationService.update(id, { active: false })
     toast({
-      title: 'Organisation suspendue',
-      description: 'L\'organisation a été suspendue avec succès'
+      title: 'Organisation désactivée',
+      description: 'L\'organisation a été désactivée avec succès'
     })
     await loadOrganizations()
   } catch (error: any) {
@@ -440,7 +503,7 @@ const suspendOrganization = async (id: number) => {
 const activateOrganization = async (id: number) => {
   loading.value = true
   try {
-    await organizationService.activate(id)
+    await organizationService.update(id, { active: true })
     toast({
       title: 'Organisation activée',
       description: 'L\'organisation a été activée avec succès'
@@ -481,7 +544,9 @@ const deleteOrganization = async (id: number) => {
 const bulkActivate = async () => {
   loading.value = true
   try {
-    await Promise.all(selectedIds.value.map((id) => organizationService.activate(id)))
+    await Promise.all(selectedIds.value.map(async (id) => {
+      await organizationService.update(id, { active: true })
+    }))
     toast({
       title: 'Organisations activées',
       description: `${selectedIds.value.length} organisation(s) activée(s)`
@@ -502,10 +567,12 @@ const bulkActivate = async () => {
 const bulkSuspend = async () => {
   loading.value = true
   try {
-    await Promise.all(selectedIds.value.map((id) => organizationService.suspend(id)))
+    await Promise.all(selectedIds.value.map(async (id) => {
+      await organizationService.update(id, { active: false })
+    }))
     toast({
-      title: 'Organisations suspendues',
-      description: `${selectedIds.value.length} organisation(s) suspendue(s)`
+      title: 'Organisations désactivées',
+      description: `${selectedIds.value.length} organisation(s) désactivée(s)`
     })
     selectedIds.value = []
     await loadOrganizations()
@@ -542,12 +609,103 @@ const bulkDelete = async () => {
   }
 }
 
-const exportData = () => {
-  // TODO: Implement export
-  toast({
-    title: 'Export en cours',
-    description: 'Les données seront téléchargées sous peu'
-  })
+// Export functions
+const exportToCSV = async () => {
+  try {
+    // Charger toutes les organisations avec les filtres actuels
+    const result = await organizationService.getAll()
+    const orgsToExport = filteredOrganizations.value.length > 0 
+      ? filteredOrganizations.value 
+      : result.organizations
+
+    // Créer le contenu CSV
+    const headers = ['ID', 'Nom', 'Description', 'Domaine', 'Statut', 'Organisation Parente', 'Créée le']
+    const rows = orgsToExport.map((org: any) => [
+      org.id,
+      org.name,
+      org.description || '',
+      org.domain || '',
+      org.active ? 'Actif' : 'Inactif',
+      org.parentId || '',
+      formatDate(org.createdAt)
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row: any[]) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    // Télécharger le fichier
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `organizations_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast({
+      title: 'Export réussi',
+      description: `${orgsToExport.length} organisation(s) exportée(s) en CSV`
+    })
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Impossible d\'exporter les données',
+      variant: 'destructive'
+    })
+  }
+}
+
+const exportToExcel = async () => {
+  try {
+    // Charger toutes les organisations avec les filtres actuels
+    const result = await organizationService.getAll()
+    const orgsToExport = filteredOrganizations.value.length > 0 
+      ? filteredOrganizations.value 
+      : result.organizations
+
+    // Créer le contenu Excel (format TSV avec en-têtes)
+    const headers = ['ID', 'Nom', 'Description', 'Domaine', 'Statut', 'Organisation Parente', 'Créée le']
+    const rows = orgsToExport.map((org: any) => [
+      org.id,
+      org.name,
+      org.description || '',
+      org.domain || '',
+      org.active ? 'Actif' : 'Inactif',
+      org.parentId || '',
+      formatDate(org.createdAt)
+    ])
+
+    const excelContent = [
+      headers.join('\t'),
+      ...rows.map((row: any[]) => row.map((cell: any) => String(cell).replace(/\t/g, ' ')).join('\t'))
+    ].join('\n')
+
+    // Télécharger le fichier
+    const blob = new Blob(['\ufeff' + excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `organizations_export_${new Date().toISOString().split('T')[0]}.xls`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast({
+      title: 'Export réussi',
+      description: `${orgsToExport.length} organisation(s) exportée(s) en Excel`
+    })
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Impossible d\'exporter les données',
+      variant: 'destructive'
+    })
+  }
 }
 
 const handleSaved = () => {
@@ -555,25 +713,6 @@ const handleSaved = () => {
   loadOrganizations()
 }
 
-const getStatusVariant = (status: string) => {
-  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    ACTIVE: 'default',
-    INACTIVE: 'secondary',
-    SUSPENDED: 'destructive',
-    PENDING: 'outline'
-  }
-  return variants[status] || 'default'
-}
-
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    ACTIVE: 'Actif',
-    INACTIVE: 'Inactif',
-    SUSPENDED: 'Suspendu',
-    PENDING: 'En attente'
-  }
-  return labels[status] || status
-}
 
 const formatDate = (date: string) => {
   if (!date) return '-'
@@ -583,21 +722,17 @@ const formatDate = (date: string) => {
 const loadOrganizations = async () => {
   loading.value = true
   try {
-    const params: any = {
-      page: currentPage.value - 1,
-      size: pageSize
-    }
-    
-    if (selectedStatus.value) params.status = selectedStatus.value
-    if (selectedType.value) params.type = selectedType.value
-    if (searchQuery.value) params.search = searchQuery.value
-
-    const result = await organizationService.getAll(params)
+    const result = await organizationService.getAll()
     organizations.value = result.organizations
 
-    // Load stats
-    const stats = await organizationService.getStats()
-    statsData.value = stats
+    // Calculate stats from organizations
+    const activeCount = organizations.value.filter(org => org.active).length
+    statsData.value = {
+      total: organizations.value.length,
+      active: activeCount,
+      inactive: organizations.value.length - activeCount,
+      suspended: 0
+    }
   } catch (error: any) {
     console.error('Error loading organizations:', error)
     toast({
@@ -610,7 +745,64 @@ const loadOrganizations = async () => {
   }
 }
 
-onMounted(() => {
-  loadOrganizations()
+onMounted(async () => {
+  await loadOrganizations()
+  
+  // Vérifier si un paramètre 'edit' est présent dans la requête
+  const editId = route.query.edit
+  if (editId) {
+    const id = Number(editId)
+    if (!isNaN(id)) {
+      // Attendre que les organisations soient chargées, puis ouvrir le dialogue
+      const org = organizations.value.find((o) => o.id === id)
+      if (org) {
+        selectedOrganization.value = org
+        dialogOpen.value = true
+      } else {
+        // Si l'organisation n'est pas trouvée, essayer de la charger directement
+        try {
+          const loadedOrg = await organizationService.getById(id)
+          selectedOrganization.value = loadedOrg
+          dialogOpen.value = true
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: 'Organisation introuvable',
+            variant: 'destructive'
+          })
+        }
+      }
+      // Nettoyer le paramètre de requête
+      router.replace({ query: {} })
+    }
+  }
+})
+
+// Watcher pour détecter les changements de paramètre edit dans la route
+watch(() => route.query.edit, async (editId) => {
+  if (editId) {
+    const id = Number(editId)
+    if (!isNaN(id)) {
+      // Vérifier si l'organisation est déjà chargée
+      let org = organizations.value.find((o) => o.id === id)
+      if (!org) {
+        // Charger l'organisation si elle n'est pas dans la liste
+        try {
+          org = await organizationService.getById(id)
+        } catch (error) {
+          toast({
+            title: 'Erreur',
+            description: 'Organisation introuvable',
+            variant: 'destructive'
+          })
+          return
+        }
+      }
+      selectedOrganization.value = org
+      dialogOpen.value = true
+      // Nettoyer le paramètre de requête
+      router.replace({ query: {} })
+    }
+  }
 })
 </script>

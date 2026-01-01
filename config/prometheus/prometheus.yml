@@ -41,15 +41,6 @@ scrape_configs:
           service: 'identity-service'
           instance: 'identity-1'
 
-  # Organization Service
-  - job_name: 'organization-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['localhost:8082']
-        labels:
-          service: 'organization-service'
-          instance: 'organization-1'
-
   # Property Service
   - job_name: 'property-service'
     metrics_path: '/actuator/prometheus'

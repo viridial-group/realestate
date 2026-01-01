@@ -59,7 +59,6 @@ echo ""
 echo "3. 🏥 Health Checks Détaillés..."
 echo ""
 
-ports=(8080 8081 8082 8083 8084 8085 8086 8087 8088 8089 8090)
 service_names=("gateway" "identity" "organization" "property" "resource" "document" "workflow" "notification" "emailing" "audit" "billing")
 
 for i in "${!ports[@]}"; do

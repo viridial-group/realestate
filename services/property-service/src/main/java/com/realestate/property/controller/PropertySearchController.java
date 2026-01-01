@@ -4,6 +4,7 @@ import com.realestate.common.document.PropertyDocument;
 import com.realestate.property.service.PropertySearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,10 +16,12 @@ import java.util.List;
 
 /**
  * Controller pour la recherche Elasticsearch des Properties
+ * Conditionnel : ne sera créé que si PropertyDocumentRepository (Elasticsearch) est disponible
  */
 @RestController
 @RequestMapping("/api/properties/search")
 @Tag(name = "Property Search", description = "Elasticsearch search API for properties")
+@ConditionalOnClass(name = "com.realestate.common.repository.elasticsearch.PropertyDocumentRepository")
 public class PropertySearchController {
 
     private final PropertySearchService propertySearchService;

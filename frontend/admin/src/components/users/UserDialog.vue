@@ -88,25 +88,26 @@
             </Select>
           </div>
           <div class="space-y-2">
-            <Label>Rôles</Label>
-            <div class="flex flex-wrap gap-2">
+            <Label>Rôles *</Label>
+            <div class="flex flex-wrap gap-3 p-3 border rounded-lg">
               <div
                 v-for="role in availableRoles"
                 :key="role.value"
                 class="flex items-center space-x-2"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   :id="`role-${role.value}`"
-                  :value="role.value"
-                  v-model="form.roles"
-                  class="rounded"
+                  :checked="form.roles.includes(role.value)"
+                  @update:checked="(checked) => toggleRole(role.value, checked)"
                 />
-                <Label :for="`role-${role.value}`" class="cursor-pointer">
+                <Label :for="`role-${role.value}`" class="cursor-pointer text-sm">
                   {{ role.label }}
                 </Label>
               </div>
             </div>
+            <p v-if="form.roles.length === 0" class="text-sm text-destructive">
+              Au moins un rôle doit être sélectionné
+            </p>
           </div>
         </div>
 
@@ -133,6 +134,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/components/ui/toast'
 import { Loader2 } from 'lucide-vue-next'
 
 interface Props {
@@ -150,6 +153,7 @@ const emit = defineEmits<{
 }>()
 
 const { createUser, updateUser, loading } = useUser()
+const { toast } = useToast()
 
 const availableRoles = [
   { value: UserRole.ADMIN, label: 'Admin' },
@@ -198,17 +202,89 @@ watch(() => props.user, (user) => {
   }
 }, { immediate: true })
 
+const toggleRole = (role: UserRole, checked: boolean) => {
+  if (checked) {
+    if (!form.value.roles.includes(role)) {
+      form.value.roles.push(role)
+    }
+  } else {
+    const index = form.value.roles.indexOf(role)
+    if (index > -1) {
+      form.value.roles.splice(index, 1)
+    }
+  }
+}
+
+const validateForm = (): boolean => {
+  if (!form.value.name || form.value.name.trim() === '') {
+    toast({
+      title: 'Erreur de validation',
+      description: 'Le nom complet est requis',
+      variant: 'destructive'
+    })
+    return false
+  }
+  if (!form.value.email || form.value.email.trim() === '') {
+    toast({
+      title: 'Erreur de validation',
+      description: 'L\'email est requis',
+      variant: 'destructive'
+    })
+    return false
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(form.value.email)) {
+    toast({
+      title: 'Erreur de validation',
+      description: 'L\'email n\'est pas valide',
+      variant: 'destructive'
+    })
+    return false
+  }
+  if (!isEdit.value && (!form.value.password || form.value.password.length < 8)) {
+    toast({
+      title: 'Erreur de validation',
+      description: 'Le mot de passe doit contenir au moins 8 caractères',
+      variant: 'destructive'
+    })
+    return false
+  }
+  if (form.value.roles.length === 0) {
+    toast({
+      title: 'Erreur de validation',
+      description: 'Au moins un rôle doit être sélectionné',
+      variant: 'destructive'
+    })
+    return false
+  }
+  return true
+}
+
 const handleSubmit = async () => {
+  if (!validateForm()) return
+  
   try {
     if (isEdit.value && props.user) {
       await updateUser(props.user.id, form.value as UserUpdate)
+      toast({
+        title: 'Utilisateur modifié',
+        description: 'L\'utilisateur a été modifié avec succès'
+      })
     } else {
       await createUser(form.value as UserCreate)
+      toast({
+        title: 'Utilisateur créé',
+        description: 'L\'utilisateur a été créé avec succès'
+      })
     }
     emit('saved')
     emit('update:open', false)
-  } catch (error) {
-    console.error('Error saving user:', error)
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Une erreur est survenue lors de la sauvegarde',
+      variant: 'destructive'
+    })
   }
 }
 </script>

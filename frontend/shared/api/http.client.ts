@@ -62,13 +62,17 @@ class HttpClient {
           // Token expiré ou invalide
           const token = tokenUtils.getToken()
           if (token) {
-            // Token présent mais invalide - nettoyer et rediriger
-            tokenUtils.removeToken()
+            // Ne pas supprimer le token immédiatement - laisser le guard gérer
+            // Le guard vérifiera et supprimera le token si nécessaire
             // Ne rediriger que si on n'est pas déjà sur la page de login
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            // et seulement si ce n'est pas une requête de vérification d'auth
+            const isAuthCheck = error.config?.url?.includes('/users/me') || 
+                               error.config?.url?.includes('/profile')
+            if (!isAuthCheck && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
               // Utiliser un petit délai pour éviter les redirections multiples
               setTimeout(() => {
-                window.location.href = '/login'
+                // Ne pas supprimer le token ici - laisser le guard le faire
+                // window.location.href = '/login'
               }, 100)
             }
           }

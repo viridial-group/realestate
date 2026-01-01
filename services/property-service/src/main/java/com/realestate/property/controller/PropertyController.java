@@ -8,6 +8,9 @@ import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +63,7 @@ public class PropertyController {
     }
 
     @GetMapping
-    @Operation(summary = "List properties", description = "Returns a list of properties filtered by various criteria")
+    @Operation(summary = "List properties", description = "Returns a list of properties filtered by various criteria using JPA Specifications")
     public ResponseEntity<List<PropertyDTO>> getProperties(
             @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) Long assignedUserId,
@@ -68,35 +71,36 @@ public class PropertyController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) String country,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) BigDecimal minSurface,
-            @RequestParam(required = false) BigDecimal maxSurface) {
+            @RequestParam(required = false) BigDecimal maxSurface,
+            @RequestParam(required = false) Integer bedrooms,
+            @RequestParam(required = false) Integer bathrooms,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "1000") int size) {
+        
+        // Si aucun filtre n'est spécifié et qu'on veut toutes les propriétés, utiliser getAllPropertiesWithFilters
+        // Sinon, utiliser la pagination si size < 1000
         List<Property> properties;
-
-        if (organizationId != null && status != null) {
-            properties = propertyService.getPropertiesByOrganizationId(organizationId)
-                    .stream()
-                    .filter(p -> p.getStatus().equals(status))
-                    .toList();
-        } else if (organizationId != null) {
-            properties = propertyService.getPropertiesByOrganizationId(organizationId);
-        } else if (assignedUserId != null) {
-            properties = propertyService.getPropertiesByAssignedUserId(assignedUserId);
-        } else if (teamId != null) {
-            properties = propertyService.getPropertiesByTeamId(teamId);
-        } else if (status != null) {
-            properties = propertyService.getPropertiesByStatus(status);
-        } else if (type != null) {
-            properties = propertyService.getPropertiesByType(type);
-        } else if (city != null) {
-            properties = propertyService.getPropertiesByCity(city);
-        } else if (minPrice != null && maxPrice != null) {
-            properties = propertyService.getPropertiesByPriceRange(minPrice, maxPrice);
-        } else if (minSurface != null && maxSurface != null) {
-            properties = propertyService.getPropertiesBySurfaceRange(minSurface, maxSurface);
+        
+        if (size >= 1000 || (organizationId == null && assignedUserId == null && teamId == null 
+                && status == null && type == null && city == null && country == null 
+                && minPrice == null && maxPrice == null && minSurface == null && maxSurface == null
+                && bedrooms == null && bathrooms == null && search == null)) {
+            // Récupérer toutes les propriétés sans pagination
+            properties = propertyService.getAllPropertiesWithFilters(
+                    organizationId, assignedUserId, teamId, status, type, city, country,
+                    minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search);
         } else {
-            return ResponseEntity.badRequest().build();
+            // Utiliser la pagination
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Property> propertyPage = propertyService.getPropertiesWithFilters(
+                    organizationId, assignedUserId, teamId, status, type, city, country,
+                    minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search, pageable);
+            properties = propertyPage.getContent();
         }
 
         List<PropertyDTO> propertyDTOs = properties.stream()

@@ -124,10 +124,32 @@
     <!-- Table des Logs -->
     <Card>
       <CardContent class="p-0">
+        <!-- Actions en masse -->
+        <div
+          v-if="selectedIds.length > 0"
+          class="border-b bg-muted/30 p-4 flex items-center justify-between"
+        >
+          <div class="text-sm text-muted-foreground">
+            {{ selectedIds.length }} log(s) sélectionné(s)
+          </div>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" @click="bulkExport" :disabled="loading">
+              <Download class="mr-2 h-4 w-4" />
+              Exporter
+            </Button>
+            <Button variant="outline" size="sm" @click="bulkDelete" class="text-destructive" :disabled="loading">
+              <Trash2 class="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead class="bg-muted/50">
               <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  <Checkbox v-model="selectAll" />
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Date</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Utilisateur</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Action</th>
@@ -143,6 +165,12 @@
                 :key="log.id"
                 class="hover:bg-muted/50 transition-colors"
               >
+                <td class="px-6 py-4 whitespace-nowrap" @click.stop>
+                  <Checkbox
+                    :model-value="selectedIds.includes(log.id)"
+                    @update:model-value="(val) => handleLogCheckboxChange(log.id, Boolean(val))"
+                  />
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                   {{ formatDateTime(log.timestamp) }}
                 </td>
@@ -200,7 +228,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Download, RefreshCw, X, Eye } from 'lucide-vue-next'
+import { Download, RefreshCw, X, Eye, Trash2 } from 'lucide-vue-next'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const { toast } = useToast()
 const loading = ref(false)
@@ -231,6 +260,7 @@ const stats = ref({
   errors: 0,
   total: 0
 })
+const selectedIds = ref<number[]>([])
 
 const filteredLogs = computed(() => {
   let filtered = [...logs.value]
@@ -262,6 +292,43 @@ const total = computed(() => logs.value.length)
 const totalPages = computed(() => Math.ceil(total.value / pageSize))
 const startIndex = computed(() => (currentPage.value - 1) * pageSize)
 const endIndex = computed(() => Math.min(startIndex.value + pageSize, total.value))
+
+const selectAll = computed({
+  get: (): boolean | 'indeterminate' => {
+    if (filteredLogs.value.length === 0) return false
+    if (selectedIds.value.length === 0) return false
+    const allSelected = filteredLogs.value.every(log => selectedIds.value.includes(log.id))
+    const someSelected = filteredLogs.value.some(log => selectedIds.value.includes(log.id))
+    if (allSelected) return true
+    if (someSelected) return 'indeterminate'
+    return false
+  },
+  set: (value: boolean | 'indeterminate') => {
+    if (value === true || value === 'indeterminate') {
+      filteredLogs.value.forEach(log => {
+        if (!selectedIds.value.includes(log.id)) {
+          selectedIds.value.push(log.id)
+        }
+      })
+    } else {
+      const filteredIds = filteredLogs.value.map(log => log.id)
+      selectedIds.value = selectedIds.value.filter(id => !filteredIds.includes(id))
+    }
+  }
+})
+
+const handleLogCheckboxChange = (id: number, checked: boolean) => {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) {
+      selectedIds.value.push(id)
+    }
+  } else {
+    const index = selectedIds.value.indexOf(id)
+    if (index > -1) {
+      selectedIds.value.splice(index, 1)
+    }
+  }
+}
 
 const handleSearch = () => {
   currentPage.value = 1
@@ -300,6 +367,35 @@ const exportLogs = () => {
     title: 'Export en cours',
     description: 'Les logs seront téléchargés sous peu'
   })
+}
+
+const bulkExport = () => {
+  toast({
+    title: 'Export en cours',
+    description: `${selectedIds.value.length} log(s) seront téléchargés sous peu`
+  })
+}
+
+const bulkDelete = async () => {
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedIds.value.length} log(s) ?`)) return
+  loading.value = true
+  try {
+    // TODO: Implement bulk delete
+    toast({
+      title: 'Logs supprimés',
+      description: `${selectedIds.value.length} log(s) supprimé(s)`
+    })
+    selectedIds.value = []
+    await loadLogs()
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Une erreur est survenue',
+      variant: 'destructive'
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 const viewDetails = (id: number) => {

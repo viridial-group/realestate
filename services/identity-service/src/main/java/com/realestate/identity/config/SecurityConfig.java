@@ -1,5 +1,8 @@
 package com.realestate.identity.config;
 
+import com.realestate.identity.filter.JwtAuthenticationFilter;
+import com.realestate.identity.filter.RemoveWwwAuthenticateFilter;
+import com.realestate.identity.filter.RolePermissionFilter;
 import com.realestate.identity.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
@@ -19,14 +23,23 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RolePermissionFilter rolePermissionFilter;
+    private final RemoveWwwAuthenticateFilter removeWwwAuthenticateFilter;
     private final CorsConfigurationSource corsConfigurationSource;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
     public SecurityConfig(
             CustomUserDetailsService userDetailsService,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            RolePermissionFilter rolePermissionFilter,
+            RemoveWwwAuthenticateFilter removeWwwAuthenticateFilter,
             CorsConfigurationSource corsConfigurationSource,
             CustomAuthenticationEntryPoint authenticationEntryPoint) {
         this.userDetailsService = userDetailsService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.rolePermissionFilter = rolePermissionFilter;
+        this.removeWwwAuthenticateFilter = removeWwwAuthenticateFilter;
         this.corsConfigurationSource = corsConfigurationSource;
         this.authenticationEntryPoint = authenticationEntryPoint;
     }
@@ -60,7 +73,10 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
-                );
+                )
+                .addFilterBefore(removeWwwAuthenticateFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rolePermissionFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

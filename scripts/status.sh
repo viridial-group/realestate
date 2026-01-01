@@ -34,7 +34,7 @@ echo ""
 echo "🚀 Microservices:"
 echo ""
 
-microservices=("realestate-gateway" "realestate-identity-service" "realestate-organization-service" "realestate-property-service")
+microservices=("realestate-gateway" "realestate-identity-service" "realestate-property-service")
 for service in "${microservices[@]}"; do
     if systemctl is-active --quiet $service 2>/dev/null; then
         echo "  ✅ $service: ACTIF"
@@ -51,7 +51,7 @@ echo ""
 echo "🔌 Ports:"
 echo ""
 
-ports=(8080 8081 8082 8083)
+ports=(8080 8081 8083)
 for port in "${ports[@]}"; do
     if netstat -tuln 2>/dev/null | grep -q ":$port " || ss -tuln 2>/dev/null | grep -q ":$port "; then
         echo "  ✅ Port $port: OUVERT"

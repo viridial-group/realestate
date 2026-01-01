@@ -1,6 +1,76 @@
 import { httpClient } from './http.client'
 import type { User, UserCreate, UserUpdate, UserSearchParams, UserProfile, UserStats, UserActivity } from '../types/user.types'
 import { API_ENDPOINTS } from '../constants/api.constants'
+import { UserStatus } from '../types/user.types'
+
+/**
+ * Interface pour les données utilisateur retournées par le backend
+ */
+interface BackendUserDTO {
+  id: number
+  email: string
+  firstName?: string
+  lastName?: string
+  enabled?: boolean
+  accountNonExpired?: boolean
+  accountNonLocked?: boolean
+  credentialsNonExpired?: boolean
+  roleNames?: string[]
+  createdAt?: string
+  updatedAt?: string
+  lastLoginAt?: string | null
+  phone?: string
+  avatar?: string
+  organizationId?: number
+  organizationName?: string
+  emailVerified?: boolean
+  metadata?: Record<string, any>
+}
+
+/**
+ * Mapper les données du backend vers le format User du frontend
+ */
+function mapBackendUserToUser(backendUser: BackendUserDTO): User {
+  // Déterminer le statut basé sur les flags du backend
+  let status: UserStatus = UserStatus.ACTIVE
+  if (!backendUser.enabled) {
+    status = UserStatus.INACTIVE
+  } else if (!backendUser.accountNonLocked) {
+    status = UserStatus.SUSPENDED
+  }
+
+  // Construire le nom complet
+  const name = backendUser.firstName && backendUser.lastName
+    ? `${backendUser.firstName} ${backendUser.lastName}`
+    : backendUser.email
+
+  // Mapper roleNames vers roles
+  const roles = backendUser.roleNames || []
+
+  return {
+    id: backendUser.id,
+    email: backendUser.email,
+    name,
+    firstName: backendUser.firstName,
+    lastName: backendUser.lastName,
+    phone: backendUser.phone,
+    avatar: backendUser.avatar,
+    status,
+    roles: roles as any[], // Les rôles sont des strings, mais le type attend UserRole[]
+    organizationId: backendUser.organizationId,
+    organizationName: backendUser.organizationName,
+    createdAt: backendUser.createdAt || new Date().toISOString(),
+    updatedAt: backendUser.updatedAt || new Date().toISOString(),
+    lastLoginAt: backendUser.lastLoginAt || undefined,
+    emailVerified: backendUser.emailVerified || false,
+    metadata: backendUser.metadata
+  }
+}
+
+/**
+ * Note: L'enrichissement avec organizationName n'est plus nécessaire
+ * car le backend retourne maintenant organizationName directement dans UserDTO
+ */
 
 /**
  * Service de gestion des utilisateurs SaaS
@@ -10,13 +80,19 @@ export const userService = {
    * Récupérer tous les utilisateurs avec filtres et pagination
    */
   async getAll(params?: UserSearchParams): Promise<{ users: User[]; total: number }> {
-    const response = await httpClient.get<{ content: User[]; totalElements: number }>(
+    const response = await httpClient.get<{ content: BackendUserDTO[]; totalElements: number }>(
       API_ENDPOINTS.USERS.BASE,
       { params }
     )
+    // Handle both paginated response (content) and simple list response
+    const backendUsers = response.data?.content || response.data || []
+    const users = Array.isArray(backendUsers) 
+      ? backendUsers.map(mapBackendUserToUser)
+      : []
+    
     return {
-      users: response.data?.content || response.data || [],
-      total: response.data?.totalElements || 0
+      users,
+      total: response.data?.totalElements || users.length
     }
   },
 
@@ -24,40 +100,40 @@ export const userService = {
    * Récupérer un utilisateur par ID
    */
   async getById(id: number): Promise<User> {
-    const response = await httpClient.get<User>(API_ENDPOINTS.USERS.BY_ID(id))
-    return response.data
+    const response = await httpClient.get<BackendUserDTO>(API_ENDPOINTS.USERS.BY_ID(id))
+    return mapBackendUserToUser(response.data)
   },
 
   /**
    * Récupérer le profil de l'utilisateur connecté
    */
   async getProfile(): Promise<UserProfile> {
-    const response = await httpClient.get<UserProfile>(API_ENDPOINTS.USERS.PROFILE)
-    return response.data
+    const response = await httpClient.get<BackendUserDTO>(API_ENDPOINTS.USERS.PROFILE)
+    return mapBackendUserToUser(response.data) as UserProfile
   },
 
   /**
    * Créer un nouvel utilisateur
    */
   async create(data: UserCreate): Promise<User> {
-    const response = await httpClient.post<User>(API_ENDPOINTS.USERS.BASE, data)
-    return response.data
+    const response = await httpClient.post<BackendUserDTO>(API_ENDPOINTS.USERS.BASE, data)
+    return mapBackendUserToUser(response.data)
   },
 
   /**
    * Mettre à jour un utilisateur
    */
   async update(id: number, data: UserUpdate): Promise<User> {
-    const response = await httpClient.put<User>(API_ENDPOINTS.USERS.BY_ID(id), data)
-    return response.data
+    const response = await httpClient.put<BackendUserDTO>(API_ENDPOINTS.USERS.BY_ID(id), data)
+    return mapBackendUserToUser(response.data)
   },
 
   /**
    * Mettre à jour le profil de l'utilisateur connecté
    */
   async updateProfile(data: UserUpdate): Promise<UserProfile> {
-    const response = await httpClient.put<UserProfile>(API_ENDPOINTS.USERS.PROFILE, data)
-    return response.data
+    const response = await httpClient.put<BackendUserDTO>(API_ENDPOINTS.USERS.PROFILE, data)
+    return mapBackendUserToUser(response.data) as UserProfile
   },
 
   /**
@@ -71,24 +147,24 @@ export const userService = {
    * Activer un utilisateur
    */
   async activate(id: number): Promise<User> {
-    const response = await httpClient.patch<User>(`${API_ENDPOINTS.USERS.BY_ID(id)}/activate`)
-    return response.data
+    const response = await httpClient.patch<BackendUserDTO>(`${API_ENDPOINTS.USERS.BY_ID(id)}/activate`)
+    return mapBackendUserToUser(response.data)
   },
 
   /**
    * Désactiver un utilisateur
    */
   async deactivate(id: number): Promise<User> {
-    const response = await httpClient.patch<User>(`${API_ENDPOINTS.USERS.BY_ID(id)}/deactivate`)
-    return response.data
+    const response = await httpClient.patch<BackendUserDTO>(`${API_ENDPOINTS.USERS.BY_ID(id)}/deactivate`)
+    return mapBackendUserToUser(response.data)
   },
 
   /**
    * Suspendre un utilisateur
    */
   async suspend(id: number, reason?: string): Promise<User> {
-    const response = await httpClient.patch<User>(`${API_ENDPOINTS.USERS.BY_ID(id)}/suspend`, { reason })
-    return response.data
+    const response = await httpClient.patch<BackendUserDTO>(`${API_ENDPOINTS.USERS.BY_ID(id)}/suspend`, { reason })
+    return mapBackendUserToUser(response.data)
   },
 
   /**
@@ -145,28 +221,28 @@ export const userService = {
    * Rechercher des utilisateurs
    */
   async search(query: string, params?: UserSearchParams): Promise<User[]> {
-    const response = await httpClient.get<User[]>(`${API_ENDPOINTS.USERS.BASE}/search`, {
+    const response = await httpClient.get<BackendUserDTO[]>(`${API_ENDPOINTS.USERS.BASE}/search`, {
       params: { q: query, ...params }
     })
-    return response.data || []
+    return (response.data || []).map(mapBackendUserToUser)
   },
 
   /**
    * Assigner des rôles à un utilisateur
    */
   async assignRoles(userId: number, roles: string[]): Promise<User> {
-    const response = await httpClient.post<User>(`${API_ENDPOINTS.USERS.BY_ID(userId)}/roles`, { roles })
-    return response.data
+    const response = await httpClient.post<BackendUserDTO>(`${API_ENDPOINTS.USERS.BY_ID(userId)}/roles`, { roles })
+    return mapBackendUserToUser(response.data)
   },
 
   /**
    * Retirer des rôles d'un utilisateur
    */
   async removeRoles(userId: number, roles: string[]): Promise<User> {
-    const response = await httpClient.delete<User>(`${API_ENDPOINTS.USERS.BY_ID(userId)}/roles`, {
+    const response = await httpClient.delete<BackendUserDTO>(`${API_ENDPOINTS.USERS.BY_ID(userId)}/roles`, {
       data: { roles }
     })
-    return response.data
+    return mapBackendUserToUser(response.data)
   }
 }
 

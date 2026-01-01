@@ -102,9 +102,9 @@
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="flex items-center space-x-2">
                 <Avatar>
-                  <AvatarImage :src="currentUser?.avatar" />
+                  <AvatarImage :src="currentUser?.avatar" v-if="currentUser?.avatar" />
                   <AvatarFallback>
-                    {{ currentUser?.name?.charAt(0).toUpperCase() || 'U' }}
+                    {{ (currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase() }}
                   </AvatarFallback>
                 </Avatar>
                 <div class="hidden flex-col items-start text-left md:flex">
@@ -117,14 +117,15 @@
             <DropdownMenuContent align="end" class="w-56">
               <DropdownMenuLabel>{{ t('common.view') }}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem @click="$router.push('/profile')">
+              <!-- Routes à implémenter plus tard -->
+              <!-- <DropdownMenuItem @click="$router.push('/profile')">
                 <User class="mr-2 h-4 w-4" />
                 {{ t('common.view') }}
-              </DropdownMenuItem>
-              <DropdownMenuItem @click="$router.push('/settings')">
+              </DropdownMenuItem> -->
+              <!-- <DropdownMenuItem @click="$router.push('/settings')">
                 <Settings class="mr-2 h-4 w-4" />
                 {{ t('common.view') }}
-              </DropdownMenuItem>
+              </DropdownMenuItem> -->
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="handleLogout" class="text-destructive">
                 <LogOut class="mr-2 h-4 w-4" />
@@ -215,18 +216,19 @@ const navigationItems = computed(() => [
     path: '/organizations',
     icon: Building2
   },
-  {
-    name: 'documents',
-    label: t('common.view'),
-    path: '/documents',
-    icon: FileText
-  },
-  {
-    name: 'settings',
-    label: t('common.view'),
-    path: '/settings',
-    icon: Settings
-  }
+  // Routes à implémenter plus tard
+  // {
+  //   name: 'documents',
+  //   label: t('common.view'),
+  //   path: '/documents',
+  //   icon: FileText
+  // },
+  // {
+  //   name: 'settings',
+  //   label: t('common.view'),
+  //   path: '/settings',
+  //   icon: Settings
+  // }
 ])
 
 const currentPageTitle = computed(() => {

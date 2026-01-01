@@ -4,50 +4,71 @@ import { API_ENDPOINTS } from '../constants/api.constants'
 export interface Organization {
   id: number
   name: string
-  type: 'AGENCY' | 'FREELANCE' | 'COMPANY'
-  email: string
-  phone?: string
-  address?: string
-  siret?: string
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING'
-  userCount?: number
+  description?: string
+  domain?: string
+  active: boolean
+  parentId?: number
   createdAt: string
   updatedAt?: string
 }
 
 export interface OrganizationCreate {
   name: string
-  type: 'AGENCY' | 'FREELANCE' | 'COMPANY'
-  email: string
-  phone?: string
-  address?: string
-  siret?: string
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING'
+  description?: string
+  domain?: string
+  active?: boolean
+  parentId?: number
 }
 
 export interface OrganizationUpdate {
   name?: string
-  type?: 'AGENCY' | 'FREELANCE' | 'COMPANY'
-  email?: string
-  phone?: string
-  address?: string
-  siret?: string
-  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING'
+  description?: string
+  domain?: string
+  active?: boolean
+  parentId?: number
 }
 
 export interface OrganizationSearchParams {
-  status?: string
-  type?: string
-  search?: string
   page?: number
   size?: number
 }
 
-export interface OrganizationStats {
-  total: number
-  active: number
-  inactive: number
-  suspended: number
+export interface Team {
+  id: number
+  name: string
+  description?: string
+  organizationId: number
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TeamCreate {
+  name: string
+  description?: string
+  active?: boolean
+}
+
+export interface TeamUpdate {
+  name?: string
+  description?: string
+  active?: boolean
+}
+
+export interface OrganizationUser {
+  id: number
+  userId: number
+  organizationId: number
+  teamId?: number
+  isPrimary: boolean
+  active: boolean
+  createdAt: string
+  updatedAt: string
+  user?: {
+    id: number
+    name: string
+    email: string
+  }
 }
 
 /**
@@ -58,13 +79,14 @@ export const organizationService = {
    * Récupérer toutes les organisations
    */
   async getAll(params?: OrganizationSearchParams): Promise<{ organizations: Organization[]; total: number }> {
-    const response = await httpClient.get<{ content: Organization[]; totalElements: number }>(
+    const response = await httpClient.get<Organization[]>(
       API_ENDPOINTS.ORGANIZATIONS.BASE,
       { params }
     )
+    const organizations = Array.isArray(response.data) ? response.data : []
     return {
-      organizations: response.data?.content || response.data || [],
-      total: response.data?.totalElements || 0
+      organizations,
+      total: organizations.length
     }
   },
 
@@ -100,45 +122,137 @@ export const organizationService = {
   },
 
   /**
-   * Activer une organisation
+   * Récupérer les organisations d'un utilisateur
    */
-  async activate(id: number): Promise<Organization> {
-    const response = await httpClient.patch<Organization>(
-      `${API_ENDPOINTS.ORGANIZATIONS.BY_ID(id)}/activate`
-    )
-    return response.data
-  },
-
-  /**
-   * Suspendre une organisation
-   */
-  async suspend(id: number, reason?: string): Promise<Organization> {
-    const response = await httpClient.patch<Organization>(
-      `${API_ENDPOINTS.ORGANIZATIONS.BY_ID(id)}/suspend`,
-      { reason }
-    )
-    return response.data
-  },
-
-  /**
-   * Récupérer les statistiques
-   */
-  async getStats(): Promise<OrganizationStats> {
-    const response = await httpClient.get<OrganizationStats>(
-      `${API_ENDPOINTS.ORGANIZATIONS.BASE}/stats`
-    )
-    return response.data
-  },
-
-  /**
-   * Rechercher des organisations
-   */
-  async search(query: string, params?: OrganizationSearchParams): Promise<Organization[]> {
+  async getByUserId(userId: number): Promise<Organization[]> {
     const response = await httpClient.get<Organization[]>(
-      `${API_ENDPOINTS.ORGANIZATIONS.BASE}/search`,
-      { params: { q: query, ...params } }
+      API_ENDPOINTS.ORGANIZATIONS.BY_USER_ID(userId)
     )
-    return response.data || []
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
+   * Récupérer les organisations racines (sans parent)
+   */
+  async getRoot(): Promise<Organization[]> {
+    const response = await httpClient.get<Organization[]>(
+      API_ENDPOINTS.ORGANIZATIONS.ROOT
+    )
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
+   * Récupérer les organisations enfants d'un parent
+   */
+  async getChildren(parentId: number): Promise<Organization[]> {
+    const response = await httpClient.get<Organization[]>(
+      API_ENDPOINTS.ORGANIZATIONS.CHILDREN(parentId)
+    )
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
+   * Assigner un utilisateur à une organisation
+   */
+  async assignUserToOrganization(organizationId: number, userId: number, isPrimary: boolean = false): Promise<void> {
+    await httpClient.post(
+      `/api/identity/organizations/${organizationId}/users/${userId}`,
+      {},
+      { params: { isPrimary } }
+    )
+  },
+
+  /**
+   * Retirer un utilisateur d'une organisation
+   */
+  async removeUserFromOrganization(organizationId: number, userId: number): Promise<void> {
+    await httpClient.delete(`/api/identity/organizations/${organizationId}/users/${userId}`)
+  },
+
+  /**
+   * Définir une organisation comme principale pour un utilisateur
+   */
+  async setPrimaryOrganization(organizationId: number, userId: number): Promise<void> {
+    await httpClient.put(`/api/identity/organizations/${organizationId}/users/${userId}/primary`)
+  },
+
+  /**
+   * Récupérer les utilisateurs d'une organisation
+   */
+  async getUsersByOrganization(organizationId: number): Promise<OrganizationUser[]> {
+    const response = await httpClient.get<OrganizationUser[]>(
+      `/api/identity/organizations/${organizationId}/users`
+    )
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
+   * Récupérer les utilisateurs d'une team
+   */
+  async getUsersByTeam(organizationId: number, teamId: number): Promise<OrganizationUser[]> {
+    const response = await httpClient.get<OrganizationUser[]>(
+      `/api/identity/organizations/${organizationId}/users/teams/${teamId}`
+    )
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
+   * Assigner un utilisateur à une team
+   */
+  async addUserToTeam(organizationId: number, userId: number, teamId: number): Promise<void> {
+    await httpClient.post(
+      `/api/identity/organizations/${organizationId}/users/${userId}/teams/${teamId}`
+    )
+  },
+
+  // Teams Management
+  /**
+   * Récupérer les teams d'une organisation
+   */
+  async getTeamsByOrganization(organizationId: number): Promise<Team[]> {
+    const response = await httpClient.get<Team[]>(
+      `/api/identity/organizations/${organizationId}/teams`
+    )
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
+   * Récupérer une team par ID
+   */
+  async getTeamById(organizationId: number, teamId: number): Promise<Team> {
+    const response = await httpClient.get<Team>(
+      `/api/identity/organizations/${organizationId}/teams/${teamId}`
+    )
+    return response.data
+  },
+
+  /**
+   * Créer une team
+   */
+  async createTeam(organizationId: number, data: TeamCreate): Promise<Team> {
+    const response = await httpClient.post<Team>(
+      `/api/identity/organizations/${organizationId}/teams`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Mettre à jour une team
+   */
+  async updateTeam(organizationId: number, teamId: number, data: TeamUpdate): Promise<Team> {
+    const response = await httpClient.put<Team>(
+      `/api/identity/organizations/${organizationId}/teams/${teamId}`,
+      data
+    )
+    return response.data
+  },
+
+  /**
+   * Supprimer une team
+   */
+  async deleteTeam(organizationId: number, teamId: number): Promise<void> {
+    await httpClient.delete(`/api/identity/organizations/${organizationId}/teams/${teamId}`)
   }
 }
 

@@ -1,14 +1,22 @@
 package com.realestate.identity.mapper;
 
 import com.realestate.identity.dto.UserDTO;
+import com.realestate.identity.entity.OrganizationUser;
 import com.realestate.identity.entity.Role;
 import com.realestate.identity.entity.User;
+import com.realestate.identity.repository.OrganizationUserRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
 @Component
 public class UserMapper {
+
+    private final OrganizationUserRepository organizationUserRepository;
+
+    public UserMapper(OrganizationUserRepository organizationUserRepository) {
+        this.organizationUserRepository = organizationUserRepository;
+    }
 
     public UserDTO toDTO(User user) {
         if (user == null) {
@@ -30,6 +38,15 @@ public class UserMapper {
                     .map(Role::getName)
                     .collect(Collectors.toSet()));
         }
+        
+        // Récupérer l'organisation principale depuis OrganizationUser
+        organizationUserRepository.findPrimaryByUserId(user.getId())
+                .ifPresent(orgUser -> {
+                    if (orgUser.getOrganization() != null) {
+                        dto.setOrganizationId(orgUser.getOrganization().getId());
+                        dto.setOrganizationName(orgUser.getOrganization().getName());
+                    }
+                });
         
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());

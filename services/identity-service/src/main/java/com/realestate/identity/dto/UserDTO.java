@@ -26,6 +26,8 @@ public class UserDTO {
     private Boolean accountNonLocked = true;
     private Boolean credentialsNonExpired = true;
     private Set<String> roleNames; // Noms des rôles (pas les entités complètes)
+    private Long organizationId; // ID de l'organisation
+    private String organizationName; // Nom de l'organisation
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
@@ -136,6 +138,22 @@ public class UserDTO {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
+    }
+
+    public String getOrganizationName() {
+        return organizationName;
+    }
+
+    public void setOrganizationName(String organizationName) {
+        this.organizationName = organizationName;
     }
 }
 

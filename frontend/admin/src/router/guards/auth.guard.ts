@@ -29,16 +29,24 @@ export async function authGuard(
       
       // Si toujours pas authentifié après vérification, rediriger
       if (!authStore.isAuthenticated) {
+        // Nettoyer le token seulement si vraiment pas authentifié
+        if (!tokenUtils.hasToken()) {
+          tokenUtils.removeToken()
+        }
         next({
           name: 'login',
           query: { redirect: to.fullPath }
         })
         return
       }
-    } catch (error) {
-      // Erreur lors de la vérification, rediriger vers login
+    } catch (error: any) {
+      // Erreur lors de la vérification
       console.error('Auth check failed:', error)
-      tokenUtils.removeToken()
+      const status = error?.status || error?.response?.status
+      // Supprimer le token seulement si c'est une erreur d'authentification
+      if (status === 401 || status === 403) {
+        tokenUtils.removeToken()
+      }
       next({
         name: 'login',
         query: { redirect: to.fullPath }

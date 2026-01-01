@@ -18,7 +18,6 @@ if [ $# -eq 0 ]; then
     echo "Services disponibles:"
     echo "  - gateway"
     echo "  - identity-service"
-    echo "  - organization-service"
     echo "  - resource-service"
     echo "  - property-service"
     echo "  - document-service"

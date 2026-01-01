@@ -13,7 +13,10 @@ export type {
   OrganizationCreate,
   OrganizationUpdate,
   OrganizationSearchParams,
-  OrganizationStats
+  Team,
+  TeamCreate,
+  TeamUpdate,
+  OrganizationUser
 } from './api/organization.service'
 
 // Stores
@@ -29,6 +32,9 @@ export type * from './types/api.types'
 export type * from './types/auth.types'
 export type * from './types/property.types'
 export type * from './types/user.types'
+
+// Enums from property.types (exported as values, not types)
+export { PropertyType, PropertyStatus } from './types/property.types'
 
 // Utils
 export { tokenUtils } from './utils/token.utils'

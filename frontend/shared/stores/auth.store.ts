@@ -38,8 +38,8 @@ export const useAuthStore = defineStore('auth', () => {
       isAuthenticated.value = true
       
       // 4. Récupérer les infos utilisateur depuis le profil
-      // Attendre un peu pour que le token soit bien propagé
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Attendre un peu pour que le token soit bien propagé dans les intercepteurs
+      await new Promise(resolve => setTimeout(resolve, 300))
       
       try {
         const profile = await userService.getProfile()
@@ -57,7 +57,8 @@ export const useAuthStore = defineStore('auth', () => {
             ? `${profile.firstName} ${profile.lastName}` 
             : profile.name || profile.email,
           roles: rolesArray,
-          organizationId: profile.organizationId
+          organizationId: profile.organizationId,
+          organizationName: profile.organizationName
         }
       } catch (profileError: any) {
         // Si l'API profile échoue, on garde quand même l'authentification

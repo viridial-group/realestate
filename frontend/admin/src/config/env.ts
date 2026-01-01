@@ -13,7 +13,6 @@ export const env = {
   
   // Service URLs
   identityServiceUrl: getEnv('VITE_IDENTITY_SERVICE_URL', 'http://localhost:8081'),
-  organizationServiceUrl: getEnv('VITE_ORGANIZATION_SERVICE_URL', 'http://localhost:8082'),
   propertyServiceUrl: getEnv('VITE_PROPERTY_SERVICE_URL', 'http://localhost:8083'),
   resourceServiceUrl: getEnv('VITE_RESOURCE_SERVICE_URL', 'http://localhost:8084'),
   documentServiceUrl: getEnv('VITE_DOCUMENT_SERVICE_URL', 'http://localhost:8085'),

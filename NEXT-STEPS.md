@@ -286,7 +286,7 @@ mvn spring-boot:run -pl services/new-service
 |---------|--------|-------|------|---------------|
 | **Gateway** | ✅ Déployé | - | 8080 | `/api/**` |
 | **Identity** | ✅ Créé | ✅ 45/46 tests (97.8%) | 8081 | `/api/identity/**` |
-| **Organization** | ✅ Créé | ✅ 26 tests | 8082 | `/api/organizations/**` |
+| **Organization** | ✅ Intégré dans Identity | - | 8081 | `/api/identity/organizations/**` |
 | **Resource** | ✅ Créé | ✅ 49 tests | 8084 | `/api/resources/**` |
 | **Property** | ✅ Créé | ✅ 16 tests | 8083 | `/api/properties/**` |
 | **Document** | ✅ Créé | ✅ 16 tests | 8085 | `/api/documents/**` |

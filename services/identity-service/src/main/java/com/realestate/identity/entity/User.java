@@ -58,6 +58,10 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    // Relation avec OrganizationUser (table de jointure)
+    @OneToMany(mappedBy = "userId", fetch = FetchType.LAZY)
+    private Set<OrganizationUser> organizationUsers = new HashSet<>();
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

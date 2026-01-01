@@ -12,7 +12,6 @@ VPS_HOST="148.230.112.148"
 SERVICES=(
     "realestate-gateway"
     "realestate-identity-service"
-    "realestate-organization-service"
     "realestate-property-service"
     "realestate-resource-service"
     "realestate-document-service"

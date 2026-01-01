@@ -25,7 +25,6 @@ else
     services=(
         "gateway:8080"
         "identity-service:8081"
-        "organization-service:8082"
         "property-service:8083"
         "resource-service:8084"
         "document-service:8085"
@@ -147,7 +146,6 @@ echo ""
 echo "4. 🏥 Health Checks HTTP:"
 echo ""
 
-ports=(8080 8081 8082 8083 8084 8085 8086 8087 8088 8089 8090)
 service_names=("gateway" "identity" "organization" "property" "resource" "document" "workflow" "notification" "emailing" "audit" "billing")
 
 for i in "${!ports[@]}"; do

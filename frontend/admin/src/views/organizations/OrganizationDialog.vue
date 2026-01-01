@@ -9,60 +9,30 @@
       </DialogHeader>
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label for="name">Nom *</Label>
-            <Input id="name" v-model="form.name" placeholder="Nom de l'organisation" required />
-          </div>
-          <div class="space-y-2">
-            <Label for="type">Type *</Label>
-            <Select v-model="form.type" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AGENCY">Agence</SelectItem>
-                <SelectItem value="FREELANCE">Freelance</SelectItem>
-                <SelectItem value="COMPANY">Entreprise</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label for="email">Email *</Label>
-            <Input id="email" v-model="form.email" type="email" placeholder="contact@example.com" required />
-          </div>
-          <div class="space-y-2">
-            <Label for="phone">Téléphone</Label>
-            <Input id="phone" v-model="form.phone" placeholder="+33 1 23 45 67 89" />
-          </div>
+        <div class="space-y-2">
+          <Label for="name">Nom *</Label>
+          <Input id="name" v-model="form.name" placeholder="Nom de l'organisation" required />
         </div>
 
         <div class="space-y-2">
-          <Label for="address">Adresse</Label>
-          <Input id="address" v-model="form.address" placeholder="123 Rue Example, 75001 Paris" />
+          <Label for="description">Description</Label>
+          <textarea
+            id="description"
+            v-model="form.description"
+            placeholder="Description de l'organisation"
+            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label for="siret">SIRET</Label>
-            <Input id="siret" v-model="form.siret" placeholder="12345678901234" />
-          </div>
-          <div class="space-y-2">
-            <Label for="status">Statut</Label>
-            <Select v-model="form.status">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ACTIVE">Actif</SelectItem>
-                <SelectItem value="INACTIVE">Inactif</SelectItem>
-                <SelectItem value="SUSPENDED">Suspendu</SelectItem>
-                <SelectItem value="PENDING">En attente</SelectItem>
-              </SelectContent>
-            </Select>
+        <div class="space-y-2">
+          <Label for="domain">Domaine</Label>
+          <Input id="domain" v-model="form.domain" placeholder="example.com" />
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center space-x-2">
+            <Checkbox id="active" v-model:checked="form.active" />
+            <Label for="active" class="cursor-pointer">Organisation active</Label>
           </div>
         </div>
 
@@ -86,7 +56,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-vue-next'
 
 interface Props {
@@ -110,34 +80,28 @@ const isEdit = computed(() => !!props.organization)
 
 const form = ref({
   name: '',
-  type: '',
-  email: '',
-  phone: '',
-  address: '',
-  siret: '',
-  status: 'ACTIVE'
+  description: '',
+  domain: '',
+  active: true,
+  parentId: undefined as number | undefined
 })
 
 watch(() => props.organization, (org) => {
   if (org) {
     form.value = {
       name: org.name || '',
-      type: org.type || '',
-      email: org.email || '',
-      phone: org.phone || '',
-      address: org.address || '',
-      siret: org.siret || '',
-      status: org.status || 'ACTIVE'
+      description: org.description || '',
+      domain: org.domain || '',
+      active: org.active !== undefined ? org.active : true,
+      parentId: org.parentId
     }
   } else {
     form.value = {
       name: '',
-      type: '',
-      email: '',
-      phone: '',
-      address: '',
-      siret: '',
-      status: 'ACTIVE'
+      description: '',
+      domain: '',
+      active: true,
+      parentId: undefined
     }
   }
 }, { immediate: true })

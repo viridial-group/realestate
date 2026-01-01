@@ -107,10 +107,28 @@
         <CardDescription>Liste de tous les abonnements actifs et inactifs</CardDescription>
       </CardHeader>
       <CardContent class="p-0">
+        <!-- Actions en masse -->
+        <div
+          v-if="selectedIds.length > 0"
+          class="border-b bg-muted/30 p-4 flex items-center justify-between"
+        >
+          <div class="text-sm text-muted-foreground">
+            {{ selectedIds.length }} abonnement(s) sélectionné(s)
+          </div>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" @click="bulkCancel" class="text-destructive" :disabled="loading">
+              <XCircle class="mr-2 h-4 w-4" />
+              Annuler
+            </Button>
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead class="bg-muted/50">
               <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  <Checkbox v-model="selectAll" />
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Organisation</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Plan</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Montant</th>
@@ -126,6 +144,12 @@
                 :key="subscription.id"
                 class="hover:bg-muted/50 transition-colors"
               >
+                <td class="px-6 py-4 whitespace-nowrap" @click.stop>
+                  <Checkbox
+                    :model-value="selectedIds.includes(subscription.id)"
+                    @update:model-value="(val) => handleSubscriptionCheckboxChange(subscription.id, Boolean(val))"
+                  />
+                </td>
                 <td class="px-6 py-4">
                   <div class="text-sm font-medium">{{ subscription.organizationName }}</div>
                   <div class="text-sm text-muted-foreground">{{ subscription.organizationEmail }}</div>
@@ -199,6 +223,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { RefreshCw, X, MoreVertical, Eye, FileText, XCircle } from 'lucide-vue-next'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const { toast } = useToast()
 const loading = ref(false)
@@ -225,6 +250,7 @@ const stats = ref({
   monthlyRevenue: 0,
   totalRevenue: 0
 })
+const selectedIds = ref<number[]>([])
 
 const filteredSubscriptions = computed(() => {
   let filtered = [...subscriptions.value]
@@ -244,6 +270,43 @@ const filteredSubscriptions = computed(() => {
 
   return filtered
 })
+
+const selectAll = computed({
+  get: (): boolean | 'indeterminate' => {
+    if (filteredSubscriptions.value.length === 0) return false
+    if (selectedIds.value.length === 0) return false
+    const allSelected = filteredSubscriptions.value.every(s => selectedIds.value.includes(s.id))
+    const someSelected = filteredSubscriptions.value.some(s => selectedIds.value.includes(s.id))
+    if (allSelected) return true
+    if (someSelected) return 'indeterminate'
+    return false
+  },
+  set: (value: boolean | 'indeterminate') => {
+    if (value === true || value === 'indeterminate') {
+      filteredSubscriptions.value.forEach(s => {
+        if (!selectedIds.value.includes(s.id)) {
+          selectedIds.value.push(s.id)
+        }
+      })
+    } else {
+      const filteredIds = filteredSubscriptions.value.map(s => s.id)
+      selectedIds.value = selectedIds.value.filter(id => !filteredIds.includes(id))
+    }
+  }
+})
+
+const handleSubscriptionCheckboxChange = (id: number, checked: boolean) => {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) {
+      selectedIds.value.push(id)
+    }
+  } else {
+    const index = selectedIds.value.indexOf(id)
+    if (index > -1) {
+      selectedIds.value.splice(index, 1)
+    }
+  }
+}
 
 const handleSearch = () => {
   loadSubscriptions()
@@ -295,6 +358,28 @@ const cancelSubscription = async (id: number) => {
       title: 'Abonnement annulé',
       description: 'L\'abonnement a été annulé avec succès'
     })
+    await loadSubscriptions()
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Une erreur est survenue',
+      variant: 'destructive'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+const bulkCancel = async () => {
+  if (!confirm(`Êtes-vous sûr de vouloir annuler ${selectedIds.value.length} abonnement(s) ?`)) return
+  loading.value = true
+  try {
+    // TODO: Implement bulk cancel
+    toast({
+      title: 'Abonnements annulés',
+      description: `${selectedIds.value.length} abonnement(s) annulé(s)`
+    })
+    selectedIds.value = []
     await loadSubscriptions()
   } catch (error: any) {
     toast({

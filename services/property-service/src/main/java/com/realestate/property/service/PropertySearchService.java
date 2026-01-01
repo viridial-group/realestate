@@ -2,6 +2,7 @@ package com.realestate.property.service;
 
 import com.realestate.common.document.PropertyDocument;
 import com.realestate.common.repository.elasticsearch.PropertyDocumentRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -11,8 +12,10 @@ import java.util.List;
 
 /**
  * Service de recherche Elasticsearch pour les Properties
+ * Conditionnel : ne sera créé que si PropertyDocumentRepository est disponible
  */
 @Service
+@ConditionalOnBean(PropertyDocumentRepository.class)
 public class PropertySearchService {
 
     private final PropertyDocumentRepository propertyDocumentRepository;

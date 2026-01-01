@@ -14,7 +14,6 @@ echo "🔍 Vérification des services"
 # ========================
 GATEWAY_PORT=8080
 IDENTITY_PORT=8081
-ORGANIZATION_PORT=8082
 PROPERTY_PORT=8083
 
 ALL_OK=true
@@ -77,9 +76,6 @@ check_service "gateway" "$GATEWAY_PORT" "http://localhost:$GATEWAY_PORT/actuator
 
 # Identity Service
 check_service "identity-service" "$IDENTITY_PORT" "http://localhost:$IDENTITY_PORT/actuator/health" || true
-
-# Organization Service
-check_service "organization-service" "$ORGANIZATION_PORT" "http://localhost:$ORGANIZATION_PORT/actuator/health" || true
 
 # Property Service
 check_service "property-service" "$PROPERTY_PORT" "http://localhost:$PROPERTY_PORT/actuator/health" || true

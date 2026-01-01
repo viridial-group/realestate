@@ -42,7 +42,6 @@
         <module>common</module>
         <module>gateway</module>
         <module>services/identity-service</module>
-        <module>services/organization-service</module>
         <module>services/resource-service</module>
         <module>services/property-service</module>
         <module>services/document-service</module>
@@ -52,7 +51,6 @@
         <module>services/audit-service</module>
         <module>services/billing-service</module>
         <!-- Services à créer progressivement -->
-        <!-- <module>services/organization-service</module> -->
         <!-- <module>services/resource-service</module> -->
         <!-- <module>services/property-service</module> -->
         <!-- <module>services/document-service</module> -->

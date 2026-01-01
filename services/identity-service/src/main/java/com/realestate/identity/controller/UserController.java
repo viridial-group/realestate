@@ -9,12 +9,11 @@ import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/identity/users")
@@ -54,13 +53,27 @@ public class UserController {
     }
 
     @GetMapping
-    @Operation(summary = "List all users", description = "Returns a list of all users in the system")
-    public ResponseEntity<List<UserDTO>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        List<UserDTO> userDTOs = users.stream()
-                .map(userMapper::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(userDTOs);
+    @Operation(summary = "List all users", description = "Returns a paginated list of all users in the system with optional filters")
+    public ResponseEntity<Page<UserDTO>> getAllUsers(
+            @RequestParam(required = false) Long organizationId,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        
+        // Utiliser les Specifications pour les filtres
+        Page<User> usersPage = userService.getUsersWithFilters(
+                organizationId,
+                role,
+                status,
+                search,
+                pageable
+        );
+        
+        Page<UserDTO> userDTOsPage = usersPage.map(userMapper::toDTO);
+        return ResponseEntity.ok(userDTOsPage);
     }
 
     @PutMapping("/{id}")
@@ -81,5 +94,6 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
+
 }
 

@@ -7,9 +7,13 @@
         <p class="text-muted-foreground mt-1">Gérez toutes les propriétés immobilières</p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" @click="exportData" :disabled="loading">
+        <Button variant="outline" @click="exportToCSV" :disabled="loading">
           <Download class="mr-2 h-4 w-4" />
-          Exporter
+          Export CSV
+        </Button>
+        <Button variant="outline" @click="exportToExcel" :disabled="loading">
+          <Download class="mr-2 h-4 w-4" />
+          Export Excel
         </Button>
         <Button @click="openCreateDialog" size="lg">
           <Plus class="mr-2 h-4 w-4" />
@@ -73,7 +77,7 @@
                 <SelectValue placeholder="Tous" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem :value="null">Tous</SelectItem>
                 <SelectItem value="HOUSE">Maison</SelectItem>
                 <SelectItem value="APARTMENT">Appartement</SelectItem>
                 <SelectItem value="LAND">Terrain</SelectItem>
@@ -88,7 +92,7 @@
                 <SelectValue placeholder="Tous" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem :value="null">Tous</SelectItem>
                 <SelectItem value="AVAILABLE">Disponible</SelectItem>
                 <SelectItem value="SOLD">Vendu</SelectItem>
                 <SelectItem value="RENTED">Loué</SelectItem>
@@ -202,10 +206,28 @@
     <!-- Vue Liste -->
     <Card v-else>
       <CardContent class="p-0">
+        <!-- Actions en masse -->
+        <div
+          v-if="selectedIds.length > 0"
+          class="border-b bg-muted/30 p-4 flex items-center justify-between"
+        >
+          <div class="text-sm text-muted-foreground">
+            {{ selectedIds.length }} propriété(s) sélectionnée(s)
+          </div>
+          <div class="flex gap-2">
+            <Button variant="outline" size="sm" @click="bulkDelete" class="text-destructive" :disabled="loading">
+              <Trash2 class="mr-2 h-4 w-4" />
+              Supprimer
+            </Button>
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead class="bg-muted/50">
               <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                  <Checkbox v-model="selectAll" />
+                </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Propriété</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Type</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Prix</th>
@@ -221,6 +243,12 @@
                 class="hover:bg-muted/50 transition-colors cursor-pointer"
                 @click="viewProperty(Number(property.id))"
               >
+                <td class="px-6 py-4 whitespace-nowrap" @click.stop>
+                  <Checkbox
+                    :model-value="selectedIds.includes(Number(property.id))"
+                    @update:model-value="(val) => handlePropertyCheckboxChange(Number(property.id), Boolean(val))"
+                  />
+                </td>
                 <td class="px-6 py-4">
                   <div>
                     <div class="text-sm font-medium">{{ property.title }}</div>
@@ -314,14 +342,15 @@ import {
   Grid3x3,
   List
 } from 'lucide-vue-next'
+import { Checkbox } from '@/components/ui/checkbox'
 import { propertyService, type Property } from '@viridial/shared'
 
 const router = useRouter()
 const { toast } = useToast()
 const loading = ref(false)
 const searchQuery = ref('')
-const selectedType = ref('')
-const selectedStatus = ref('')
+const selectedType = ref<string | null>(null)
+const selectedStatus = ref<string | null>(null)
 const priceMin = ref('')
 const priceMax = ref('')
 const viewMode = ref<'grid' | 'list'>('grid')
@@ -331,6 +360,7 @@ const pageSize = 12
 
 const properties = ref<Property[]>([])
 const statsData = ref({ total: 0, available: 0, sold: 0, rented: 0 })
+const selectedIds = ref<number[]>([])
 
 const stats = computed(() => statsData.value)
 
@@ -361,6 +391,44 @@ const totalPages = computed(() => Math.ceil(total.value / pageSize))
 const startIndex = computed(() => (currentPage.value - 1) * pageSize)
 const endIndex = computed(() => Math.min(startIndex.value + pageSize, total.value))
 
+const selectAll = computed({
+  get: (): boolean | 'indeterminate' => {
+    if (filteredProperties.value.length === 0) return false
+    if (selectedIds.value.length === 0) return false
+    const pageIds = filteredProperties.value.map(p => Number(p.id))
+    const allSelected = pageIds.every(id => selectedIds.value.includes(id))
+    const someSelected = pageIds.some(id => selectedIds.value.includes(id))
+    if (allSelected) return true
+    if (someSelected) return 'indeterminate'
+    return false
+  },
+  set: (value: boolean | 'indeterminate') => {
+    const pageIds = filteredProperties.value.map(p => Number(p.id))
+    if (value === true || value === 'indeterminate') {
+      pageIds.forEach(id => {
+        if (!selectedIds.value.includes(id)) {
+          selectedIds.value.push(id)
+        }
+      })
+    } else {
+      selectedIds.value = selectedIds.value.filter(id => !pageIds.includes(id))
+    }
+  }
+})
+
+const handlePropertyCheckboxChange = (id: number, checked: boolean) => {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) {
+      selectedIds.value.push(id)
+    }
+  } else {
+    const index = selectedIds.value.indexOf(id)
+    if (index > -1) {
+      selectedIds.value.splice(index, 1)
+    }
+  }
+}
+
 const handleSearch = () => {
   currentPage.value = 1
   loadProperties()
@@ -378,8 +446,8 @@ const handleSort = () => {
 
 const resetFilters = () => {
   searchQuery.value = ''
-  selectedType.value = ''
-  selectedStatus.value = ''
+  selectedType.value = null
+  selectedStatus.value = null
   priceMin.value = ''
   priceMax.value = ''
   currentPage.value = 1
@@ -431,11 +499,141 @@ const deleteProperty = async (id: number) => {
   }
 }
 
-const exportData = () => {
-  toast({
-    title: 'Export en cours',
-    description: 'Les données seront téléchargées sous peu'
-  })
+const bulkDelete = async () => {
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedIds.value.length} propriété(s) ?`)) return
+  loading.value = true
+  try {
+    await Promise.all(selectedIds.value.map((id) => propertyService.delete(id)))
+    toast({
+      title: 'Propriétés supprimées',
+      description: `${selectedIds.value.length} propriété(s) supprimée(s)`
+    })
+    selectedIds.value = []
+    await loadProperties()
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Une erreur est survenue',
+      variant: 'destructive'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+// Export functions
+const exportToCSV = async () => {
+  try {
+    // Charger toutes les propriétés avec les filtres actuels
+    const params: any = {}
+    if (searchQuery.value) params.search = searchQuery.value
+    if (selectedType.value) params.propertyType = selectedType.value
+    if (selectedStatus.value) params.status = selectedStatus.value
+    if (priceMin.value) params.minPrice = Number(priceMin.value)
+    if (priceMax.value) params.maxPrice = Number(priceMax.value)
+
+    const propertiesToExport = await propertyService.getAll(params)
+
+    // Créer le contenu CSV
+    const headers = ['ID', 'Titre', 'Type', 'Prix', 'Adresse', 'Ville', 'Statut', 'Chambres', 'Salles de bain', 'Surface', 'Créée le']
+    const rows = propertiesToExport.map((property: any) => [
+      property.id,
+      property.title,
+      property.propertyType,
+      formatPrice(property.price),
+      property.address,
+      property.city,
+      getStatusLabel(property.status),
+      property.bedrooms || '',
+      property.bathrooms || '',
+      property.area || '',
+      formatDate(property.createdAt)
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row: any[]) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    // Télécharger le fichier
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `properties_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast({
+      title: 'Export réussi',
+      description: `${propertiesToExport.length} propriété(s) exportée(s) en CSV`
+    })
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Impossible d\'exporter les données',
+      variant: 'destructive'
+    })
+  }
+}
+
+const exportToExcel = async () => {
+  try {
+    // Charger toutes les propriétés avec les filtres actuels
+    const params: any = {}
+    if (searchQuery.value) params.search = searchQuery.value
+    if (selectedType.value) params.propertyType = selectedType.value
+    if (selectedStatus.value) params.status = selectedStatus.value
+    if (priceMin.value) params.minPrice = Number(priceMin.value)
+    if (priceMax.value) params.maxPrice = Number(priceMax.value)
+
+    const propertiesToExport = await propertyService.getAll(params)
+
+    // Créer le contenu Excel (format TSV avec en-têtes)
+    const headers = ['ID', 'Titre', 'Type', 'Prix', 'Adresse', 'Ville', 'Statut', 'Chambres', 'Salles de bain', 'Surface', 'Créée le']
+    const rows = propertiesToExport.map((property: any) => [
+      property.id,
+      property.title,
+      property.propertyType,
+      formatPrice(property.price),
+      property.address,
+      property.city,
+      getStatusLabel(property.status),
+      property.bedrooms || '',
+      property.bathrooms || '',
+      property.area || '',
+      formatDate(property.createdAt)
+    ])
+
+    const excelContent = [
+      headers.join('\t'),
+      ...rows.map((row: any[]) => row.map((cell: any) => String(cell).replace(/\t/g, ' ')).join('\t'))
+    ].join('\n')
+
+    // Télécharger le fichier
+    const blob = new Blob(['\ufeff' + excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `properties_export_${new Date().toISOString().split('T')[0]}.xls`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast({
+      title: 'Export réussi',
+      description: `${propertiesToExport.length} propriété(s) exportée(s) en Excel`
+    })
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Impossible d\'exporter les données',
+      variant: 'destructive'
+    })
+  }
 }
 
 const getStatusVariant = (status: string) => {
@@ -482,7 +680,7 @@ const loadProperties = async () => {
     if (priceMax.value) params.priceMax = Number(priceMax.value)
 
     const result = await propertyService.getAll(params)
-    properties.value = result
+    properties.value = Array.isArray(result) ? result : []
 
     // Calculate stats
     statsData.value = {

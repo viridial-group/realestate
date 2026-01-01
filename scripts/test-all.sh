@@ -57,7 +57,6 @@ echo ""
 
 services=(
     "8081:Identity Service"
-    "8082:Organization Service"
     "8083:Property Service"
     "8084:Resource Service"
     "8085:Document Service"

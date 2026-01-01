@@ -44,5 +44,6 @@ export interface UserInfo {
   name: string
   roles?: string[]
   organizationId?: number
+  organizationName?: string
 }
 

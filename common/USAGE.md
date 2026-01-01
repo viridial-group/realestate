@@ -74,8 +74,7 @@ public class CustomSecurityConfig {
 ## ✅ Services Utilisant Common
 
 - ✅ **Gateway** - Utilise `GatewaySecurityConfig`
-- ⏳ **Identity Service** - Utilisera `WebMvcSecurityConfig` et `RedisConfig`
-- ⏳ **Organization Service** - Utilisera `WebMvcSecurityConfig` et `RedisConfig`
+- ✅ **Identity Service** - Utilise `WebMvcSecurityConfig` et `RedisConfig` (inclut la gestion des organisations)
 - ⏳ **Property Service** - Utilisera `WebMvcSecurityConfig` et `RedisConfig`
 - ⏳ **Autres services** - Utiliseront les configurations communes
 

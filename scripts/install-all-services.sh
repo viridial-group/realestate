@@ -83,10 +83,6 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/identity/**
-        - id: organization-service
-          uri: http://localhost:8082
-          predicates:
-            - Path=/api/organizations/**
         - id: resource-service
           uri: http://localhost:8084
           predicates:

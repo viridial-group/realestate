@@ -78,7 +78,6 @@ start_service_if_needed() {
 # Services dans l'ordre de dépendance
 services=(
     "identity-service:services/identity-service:8081:identity-service-*.jar"
-    "organization-service:services/organization-service:8082:organization-service-*.jar"
     "resource-service:services/resource-service:8084:resource-service-*.jar"
     "property-service:services/property-service:8083:property-service-*.jar"
     "document-service:services/document-service:8085:document-service-*.jar"

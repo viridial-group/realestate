@@ -3,7 +3,6 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string
   readonly VITE_IDENTITY_SERVICE_URL?: string
-  readonly VITE_ORGANIZATION_SERVICE_URL?: string
   readonly VITE_PROPERTY_SERVICE_URL?: string
   readonly VITE_RESOURCE_SERVICE_URL?: string
   readonly VITE_DOCUMENT_SERVICE_URL?: string

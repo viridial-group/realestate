@@ -21,7 +21,6 @@ Ce document explique comment configurer les variables d'environnement pour l'app
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `VITE_IDENTITY_SERVICE_URL` | URL du service Identity | `http://localhost:8081` |
-| `VITE_ORGANIZATION_SERVICE_URL` | URL du service Organization | `http://localhost:8082` |
 | `VITE_PROPERTY_SERVICE_URL` | URL du service Property | `http://localhost:8083` |
 | `VITE_RESOURCE_SERVICE_URL` | URL du service Resource | `http://localhost:8084` |
 | `VITE_DOCUMENT_SERVICE_URL` | URL du service Document | `http://localhost:8085` |

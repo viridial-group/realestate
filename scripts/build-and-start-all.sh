@@ -101,16 +101,86 @@ start_service() {
 }
 
 # ========================
-# Démarrage des Services
+# Fonction pour démarrer un service d'infrastructure
 # ========================
-echo "🚀 Démarrage des services..."
+start_infrastructure_service() {
+    local service_name=$1
+    local script_path="$SCRIPT_DIR/start-${service_name}.sh"
+    
+    if [ -f "$script_path" ]; then
+        echo "🔧 Démarrage de $service_name..."
+        bash "$script_path" || {
+            echo "⚠️  Erreur lors du démarrage de $service_name (continuons...)"
+        }
+        sleep 2
+    else
+        echo "⚠️  Script de démarrage introuvable pour $service_name: $script_path"
+    fi
+}
+
+# ========================
+# Démarrage des Services d'Infrastructure
+# ========================
+echo "🏗️  Démarrage des services d'infrastructure..."
+echo ""
+
+# Vérifier que Docker est disponible
+if ! command -v docker &> /dev/null; then
+    echo "⚠️  Docker n'est pas installé - Les services d'infrastructure ne peuvent pas être démarrés"
+    echo "💡 Installez Docker: https://docs.docker.com/get-docker/"
+    echo ""
+else
+    # Créer le réseau Docker si nécessaire
+    if ! docker network ls | grep -q "realestate-network"; then
+        echo "📡 Création du réseau Docker: realestate-network"
+        docker network create realestate-network 2>/dev/null || true
+    fi
+    
+    # Services d'infrastructure dans l'ordre de dépendance
+    # 1. PostgreSQL (généralement déjà démarré, mais on vérifie)
+    echo "🐘 Vérification de PostgreSQL..."
+    if ! pg_isready -h localhost -p 5432 &> /dev/null && ! docker ps | grep -q "postgres"; then
+        echo "⚠️  PostgreSQL n'est pas accessible - Assurez-vous qu'il est démarré"
+    else
+        echo "   ✅ PostgreSQL est accessible"
+    fi
+    echo ""
+    
+    # 2. Redis
+    start_infrastructure_service "redis"
+    
+    # 3. Elasticsearch (avant Kibana)
+    start_infrastructure_service "elasticsearch"
+    
+    # 4. Kibana (après Elasticsearch)
+    start_infrastructure_service "kibana"
+    
+    # 5. Kafka (avec Zookeeper)
+    start_infrastructure_service "kafka"
+    
+    # 6. Prometheus
+    start_infrastructure_service "prometheus"
+    
+    # 7. Grafana
+    start_infrastructure_service "grafana"
+    
+    # 8. Zipkin (optionnel)
+    start_infrastructure_service "zipkin"
+    
+    echo "✅ Services d'infrastructure démarrés"
+    echo ""
+fi
+
+# ========================
+# Démarrage des Services Spring Boot
+# ========================
+echo "🚀 Démarrage des services Spring Boot..."
 echo ""
 
 # Services dans l'ordre de dépendance
 services=(
     "gateway:gateway:8080:gateway-*.jar"
     "identity-service:services/identity-service:8081:identity-service-*.jar"
-    "organization-service:services/organization-service:8082:organization-service-*.jar"
     "resource-service:services/resource-service:8084:resource-service-*.jar"
     "property-service:services/property-service:8083:property-service-*.jar"
     "document-service:services/document-service:8085:document-service-*.jar"

@@ -155,8 +155,8 @@ const handleLogin = async (values: any) => {
       variant: 'default'
     })
 
-    // Attendre un peu pour que le profil soit chargé
-    await new Promise(resolve => setTimeout(resolve, 200))
+    // Attendre un peu pour que le profil soit chargé et que l'auth soit vérifiée
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     // Rediriger vers la page demandée ou le dashboard
     const redirect = route.query.redirect as string

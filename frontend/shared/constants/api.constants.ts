@@ -29,8 +29,13 @@ export const API_ENDPOINTS = {
   },
   // Organizations
   ORGANIZATIONS: {
-    BASE: '/api/organizations',
-    BY_ID: (id: number) => `/api/organizations/${id}`
+    BASE: '/api/identity/organizations',
+    BY_ID: (id: number) => `/api/identity/organizations/${id}`,
+    BY_USER_ID: (userId: number) => `/api/identity/organizations/user/${userId}`,
+    ROOT: '/api/identity/organizations/root',
+    CHILDREN: (parentId: number) => `/api/identity/organizations/${parentId}/children`,
+    STATS: '/api/identity/organizations/stats',
+    SEARCH: '/api/identity/organizations/search'
   }
 } as const
 

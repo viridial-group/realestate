@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3001,
       proxy: {
-        // Proxy pour les routes d'authentification directement vers identity-service (contourne le gateway)
-        '/api/identity/auth': {
+        // Proxy pour toutes les routes identity-service directement (contourne le gateway)
+        '/api/identity': {
           target: 'http://localhost:8081',
           changeOrigin: true,
           secure: false,

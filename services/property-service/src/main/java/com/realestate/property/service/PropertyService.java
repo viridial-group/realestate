@@ -11,8 +11,12 @@ import com.realestate.property.entity.PropertyFeature;
 import com.realestate.property.repository.PropertyAccessRepository;
 import com.realestate.property.repository.PropertyFeatureRepository;
 import com.realestate.property.repository.PropertyRepository;
+import com.realestate.property.specification.PropertySpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -151,6 +155,159 @@ public class PropertyService {
     @Transactional(readOnly = true)
     public List<Property> getPropertiesBySurfaceRange(BigDecimal minSurface, BigDecimal maxSurface) {
         return propertyRepository.findActiveBySurfaceRange(minSurface, maxSurface);
+    }
+
+    /**
+     * Récupérer les propriétés avec filtres multiples en utilisant JPA Specifications
+     */
+    @Transactional(readOnly = true)
+    public Page<Property> getPropertiesWithFilters(
+            Long organizationId,
+            Long assignedUserId,
+            Long teamId,
+            String status,
+            String type,
+            String city,
+            String country,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            BigDecimal minSurface,
+            BigDecimal maxSurface,
+            Integer bedrooms,
+            Integer bathrooms,
+            String search,
+            Pageable pageable) {
+        
+        Specification<Property> spec = Specification.where(null);
+
+        // Filtre par organisation
+        if (organizationId != null) {
+            spec = spec.and(PropertySpecification.hasOrganization(organizationId));
+        }
+
+        // Filtre par utilisateur assigné
+        if (assignedUserId != null) {
+            spec = spec.and(PropertySpecification.hasAssignedUser(assignedUserId));
+        }
+
+        // Filtre par team
+        if (teamId != null) {
+            spec = spec.and(PropertySpecification.hasTeam(teamId));
+        }
+
+        // Filtre par statut
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasStatus(status));
+        }
+
+        // Filtre par type
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasType(type));
+        }
+
+        // Filtre par ville
+        if (city != null && !city.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCity(city));
+        }
+
+        // Filtre par pays
+        if (country != null && !country.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCountry(country));
+        }
+
+        // Filtre par plage de prix
+        if (minPrice != null || maxPrice != null) {
+            spec = spec.and(PropertySpecification.hasPriceRange(minPrice, maxPrice));
+        }
+
+        // Filtre par plage de surface
+        if (minSurface != null || maxSurface != null) {
+            spec = spec.and(PropertySpecification.hasSurfaceRange(minSurface, maxSurface));
+        }
+
+        // Filtre par nombre de chambres
+        if (bedrooms != null) {
+            spec = spec.and(PropertySpecification.hasBedrooms(bedrooms));
+        }
+
+        // Filtre par nombre de salles de bain
+        if (bathrooms != null) {
+            spec = spec.and(PropertySpecification.hasBathrooms(bathrooms));
+        }
+
+        // Recherche textuelle
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(PropertySpecification.searchByText(search));
+        }
+
+        // Par défaut, ne retourner que les propriétés actives
+        spec = spec.and(PropertySpecification.isActive(true));
+
+        return propertyRepository.findAll(spec, pageable);
+    }
+
+    /**
+     * Récupérer toutes les propriétés avec filtres (sans pagination)
+     */
+    @Transactional(readOnly = true)
+    public List<Property> getAllPropertiesWithFilters(
+            Long organizationId,
+            Long assignedUserId,
+            Long teamId,
+            String status,
+            String type,
+            String city,
+            String country,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            BigDecimal minSurface,
+            BigDecimal maxSurface,
+            Integer bedrooms,
+            Integer bathrooms,
+            String search) {
+        
+        Specification<Property> spec = Specification.where(null);
+
+        if (organizationId != null) {
+            spec = spec.and(PropertySpecification.hasOrganization(organizationId));
+        }
+        if (assignedUserId != null) {
+            spec = spec.and(PropertySpecification.hasAssignedUser(assignedUserId));
+        }
+        if (teamId != null) {
+            spec = spec.and(PropertySpecification.hasTeam(teamId));
+        }
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasStatus(status));
+        }
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasType(type));
+        }
+        if (city != null && !city.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCity(city));
+        }
+        if (country != null && !country.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCountry(country));
+        }
+        if (minPrice != null || maxPrice != null) {
+            spec = spec.and(PropertySpecification.hasPriceRange(minPrice, maxPrice));
+        }
+        if (minSurface != null || maxSurface != null) {
+            spec = spec.and(PropertySpecification.hasSurfaceRange(minSurface, maxSurface));
+        }
+        if (bedrooms != null) {
+            spec = spec.and(PropertySpecification.hasBedrooms(bedrooms));
+        }
+        if (bathrooms != null) {
+            spec = spec.and(PropertySpecification.hasBathrooms(bathrooms));
+        }
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(PropertySpecification.searchByText(search));
+        }
+
+        spec = spec.and(PropertySpecification.isActive(true));
+
+        return propertyRepository.findAll(spec);
     }
 
     @Transactional

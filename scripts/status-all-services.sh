@@ -21,7 +21,6 @@ fi
 services=(
     "gateway:8080"
     "identity-service:8081"
-    "organization-service:8082"
     "resource-service:8084"
     "property-service:8083"
     "document-service:8085"

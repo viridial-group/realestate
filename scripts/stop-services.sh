@@ -16,7 +16,6 @@ echo "🚀 Arrêt des microservices..."
 services=(
     "realestate-gateway"
     "realestate-identity-service"
-    "realestate-organization-service"
     "realestate-property-service"
 )
 

@@ -60,59 +60,61 @@ fi
 echo ""
 
 # ========================
-# 2. Arrêter Kibana
+# Fonction pour arrêter un service d'infrastructure
 # ========================
-echo "🎨 Arrêt de Kibana..."
-if docker ps | grep -q "kibana"; then
-    docker stop kibana > /dev/null 2>&1 && echo "   ✅ Kibana arrêté" || echo "   ⚠️  Erreur lors de l'arrêt de Kibana"
-else
-    echo "   ℹ️  Kibana n'est pas en cours d'exécution"
-fi
+stop_infrastructure_service() {
+    local service_name=$1
+    local script_path="$SCRIPT_DIR/stop-${service_name}.sh"
+    
+    if [ -f "$script_path" ]; then
+        echo "🛑 Arrêt de $service_name..."
+        bash "$script_path" || {
+            echo "   ⚠️  Erreur lors de l'arrêt de $service_name (continuons...)"
+        }
+    else
+        # Arrêt manuel si le script n'existe pas
+        if docker ps | grep -q "$service_name"; then
+            docker stop "$service_name" > /dev/null 2>&1 && echo "   ✅ $service_name arrêté" || echo "   ⚠️  Erreur lors de l'arrêt de $service_name"
+        else
+            echo "   ℹ️  $service_name n'est pas en cours d'exécution"
+        fi
+    fi
+}
 
+# ========================
+# 2. Arrêter les Services d'Infrastructure
+# ========================
+echo "🏗️  Arrêt des services d'infrastructure..."
 echo ""
 
-# ========================
-# 3. Arrêter Elasticsearch
-# ========================
-echo "🔍 Arrêt d'Elasticsearch..."
-if docker ps | grep -q "elasticsearch"; then
-    docker stop elasticsearch > /dev/null 2>&1 && echo "   ✅ Elasticsearch arrêté" || echo "   ⚠️  Erreur lors de l'arrêt d'Elasticsearch"
+# Arrêter dans l'ordre inverse de démarrage (dépendances d'abord)
+# 1. Kibana (avant Elasticsearch)
+stop_infrastructure_service "kibana"
+
+# 2. Elasticsearch
+stop_infrastructure_service "elasticsearch"
+
+# 3. Grafana
+stop_infrastructure_service "grafana"
+
+# 4. Prometheus
+stop_infrastructure_service "prometheus"
+
+# 5. Zipkin
+stop_infrastructure_service "zipkin"
+
+# 6. Kafka (et Zookeeper)
+stop_infrastructure_service "kafka"
+
+# 7. Redis
+if docker ps | grep -q "redis"; then
+    echo "🔴 Arrêt de Redis..."
+    docker stop redis > /dev/null 2>&1 && echo "   ✅ Redis arrêté" || echo "   ⚠️  Erreur lors de l'arrêt de Redis"
+elif pgrep -x redis-server > /dev/null; then
+    echo "🔴 Arrêt de Redis..."
+    pkill redis-server && echo "   ✅ Redis arrêté" || echo "   ⚠️  Erreur lors de l'arrêt de Redis"
 else
-    echo "   ℹ️  Elasticsearch n'est pas en cours d'exécution"
-fi
-
-echo ""
-
-# ========================
-# 4. Arrêter Kafka
-# ========================
-echo "📨 Arrêt de Kafka..."
-
-# Vérifier différents noms de conteneurs Kafka possibles
-KAFKA_CONTAINER=""
-if docker ps | grep -q "realestate-kafka"; then
-    KAFKA_CONTAINER="realestate-kafka"
-elif docker ps | grep -q "kafka"; then
-    KAFKA_CONTAINER=$(docker ps | grep kafka | grep -v zookeeper | awk '{print $NF}' | head -1)
-fi
-
-if [ -n "$KAFKA_CONTAINER" ]; then
-    docker stop "$KAFKA_CONTAINER" > /dev/null 2>&1 && echo "   ✅ Kafka arrêté" || echo "   ⚠️  Erreur lors de l'arrêt de Kafka"
-else
-    echo "   ℹ️  Kafka n'est pas en cours d'exécution"
-fi
-
-# Arrêter Zookeeper si présent
-ZOOKEEPER_CONTAINER=""
-if docker ps | grep -q "realestate-zookeeper"; then
-    ZOOKEEPER_CONTAINER="realestate-zookeeper"
-elif docker ps | grep -q "zookeeper"; then
-    ZOOKEEPER_CONTAINER=$(docker ps | grep zookeeper | awk '{print $NF}' | head -1)
-fi
-
-if [ -n "$ZOOKEEPER_CONTAINER" ]; then
-    echo "🦘 Arrêt de Zookeeper..."
-    docker stop "$ZOOKEEPER_CONTAINER" > /dev/null 2>&1 && echo "   ✅ Zookeeper arrêté" || echo "   ⚠️  Erreur lors de l'arrêt de Zookeeper"
+    echo "🔴 Redis n'est pas en cours d'exécution"
 fi
 
 echo ""
@@ -124,10 +126,15 @@ echo "✅ Tous les services ont été arrêtés"
 echo ""
 echo "📋 Services arrêtés :"
 echo "   - Services Spring Boot (via PIDs)"
-echo "   - Kibana (Docker)"
-echo "   - Elasticsearch (Docker)"
-echo "   - Kafka (Docker)"
-echo "   - Zookeeper (Docker)"
+echo "   - Services d'infrastructure :"
+echo "     • Redis"
+echo "     • Elasticsearch"
+echo "     • Kibana"
+echo "     • Kafka"
+echo "     • Zookeeper"
+echo "     • Prometheus"
+echo "     • Grafana"
+echo "     • Zipkin"
 echo ""
 echo "💡 Pour redémarrer tous les services :"
 echo "   ./scripts/build-and-start-all.sh"

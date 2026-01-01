@@ -29,7 +29,7 @@
 
 ### Microservices à Créer
 - [ ] **Identity Service** - Authentification et gestion des utilisateurs (port 8081)
-- [ ] **Organization Service** - Gestion des organisations/tenants (port 8082)
+- [x] **Organization** - Intégré dans Identity Service (port 8081)
 - [ ] **Property Service** - Gestion des propriétés (port 8083)
 - [ ] **Document Service** - Gestion des documents
 - [ ] **Notification Service** - Notifications en temps réel

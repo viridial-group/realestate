@@ -69,7 +69,6 @@ echo "🔗 Activation des services..."
 services=(
     "realestate-gateway"
     "realestate-identity-service"
-    "realestate-organization-service"
     "realestate-property-service"
 )
 
