@@ -1,8 +1,8 @@
 package com.realestate.gateway.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -15,14 +15,15 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
  * et permet l'accès public à toutes les routes API.
  * 
  * Cette configuration remplace celle du common pour le gateway.
+ * Utilise @Primary pour s'assurer qu'elle est utilisée en priorité.
  */
 @Configuration
 @EnableWebFluxSecurity
 public class GatewaySecurityConfig {
 
     @Bean
+    @Primary // Priorité sur la configuration du common
     @Order(-1) // Priorité élevée pour s'assurer que cette config est appliquée en premier
-    @ConditionalOnMissingBean(name = "securityWebFilterChain")
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         // Désactiver complètement la sécurité par défaut
         http
