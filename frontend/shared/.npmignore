@@ -1,0 +1,54 @@
+# Source files (on publie seulement dist/)
+**/*.ts
+!dist/**/*.d.ts
+**/*.vue
+src/
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Development files
+.vscode/
+.idea/
+*.log
+*.swp
+*.swo
+*~
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/__tests__/
+**/__mocks__/
+coverage/
+.nyc_output/
+
+# Build artifacts (sauf dist qui est publié)
+build/
+*.tsbuildinfo
+tsconfig.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Scripts
+scripts/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Misc
+.DS_Store
+Thumbs.db
+PUBLISH.md
+

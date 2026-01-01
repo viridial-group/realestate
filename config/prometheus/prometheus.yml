@@ -1,0 +1,134 @@
+# Configuration Prometheus pour Real Estate Platform
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'realestate-platform'
+    environment: 'production'
+
+# Alertmanager configuration (optionnel)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['localhost:9093']
+
+# Règles d'alerte (optionnel)
+# rule_files:
+#   - "alerts.yml"
+
+# Configuration des cibles à scraper
+scrape_configs:
+  # Prometheus lui-même
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8080']
+        labels:
+          service: 'gateway'
+          instance: 'gateway-1'
+
+  # Identity Service
+  - job_name: 'identity-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8081']
+        labels:
+          service: 'identity-service'
+          instance: 'identity-1'
+
+  # Organization Service
+  - job_name: 'organization-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8082']
+        labels:
+          service: 'organization-service'
+          instance: 'organization-1'
+
+  # Property Service
+  - job_name: 'property-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8083']
+        labels:
+          service: 'property-service'
+          instance: 'property-1'
+
+  # Resource Service
+  - job_name: 'resource-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8084']
+        labels:
+          service: 'resource-service'
+          instance: 'resource-1'
+
+  # Document Service
+  - job_name: 'document-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8085']
+        labels:
+          service: 'document-service'
+          instance: 'document-1'
+
+  # Workflow Service
+  - job_name: 'workflow-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8086']
+        labels:
+          service: 'workflow-service'
+          instance: 'workflow-1'
+
+  # Notification Service
+  - job_name: 'notification-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8087']
+        labels:
+          service: 'notification-service'
+          instance: 'notification-1'
+
+  # Emailing Service
+  - job_name: 'emailing-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8088']
+        labels:
+          service: 'emailing-service'
+          instance: 'emailing-1'
+
+  # Audit Service
+  - job_name: 'audit-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8089']
+        labels:
+          service: 'audit-service'
+          instance: 'audit-1'
+
+  # Billing Service
+  - job_name: 'billing-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8090']
+        labels:
+          service: 'billing-service'
+          instance: 'billing-1'
+
+  # PostgreSQL (si exporter installé)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['localhost:9187']
+
+  # Redis (si exporter installé)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['localhost:9121']
+

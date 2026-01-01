@@ -1,0 +1,43 @@
+{
+  "index_patterns": ["realestate-logs-*"],
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "index": {
+      "refresh_interval": "5s"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "log_level": {
+        "type": "keyword"
+      },
+      "service_name": {
+        "type": "keyword"
+      },
+      "thread_name": {
+        "type": "keyword"
+      },
+      "log_message": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "exception": {
+        "type": "text"
+      },
+      "stack_trace": {
+        "type": "text"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "tags": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+

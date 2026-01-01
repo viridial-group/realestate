@@ -201,11 +201,12 @@
 7. ⏳ Tests d'intégration complets
 
 ### Phase 3 : Infrastructure (2-3 jours) 📊
-1. Configurer Elasticsearch
-2. Intégrer dans Property Service
-3. Intégrer dans Audit Service
-4. Configurer Prometheus/Grafana
-5. Configurer ELK Stack
+1. ✅ Configurer Elasticsearch - **FAIT**
+2. ✅ Intégrer dans Property Service - **FAIT**
+3. ✅ Intégrer dans Audit Service - **FAIT**
+4. ✅ Configurer Prometheus/Grafana - **FAIT**
+5. ✅ Configurer ELK Stack (Logstash, Kibana) - **FAIT**
+6. ✅ Configurer Zipkin (Distributed Tracing) - **FAIT**
 
 ### Phase 4 : Frontend Vue.js (3-5 jours) 🎨
 1. Initialiser le projet Vue.js

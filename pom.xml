@@ -29,6 +29,10 @@
         <!-- Elasticsearch -->
         <elasticsearch.version>8.15.0</elasticsearch.version>
         
+        <!-- Micrometer Tracing -->
+        <micrometer-tracing.version>1.2.1</micrometer-tracing.version>
+        <zipkin.version>2.24.4</zipkin.version>
+        
         <!-- Testing -->
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.7.0</mockito.version>
