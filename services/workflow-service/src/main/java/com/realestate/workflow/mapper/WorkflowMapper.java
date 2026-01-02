@@ -23,6 +23,7 @@ public class WorkflowMapper {
         dto.setRequiredRoles(workflow.getRequiredRoles());
         dto.setActive(workflow.getActive());
         dto.setIsDefault(workflow.getIsDefault());
+        dto.setStatus(workflow.getStatus());
         dto.setCreatedAt(workflow.getCreatedAt());
         dto.setUpdatedAt(workflow.getUpdatedAt());
         return dto;
@@ -44,6 +45,9 @@ public class WorkflowMapper {
         workflow.setRequiredRoles(dto.getRequiredRoles());
         workflow.setActive(dto.getActive());
         workflow.setIsDefault(dto.getIsDefault());
+        if (dto.getStatus() != null) {
+            workflow.setStatus(dto.getStatus());
+        }
         return workflow;
     }
 }

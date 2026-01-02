@@ -261,7 +261,7 @@
       </CardContent>
     </Card>
 
-    <!-- Vue Grille/Liste -->
+    <!-- Vue Grille/Liste/Carte -->
     <div class="flex items-center justify-between">
       <div class="flex gap-2">
         <Button
@@ -279,6 +279,14 @@
           @click="viewMode = 'list'"
         >
           <List class="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          :class="{ 'bg-primary text-primary-foreground': viewMode === 'map' }"
+          @click="viewMode = 'map'"
+        >
+          <MapPin class="h-4 w-4" />
         </Button>
       </div>
       <div class="flex items-center gap-2">
@@ -347,7 +355,7 @@
     </div>
 
     <!-- Vue Liste -->
-    <Card v-else>
+    <Card v-if="viewMode === 'list'">
       <CardContent class="p-0">
         <!-- Actions en masse -->
         <div
@@ -446,8 +454,17 @@
       </CardContent>
     </Card>
 
+    <!-- Vue Carte -->
+    <div v-if="viewMode === 'map'" class="space-y-4">
+      <PropertyMap
+        :properties="filteredProperties"
+        :selected-property-id="selectedPropertyId"
+        @property-click="handleMapPropertyClick"
+      />
+    </div>
+
     <!-- Pagination -->
-    <div class="flex items-center justify-between">
+    <div v-if="viewMode !== 'map'" class="flex items-center justify-between">
       <div class="text-sm text-muted-foreground">
         Affichage de {{ startIndex + 1 }} à {{ endIndex }} sur {{ total }}
       </div>
@@ -492,8 +509,10 @@ import {
   Grid3x3,
   List,
   CheckCircle,
-  Key
+  Key,
+  MapPin
 } from 'lucide-vue-next'
+import PropertyMap from '@/components/properties/PropertyMap.vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
 import { propertyService, organizationService, type Property, type Organization } from '@viridial/shared'
@@ -514,7 +533,8 @@ const surfaceMax = ref<number | ''>('')
 const surfaceRange = ref<number[]>([0, 500])
 const selectedBedrooms = ref<number | null>(null)
 const selectedBathrooms = ref<number | null>(null)
-const viewMode = ref<'grid' | 'list'>('grid')
+const viewMode = ref<'grid' | 'list' | 'map'>('grid')
+const selectedPropertyId = ref<number | null>(null)
 const sortBy = ref('createdAt')
 const currentPage = ref(1)
 const pageSize = 12
@@ -697,6 +717,12 @@ const openCreateDialog = () => {
 
 const viewProperty = (id: number) => {
   router.push(`/properties/${id}`)
+}
+
+const handleMapPropertyClick = (id: number) => {
+  selectedPropertyId.value = id
+  // Optionnel: ouvrir un dialog ou naviguer vers la page de détail
+  // viewProperty(id)
 }
 
 const editProperty = (id: number) => {

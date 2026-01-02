@@ -1,0 +1,17 @@
+{
+	"ulid": "01KDYYYW50KE9XWR3GRS100DRY",
+	"minTime": 1767333600875,
+	"maxTime": 1767340800000,
+	"stats": {
+		"numSamples": 426574,
+		"numSeries": 1038,
+		"numChunks": 2748
+	},
+	"compaction": {
+		"level": 1,
+		"sources": [
+			"01KDYYYW50KE9XWR3GRS100DRY"
+		]
+	},
+	"version": 1
+}

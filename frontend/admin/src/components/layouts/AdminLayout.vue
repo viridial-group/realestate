@@ -228,7 +228,9 @@ import {
   LogOut,
   CreditCard,
   FileSearch,
-  Workflow
+  Workflow,
+  BookOpen,
+  Package
 } from 'lucide-vue-next'
 import LanguageSelector from '@/components/shared/LanguageSelector.vue'
 
@@ -304,6 +306,13 @@ const navigationItems = computed(() => {
       requiresAdmin: true
     },
     {
+      name: 'plans',
+      label: t('plans.title', 'Plans d\'abonnement'),
+      path: '/plans',
+      icon: Package,
+      requiresAdmin: true
+    },
+    {
       name: 'audit',
       label: t('audit.title', 'Audit et Logs'),
       path: '/audit',
@@ -316,6 +325,12 @@ const navigationItems = computed(() => {
       path: '/notifications',
       icon: Bell,
       requiresAdmin: true
+    },
+    {
+      name: 'documentation',
+      label: t('documentation.title', 'Documentation'),
+      path: '/documentation',
+      icon: BookOpen
     }
   ]
 

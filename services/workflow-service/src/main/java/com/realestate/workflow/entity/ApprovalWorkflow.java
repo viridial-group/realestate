@@ -14,7 +14,8 @@ import java.util.List;
 @Table(name = "approval_workflows", indexes = {
     @Index(name = "idx_workflow_org", columnList = "organization_id"),
     @Index(name = "idx_workflow_action", columnList = "action"),
-    @Index(name = "idx_workflow_active", columnList = "active")
+    @Index(name = "idx_workflow_active", columnList = "active"),
+    @Index(name = "idx_workflow_status", columnList = "status")
 })
 public class ApprovalWorkflow {
 

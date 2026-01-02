@@ -11,6 +11,16 @@ export const workflowRoutes: RouteRecordRaw[] = [
       icon: 'Workflow',
       menu: true
     }
+  },
+  {
+    path: 'workflows/:id',
+    name: 'workflow-detail',
+    component: () => import('@/views/workflows/Detail.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: 'Détails du Workflow',
+      menu: false
+    }
   }
 ]
 

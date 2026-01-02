@@ -11,6 +11,8 @@
 SET session_replication_role = 'replica';
 
 -- Supprimer toutes les tables dans l'ordre inverse des dépendances
+DROP TABLE IF EXISTS tasks CASCADE;
+DROP TABLE IF EXISTS approval_workflows CASCADE;
 DROP TABLE IF EXISTS notification_subscriptions CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
@@ -61,6 +63,12 @@ SET session_replication_role = 'replica';
 -- Supprimer les données dans l'ordre inverse des dépendances (si les tables existent)
 DO $$
 BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tasks') THEN
+        TRUNCATE TABLE tasks CASCADE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'approval_workflows') THEN
+        TRUNCATE TABLE approval_workflows CASCADE;
+    END IF;
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notification_subscriptions') THEN
         TRUNCATE TABLE notification_subscriptions CASCADE;
     END IF;
@@ -2092,7 +2100,333 @@ WHERE ou.active = true
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- 13. CRÉER DES ABONNEMENTS AUX NOTIFICATIONS
+-- 13. CRÉER DES WORKFLOWS D'APPROBATION
+-- =====================================================
+
+-- Créer la table approval_workflows si elle n'existe pas
+CREATE TABLE IF NOT EXISTS approval_workflows (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    action VARCHAR(100) NOT NULL,
+    organization_id BIGINT NOT NULL,
+    created_by BIGINT NOT NULL,
+    target_type VARCHAR(100) NOT NULL,
+    target_id BIGINT,
+    steps TEXT,
+    required_roles TEXT,
+    active BOOLEAN NOT NULL DEFAULT true,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Créer la table tasks si elle n'existe pas
+CREATE TABLE IF NOT EXISTS tasks (
+    id BIGSERIAL PRIMARY KEY,
+    workflow_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description VARCHAR(2000),
+    type VARCHAR(100) NOT NULL DEFAULT 'REVIEW',
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM',
+    step_number INTEGER NOT NULL,
+    assigned_to BIGINT,
+    assigned_role VARCHAR(100),
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    due_date TIMESTAMP,
+    completed_at TIMESTAMP,
+    completed_by BIGINT,
+    comments VARCHAR(1000),
+    organization_id BIGINT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_task_workflow FOREIGN KEY (workflow_id) REFERENCES approval_workflows(id) ON DELETE CASCADE
+);
+
+-- Créer les index pour les workflows
+CREATE INDEX IF NOT EXISTS idx_workflow_org ON approval_workflows(organization_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_action ON approval_workflows(action);
+CREATE INDEX IF NOT EXISTS idx_workflow_active ON approval_workflows(active);
+CREATE INDEX IF NOT EXISTS idx_workflow_status ON approval_workflows(status);
+
+-- Créer les index pour les tâches
+CREATE INDEX IF NOT EXISTS idx_task_workflow ON tasks(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_task_assigned_to ON tasks(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_task_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_task_due_date ON tasks(due_date);
+
+-- Workflows pour Immobilier Paris
+INSERT INTO approval_workflows (name, description, action, organization_id, created_by, target_type, steps, required_roles, active, is_default, status, created_at, updated_at)
+SELECT 
+    'Validation création propriété', 
+    'Workflow d''approbation pour la création de nouvelles propriétés. Nécessite validation manager puis directeur.',
+    'PROPERTY_CREATE',
+    o.id,
+    u.id,
+    'PROPERTY',
+    '[{"step": 1, "name": "Vérification des informations", "role": "AGENT"}, {"step": 2, "name": "Validation Manager", "role": "MANAGER"}, {"step": 3, "name": "Approbation finale", "role": "DIRECTOR"}]',
+    '["AGENT", "MANAGER", "DIRECTOR"]',
+    true,
+    true,
+    'COMPLETED',
+    NOW() - INTERVAL '10 days',
+    NOW() - INTERVAL '10 days'
+FROM organizations o, users u
+WHERE o.name = 'Immobilier Paris' AND u.email = 'directeur@paris-immobilier.fr'
+UNION ALL SELECT 
+    'Modification propriété',
+    'Workflow pour modifier une propriété existante. Validation manager requise.',
+    'PROPERTY_UPDATE',
+    o.id,
+    u.id,
+    'PROPERTY',
+    '[{"step": 1, "name": "Révision des modifications", "role": "AGENT"}, {"step": 2, "name": "Validation Manager", "role": "MANAGER"}]',
+    '["AGENT", "MANAGER"]',
+    true,
+    true,
+    'IN_PROGRESS',
+    NOW() - INTERVAL '8 days',
+    NOW() - INTERVAL '8 days'
+FROM organizations o, users u
+WHERE o.name = 'Immobilier Paris' AND u.email = 'directeur@paris-immobilier.fr'
+UNION ALL SELECT 
+    'Upload document',
+    'Workflow pour l''upload de documents. Validation automatique pour les agents.',
+    'DOCUMENT_UPLOAD',
+    o.id,
+    u.id,
+    'DOCUMENT',
+    '[{"step": 1, "name": "Vérification du document", "role": "AGENT"}]',
+    '["AGENT"]',
+    true,
+    true,
+    'PENDING',
+    NOW() - INTERVAL '5 days',
+    NOW() - INTERVAL '5 days'
+FROM organizations o, users u
+WHERE o.name = 'Immobilier Paris' AND u.email = 'directeur@paris-immobilier.fr'
+ON CONFLICT DO NOTHING;
+
+-- Workflows pour Real Estate Lyon
+INSERT INTO approval_workflows (name, description, action, organization_id, created_by, target_type, steps, required_roles, active, is_default, status, created_at, updated_at)
+SELECT 
+    'Validation création propriété',
+    'Processus d''approbation pour nouvelles propriétés avec validation en 2 étapes.',
+    'PROPERTY_CREATE',
+    o.id,
+    u.id,
+    'PROPERTY',
+    '[{"step": 1, "name": "Saisie et vérification", "role": "AGENT"}, {"step": 2, "name": "Approbation Manager", "role": "MANAGER"}]',
+    '["AGENT", "MANAGER"]',
+    true,
+    true,
+    'PENDING',
+    NOW() - INTERVAL '7 days',
+    NOW() - INTERVAL '7 days'
+FROM organizations o, users u
+WHERE o.name = 'Real Estate Lyon' AND u.email = 'directeur@lyon-realestate.fr'
+UNION ALL SELECT 
+    'Suppression propriété',
+    'Workflow strict pour la suppression de propriétés. Nécessite double validation.',
+    'PROPERTY_DELETE',
+    o.id,
+    u.id,
+    'PROPERTY',
+    '[{"step": 1, "name": "Demande de suppression", "role": "AGENT"}, {"step": 2, "name": "Validation Manager", "role": "MANAGER"}, {"step": 3, "name": "Approbation finale Directeur", "role": "DIRECTOR"}]',
+    '["AGENT", "MANAGER", "DIRECTOR"]',
+    true,
+    true,
+    'PENDING',
+    NOW() - INTERVAL '6 days',
+    NOW() - INTERVAL '6 days'
+FROM organizations o, users u
+WHERE o.name = 'Real Estate Lyon' AND u.email = 'directeur@lyon-realestate.fr'
+ON CONFLICT DO NOTHING;
+
+-- Workflows pour Property Marseille
+INSERT INTO approval_workflows (name, description, action, organization_id, created_by, target_type, steps, required_roles, active, is_default, status, created_at, updated_at)
+SELECT 
+    'Validation création propriété',
+    'Workflow simplifié pour création de propriétés.',
+    'PROPERTY_CREATE',
+    o.id,
+    u.id,
+    'PROPERTY',
+    '[{"step": 1, "name": "Création et validation", "role": "AGENT"}]',
+    '["AGENT"]',
+    true,
+    true,
+    'CANCELLED',
+    NOW() - INTERVAL '4 days',
+    NOW() - INTERVAL '4 days'
+FROM organizations o, users u
+WHERE o.name = 'Property Marseille' AND u.email = 'directeur@marseille-property.fr'
+ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- 13.1. CRÉER DES TÂCHES POUR LES WORKFLOWS
+-- =====================================================
+
+-- Tâches pour le workflow de création de propriété (Immobilier Paris) - PROP-PARIS-001
+INSERT INTO tasks (workflow_id, title, description, type, priority, step_number, assigned_to, assigned_role, status, due_date, completed_at, completed_by, comments, organization_id, active, created_at, updated_at)
+SELECT 
+    w.id,
+    'Vérification des informations de la propriété',
+    'Vérifier que toutes les informations de la propriété PROP-PARIS-001 sont complètes et correctes.',
+    'REVIEW',
+    'MEDIUM',
+    1,
+    (SELECT id FROM users WHERE email = 'agent1@paris-immobilier.fr'),
+    'AGENT',
+    'APPROVED',
+    NOW() - INTERVAL '5 days',
+    NOW() - INTERVAL '4 days',
+    (SELECT id FROM users WHERE email = 'agent1@paris-immobilier.fr'),
+    'Toutes les informations vérifiées et validées.',
+    o.id,
+    true,
+    NOW() - INTERVAL '5 days',
+    NOW() - INTERVAL '4 days'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_CREATE' AND w.organization_id = o.id AND o.name = 'Immobilier Paris' AND w.is_default = true
+UNION ALL SELECT 
+    w.id,
+    'Validation Manager',
+    'Valider la création de la propriété PROP-PARIS-001.',
+    'APPROVAL',
+    'HIGH',
+    2,
+    (SELECT id FROM users WHERE email = 'manager@paris-immobilier.fr'),
+    'MANAGER',
+    'APPROVED',
+    NOW() - INTERVAL '4 days',
+    NOW() - INTERVAL '3 days',
+    (SELECT id FROM users WHERE email = 'manager@paris-immobilier.fr'),
+    'Propriété validée, conforme aux standards.',
+    o.id,
+    true,
+    NOW() - INTERVAL '4 days',
+    NOW() - INTERVAL '3 days'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_CREATE' AND w.organization_id = o.id AND o.name = 'Immobilier Paris' AND w.is_default = true
+UNION ALL SELECT 
+    w.id,
+    'Approbation finale Directeur',
+    'Approbation finale de la propriété PROP-PARIS-001.',
+    'APPROVAL',
+    'HIGH',
+    3,
+    (SELECT id FROM users WHERE email = 'directeur@paris-immobilier.fr'),
+    'DIRECTOR',
+    'APPROVED',
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '2 days',
+    (SELECT id FROM users WHERE email = 'directeur@paris-immobilier.fr'),
+    'Approuvé pour publication.',
+    o.id,
+    true,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '2 days'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_CREATE' AND w.organization_id = o.id AND o.name = 'Immobilier Paris' AND w.is_default = true
+ON CONFLICT DO NOTHING;
+
+-- Tâches en cours pour le workflow de modification (Immobilier Paris) - PROP-PARIS-002
+INSERT INTO tasks (workflow_id, title, description, type, priority, step_number, assigned_to, assigned_role, status, due_date, completed_at, completed_by, comments, organization_id, active, created_at, updated_at)
+SELECT 
+    w.id,
+    'Révision des modifications',
+    'Réviser les modifications apportées à la propriété PROP-PARIS-002.',
+    'REVIEW',
+    'MEDIUM',
+    1,
+    (SELECT id FROM users WHERE email = 'agent2@paris-immobilier.fr'),
+    'AGENT',
+    'IN_PROGRESS',
+    NOW() + INTERVAL '2 days',
+    NULL::TIMESTAMP,
+    NULL::BIGINT,
+    NULL,
+    o.id,
+    true,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_UPDATE' AND w.organization_id = o.id AND o.name = 'Immobilier Paris' AND w.is_default = true
+ON CONFLICT DO NOTHING;
+
+-- Tâches en attente pour Real Estate Lyon
+INSERT INTO tasks (workflow_id, title, description, type, priority, step_number, assigned_to, assigned_role, status, due_date, completed_at, completed_by, comments, organization_id, active, created_at, updated_at)
+SELECT 
+    w.id,
+    'Saisie et vérification',
+    'Saisir et vérifier les informations de la nouvelle propriété.',
+    'REVIEW',
+    'MEDIUM',
+    1,
+    (SELECT id FROM users WHERE email = 'agent1@lyon-realestate.fr'),
+    'AGENT',
+    'PENDING',
+    NOW() + INTERVAL '3 days',
+    NULL::TIMESTAMP,
+    NULL::BIGINT,
+    NULL,
+    o.id,
+    true,
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '2 days'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_CREATE' AND w.organization_id = o.id AND o.name = 'Real Estate Lyon' AND w.is_default = true
+UNION ALL SELECT 
+    w.id,
+    'Demande de suppression',
+    'Demande de suppression de la propriété PROP-LYON-001.',
+    'REVIEW',
+    'HIGH',
+    1,
+    (SELECT id FROM users WHERE email = 'agent2@lyon-realestate.fr'),
+    'AGENT',
+    'PENDING',
+    NOW() + INTERVAL '1 day',
+    NULL::TIMESTAMP,
+    NULL::BIGINT,
+    NULL,
+    o.id,
+    true,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_DELETE' AND w.organization_id = o.id AND o.name = 'Real Estate Lyon' AND w.is_default = true
+ON CONFLICT DO NOTHING;
+
+-- Tâche rejetée pour Property Marseille
+INSERT INTO tasks (workflow_id, title, description, type, priority, step_number, assigned_to, assigned_role, status, due_date, completed_at, completed_by, comments, organization_id, active, created_at, updated_at)
+SELECT 
+    w.id,
+    'Création et validation',
+    'Créer et valider la nouvelle propriété.',
+    'REVIEW',
+    'MEDIUM',
+    1,
+    (SELECT id FROM users WHERE email = 'agent1@marseille-property.fr'),
+    'AGENT',
+    'REJECTED',
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '2 days',
+    (SELECT id FROM users WHERE email = 'manager@marseille-property.fr'),
+    'Informations incomplètes. Veuillez compléter les champs manquants.',
+    o.id,
+    true,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '2 days'
+FROM approval_workflows w, organizations o
+WHERE w.action = 'PROPERTY_CREATE' AND w.organization_id = o.id AND o.name = 'Property Marseille' AND w.is_default = true
+ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- 14. CRÉER DES ABONNEMENTS AUX NOTIFICATIONS
 -- =====================================================
 
 -- Abonnements par défaut pour tous les utilisateurs (tous les types de notifications activés)
@@ -2148,7 +2482,7 @@ WHERE ou.active = true AND r.name IN ('ADMIN', 'DIRECTOR')
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- 14. RÉSUMÉ ET STATISTIQUES
+-- 15. RÉSUMÉ ET STATISTIQUES
 -- =====================================================
 
 DO $$
@@ -2167,6 +2501,8 @@ DECLARE
     payment_count INTEGER;
     notification_count INTEGER;
     notification_subscription_count INTEGER;
+    workflow_count INTEGER;
+    task_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO user_count FROM users;
     SELECT COUNT(*) INTO org_count FROM organizations;
@@ -2182,6 +2518,8 @@ BEGIN
     SELECT COUNT(*) INTO payment_count FROM payments;
     SELECT COUNT(*) INTO notification_count FROM notifications;
     SELECT COUNT(*) INTO notification_subscription_count FROM notification_subscriptions;
+    SELECT COUNT(*) INTO workflow_count FROM approval_workflows;
+    SELECT COUNT(*) INTO task_count FROM tasks;
     
     RAISE NOTICE '';
     RAISE NOTICE '═══════════════════════════════════════════════════════════';
@@ -2203,6 +2541,8 @@ BEGIN
     RAISE NOTICE '   • Paiements: %', payment_count;
     RAISE NOTICE '   • Notifications: %', notification_count;
     RAISE NOTICE '   • Abonnements aux notifications: %', notification_subscription_count;
+    RAISE NOTICE '   • Workflows d''approbation: %', workflow_count;
+    RAISE NOTICE '   • Tâches: %', task_count;
     RAISE NOTICE '';
     RAISE NOTICE '💰 PLANS DISPONIBLES:';
     RAISE NOTICE '   • FREE: 0€/mois (5 propriétés, 1 utilisateur)';

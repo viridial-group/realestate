@@ -113,31 +113,32 @@
         </CardContent>
       </Card>
 
-      <!-- Graphiques utilisateurs (garder les existants) -->
+      <!-- Graphiques utilisateurs -->
       <Card>
         <CardHeader>
           <CardTitle>{{ t('dashboard.usersByRole') }}</CardTitle>
+          <CardDescription>{{ t('dashboard.usersByRoleDescription', 'Répartition des utilisateurs par rôle') }}</CardDescription>
         </CardHeader>
         <CardContent>
           <div class="space-y-2">
             <div
-              v-for="(count, role) in {}"
+              v-for="(count, role) in usersByRole"
               :key="role"
               class="flex items-center justify-between"
             >
-              <span class="text-sm">{{ role }}</span>
+              <span class="text-sm">{{ getRoleLabel(role) }}</span>
               <div class="flex items-center space-x-2">
                 <div class="w-32 bg-secondary rounded-full h-2">
                   <div
-                    class="bg-primary h-2 rounded-full"
+                    class="bg-primary h-2 rounded-full transition-all"
                     :style="{ width: `${(count / (userStats.total || 1)) * 100}%` }"
                   ></div>
                 </div>
                 <span class="text-sm font-medium w-8 text-right">{{ count }}</span>
               </div>
             </div>
-            <div v-if="Object.keys({}).length === 0" class="text-sm text-muted-foreground text-center py-4">
-              Aucune donnée disponible
+            <div v-if="Object.keys(usersByRole).length === 0" class="text-sm text-muted-foreground text-center py-4">
+              {{ t('dashboard.noDataAvailable', 'Aucune donnée disponible') }}
             </div>
           </div>
         </CardContent>
@@ -146,27 +147,29 @@
       <Card>
         <CardHeader>
           <CardTitle>{{ t('dashboard.usersByStatus') }}</CardTitle>
+          <CardDescription>{{ t('dashboard.usersByStatusDescription', 'Répartition des utilisateurs par statut') }}</CardDescription>
         </CardHeader>
         <CardContent>
           <div class="space-y-2">
             <div
-              v-for="(count, status) in {}"
+              v-for="(count, status) in usersByStatus"
               :key="status"
               class="flex items-center justify-between"
             >
-              <span class="text-sm">{{ status }}</span>
+              <span class="text-sm">{{ getStatusLabel(status) }}</span>
               <div class="flex items-center space-x-2">
                 <div class="w-32 bg-secondary rounded-full h-2">
                   <div
-                    class="bg-primary h-2 rounded-full"
+                    class="h-2 rounded-full transition-all"
+                    :class="getStatusColorClass(status)"
                     :style="{ width: `${(count / (userStats.total || 1)) * 100}%` }"
                   ></div>
                 </div>
                 <span class="text-sm font-medium w-8 text-right">{{ count }}</span>
               </div>
             </div>
-            <div v-if="Object.keys({}).length === 0" class="text-sm text-muted-foreground text-center py-4">
-              Aucune donnée disponible
+            <div v-if="Object.keys(usersByStatus).length === 0" class="text-sm text-muted-foreground text-center py-4">
+              {{ t('dashboard.noDataAvailable', 'Aucune donnée disponible') }}
             </div>
           </div>
         </CardContent>
@@ -213,7 +216,7 @@
         </CardHeader>
         <CardContent>
           <div class="space-y-3">
-            <div v-for="activity in recentActivities" :key="activity.id" class="flex items-start gap-3">
+            <div v-for="activity in formattedActivities" :key="activity.id" class="flex items-start gap-3">
               <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <component :is="activity.icon" class="h-4 w-4 text-primary" />
               </div>
@@ -222,8 +225,8 @@
                 <p class="text-xs text-muted-foreground">{{ activity.time }}</p>
               </div>
             </div>
-            <div v-if="recentActivities.length === 0" class="text-sm text-muted-foreground text-center py-4">
-              Aucune activité récente
+            <div v-if="formattedActivities.length === 0" class="text-sm text-muted-foreground text-center py-4">
+              {{ t('dashboard.noRecentActivity', 'Aucune activité récente') }}
             </div>
           </div>
         </CardContent>
@@ -235,15 +238,17 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { statsService, propertyService, type Property, PropertyStatus, type DashboardStats } from '@viridial/shared'
+import { statsService, propertyService, userService, type Property, type DashboardStats, type User, UserStatus } from '@viridial/shared'
+import { auditService, type AuditLog } from '../../../shared/api/audit.service'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, UserCheck, Home, Building2, CreditCard, UserPlus, Plus } from 'lucide-vue-next'
+import { Users, UserCheck, Home, Building2, CreditCard, UserPlus, Plus, FileText, Settings } from 'lucide-vue-next'
 import PropertiesByTypeChart from '@/components/dashboard/PropertiesByTypeChart.vue'
 import PropertiesByStatusChart from '@/components/dashboard/PropertiesByStatusChart.vue'
 import PropertiesTimelineChart from '@/components/dashboard/PropertiesTimelineChart.vue'
 import PropertiesByCityChart from '@/components/dashboard/PropertiesByCityChart.vue'
 import { useToast } from '@/components/ui/toast'
+import { useAuthStore } from '@viridial/shared'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -252,6 +257,9 @@ const { toast } = useToast()
 const dashboardStats = ref<DashboardStats | null>(null)
 const loading = ref(false)
 const properties = ref<Property[]>([]) // Pour les graphiques qui nécessitent les données complètes
+const allUsers = ref<User[]>([]) // Pour calculer les statistiques par rôle et statut
+const recentActivities = ref<AuditLog[]>([]) // Activités récentes depuis l'API audit
+const authStore = useAuthStore()
 
 // Statistiques calculées depuis l'API optimisée
 const propertiesStats = computed(() => dashboardStats.value?.propertyStats || {
@@ -286,58 +294,75 @@ const organizationStats = computed(() => dashboardStats.value?.organizationStats
   newThisWeek: 0
 })
 
-// Pour les graphiques, on convertit les stats en format Property[]
-// On utilise les données byType et byStatus pour créer des propriétés virtuelles
-const propertiesForCharts = computed(() => {
-  // Si on a déjà chargé les propriétés complètes, on les utilise
-  if (properties.value.length > 0) {
-    return properties.value
-  }
-  
-  // Sinon, on crée des propriétés virtuelles depuis les statistiques
-  // pour que les graphiques fonctionnent
-  const virtualProperties: Property[] = []
-  const stats = dashboardStats.value?.propertyStats
-  
-  if (stats) {
-    // Créer des propriétés virtuelles par type
-    Object.entries(stats.byType).forEach(([type, count]) => {
-      for (let i = 0; i < count; i++) {
-        virtualProperties.push({
-          id: i,
-          type: type as any,
-          status: 'AVAILABLE' as any,
-          title: '',
-          price: 0,
-          createdAt: new Date().toISOString()
-        } as Property)
-      }
+
+// Statistiques utilisateurs par rôle et par statut (calculées depuis allUsers)
+const usersByRole = computed(() => {
+  const roleCounts: Record<string, number> = {}
+  allUsers.value.forEach(user => {
+    user.roles?.forEach(role => {
+      roleCounts[role] = (roleCounts[role] || 0) + 1
     })
-  }
-  
-  return virtualProperties
+  })
+  return roleCounts
 })
 
-const recentActivities = ref([
-  {
-    id: '1',
-    title: 'Nouvel utilisateur créé',
-    time: 'Il y a 5 minutes',
-    icon: UserPlus
-  },
-  {
-    id: '2',
-    title: 'Nouvelle propriété ajoutée',
-    time: 'Il y a 1 heure',
-    icon: Plus
-  },
-  {
-    id: '3',
-    title: 'Nouvelle organisation créée',
-    time: 'Il y a 2 heures',
-    icon: Plus
-  }
-])
+const usersByStatus = computed(() => {
+  const statusCounts: Record<string, number> = {}
+  allUsers.value.forEach(user => {
+    const status = user.status || UserStatus.ACTIVE
+    statusCounts[status] = (statusCounts[status] || 0) + 1
+  })
+  return statusCounts
+})
+
+// Formater les activités récentes pour l'affichage
+const formattedActivities = computed(() => {
+  return recentActivities.value.map((activity: AuditLog) => {
+    let icon = Plus
+    let title = activity.description || activity.action
+    
+    // Déterminer l'icône selon l'action
+    if (activity.action?.toLowerCase().includes('user') || activity.action?.toLowerCase().includes('utilisateur')) {
+      icon = UserPlus
+    } else if (activity.action?.toLowerCase().includes('property') || activity.action?.toLowerCase().includes('propriété')) {
+      icon = Home
+    } else if (activity.action?.toLowerCase().includes('organization') || activity.action?.toLowerCase().includes('organisation')) {
+      icon = Building2
+    } else if (activity.action?.toLowerCase().includes('document')) {
+      icon = FileText
+    } else if (activity.action?.toLowerCase().includes('config') || activity.action?.toLowerCase().includes('setting')) {
+      icon = Settings
+    }
+    
+    // Formater le temps
+    const createdAt = new Date(activity.createdAt)
+    const now = new Date()
+    const diffMs = now.getTime() - createdAt.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    
+    let time = ''
+    if (diffMins < 1) {
+      time = t('dashboard.justNow', 'À l\'instant')
+    } else if (diffMins < 60) {
+      time = t('dashboard.minutesAgo', { count: diffMins }, `Il y a ${diffMins} minute${diffMins > 1 ? 's' : ''}`)
+    } else if (diffHours < 24) {
+      time = t('dashboard.hoursAgo', { count: diffHours }, `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`)
+    } else if (diffDays < 7) {
+      time = t('dashboard.daysAgo', { count: diffDays }, `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`)
+    } else {
+      time = createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    }
+    
+    return {
+      id: activity.id.toString(),
+      title,
+      time,
+      icon
+    }
+  })
+})
 
 // Charger toutes les statistiques depuis l'API optimisée
 const loadDashboardStats = async () => {
@@ -346,13 +371,31 @@ const loadDashboardStats = async () => {
     dashboardStats.value = stats
     
     // Charger aussi les propriétés complètes pour les graphiques détaillés
-    // (optionnel, peut être fait en lazy loading si nécessaire)
     try {
       const allProperties = await propertyService.getAll()
       properties.value = allProperties
     } catch (error) {
       console.warn('Could not load full properties list for charts:', error)
-      // On continue sans les propriétés complètes, les graphiques utiliseront les stats
+    }
+    
+    // Charger tous les utilisateurs pour calculer les statistiques par rôle et statut
+    try {
+      const usersData = await userService.getAll({ size: 1000 }) // Charger jusqu'à 1000 utilisateurs
+      allUsers.value = usersData.users
+    } catch (error) {
+      console.warn('Could not load users for statistics:', error)
+    }
+    
+    // Charger les activités récentes depuis l'API audit
+    try {
+      const currentOrgId = authStore.user?.organizationId
+      if (currentOrgId) {
+        const activities = await auditService.getRecentActivities(currentOrgId, 10)
+        recentActivities.value = activities
+      }
+    } catch (error) {
+      console.warn('Could not load recent activities:', error)
+      // Continuer sans les activités récentes
     }
   } catch (error: any) {
     console.error('Error loading dashboard stats:', error)
@@ -362,6 +405,42 @@ const loadDashboardStats = async () => {
       variant: 'destructive'
     })
   }
+}
+
+// Fonctions utilitaires pour les labels
+const getRoleLabel = (role: string): string => {
+  const roleLabels: Record<string, string> = {
+    'ADMIN': t('users.roles.admin', 'Admin'),
+    'AGENT': t('users.roles.agent', 'Agent'),
+    'FREELANCE': t('users.roles.freelance', 'Freelance'),
+    'AUTO_ENTREPRENEUR': t('users.roles.autoEntrepreneur', 'Auto-entrepreneur'),
+    'PARTICULAR': t('users.roles.particular', 'Particulier'),
+    'USER': t('users.roles.user', 'Utilisateur'),
+    'SUPER_ADMIN': t('users.roles.superAdmin', 'Super Admin')
+  }
+  return roleLabels[role] || role
+}
+
+const getStatusLabel = (status: string): string => {
+  const statusLabels: Record<string, string> = {
+    'ACTIVE': t('users.active', 'Actif'),
+    'INACTIVE': t('users.inactive', 'Inactif'),
+    'SUSPENDED': t('users.suspended', 'Suspendu'),
+    'PENDING': t('users.pending', 'En attente'),
+    'DELETED': t('users.deleted', 'Supprimé')
+  }
+  return statusLabels[status] || status
+}
+
+const getStatusColorClass = (status: string): string => {
+  const colorClasses: Record<string, string> = {
+    'ACTIVE': 'bg-green-500',
+    'INACTIVE': 'bg-gray-500',
+    'SUSPENDED': 'bg-red-500',
+    'PENDING': 'bg-yellow-500',
+    'DELETED': 'bg-gray-400'
+  }
+  return colorClasses[status] || 'bg-primary'
 }
 
 onMounted(async () => {

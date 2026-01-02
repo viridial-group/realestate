@@ -11,7 +11,25 @@ export { organizationService } from './api/organization.service'
 export { documentService } from './api/document.service'
 export { statsService } from './api/stats.service'
 export { billingService } from './api/billing.service'
+export { planService } from './api/plan.service'
 export { notificationService } from './api/notification.service'
+export { auditService } from './api/audit.service'
+export type { AuditLog, AuditLogSearchParams, AuditLogPage } from './api/audit.service'
+export { workflowService } from './api/workflow.service'
+export { TaskStatusEnum } from './types/workflow.types'
+export type {
+  Workflow,
+  WorkflowCreate,
+  WorkflowUpdate,
+  WorkflowSearchParams,
+  Task,
+  TaskCreate,
+  TaskUpdate,
+  TaskSearchParams,
+  TaskApproveParams,
+  TaskRejectParams,
+  TaskStatus
+} from './types/workflow.types'
 export type {
   Organization,
   OrganizationCreate,
@@ -41,6 +59,7 @@ export type * from './types/document.types'
 export type * from './types/stats.types'
 export type * from './types/billing.types'
 export type * from './types/notification.types'
+export type * from './types/workflow.types'
 
 // Enums from property.types (exported as values, not types)
 export { PropertyType, PropertyStatus } from './types/property.types'

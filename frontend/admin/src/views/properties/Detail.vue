@@ -412,7 +412,7 @@
             <CardHeader>
               <CardTitle>Localisation</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent class="space-y-4">
               <div class="space-y-2">
                 <div class="flex items-start gap-2">
                   <MapPin class="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -422,6 +422,17 @@
                     <p class="text-sm text-muted-foreground">{{ property.country }}</p>
                   </div>
                 </div>
+              </div>
+              <!-- Carte -->
+              <div v-if="hasLocation" class="mt-4">
+                <PropertyMap
+                  :properties="[property]"
+                  :selected-property-id="property.id"
+                />
+              </div>
+              <div v-else class="mt-4 p-4 bg-muted/50 rounded-lg text-center text-sm text-muted-foreground">
+                <MapPin class="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Coordonnées GPS non disponibles pour cette propriété</p>
               </div>
             </CardContent>
           </Card>
@@ -536,6 +547,7 @@ import {
   Loader2
 } from 'lucide-vue-next'
 import { propertyService, documentService, organizationService, type Property, PropertyType, PropertyStatus, type PropertyFeature } from '@viridial/shared'
+import PropertyMap from '@/components/properties/PropertyMap.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -551,6 +563,13 @@ const organizationName = ref<string | null>(null)
 const assignedUserName = ref<string | null>(null)
 
 const propertyId = computed(() => Number(route.params.id))
+
+const hasLocation = computed(() => {
+  return property.value?.latitude != null && 
+         property.value?.longitude != null && 
+         !isNaN(property.value.latitude) && 
+         !isNaN(property.value.longitude)
+})
 
 onMounted(() => {
   loadProperty()
@@ -767,13 +786,7 @@ const getTypeLabel = (type: PropertyType | string) => {
     [PropertyType.VILLA]: 'Villa',
     [PropertyType.LAND]: 'Terrain',
     [PropertyType.COMMERCIAL]: 'Commercial',
-    [PropertyType.OTHER]: 'Autre',
-    'APARTMENT': 'Appartement',
-    'HOUSE': 'Maison',
-    'VILLA': 'Villa',
-    'LAND': 'Terrain',
-    'COMMERCIAL': 'Commercial',
-    'OTHER': 'Autre'
+    [PropertyType.OTHER]: 'Autre'
   }
   return labels[typeStr] || typeStr
 }

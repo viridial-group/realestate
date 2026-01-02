@@ -119,7 +119,8 @@
                 <Label for="fullBathrooms">Salles de bain complètes</Label>
                 <Input
                   id="fullBathrooms"
-                  v-model.number="form.fullBathrooms"
+                  v-model.number="fullBathrooms"
+                  v-bind="fullBathroomsAttrs"
                   type="number"
                   min="0"
                   placeholder="0"
@@ -130,7 +131,8 @@
                 <Label for="area">Surface (m²)</Label>
                 <Input
                   id="area"
-                  v-model.number="form.area"
+                  v-model.number="area"
+                  v-bind="areaAttrs"
                   type="number"
                   min="0"
                   step="0.01"
@@ -149,7 +151,8 @@
                 <Label for="totalStructureArea">Surface totale structure (m²)</Label>
                 <Input
                   id="totalStructureArea"
-                  v-model.number="form.totalStructureArea"
+                  v-model.number="totalStructureArea"
+                  v-bind="totalStructureAreaAttrs"
                   type="number"
                   min="0"
                   step="0.01"
@@ -161,7 +164,8 @@
                 <Label for="totalInteriorLivableArea">Surface habitable intérieure (m²)</Label>
                 <Input
                   id="totalInteriorLivableArea"
-                  v-model.number="form.totalInteriorLivableArea"
+                  v-model.number="totalInteriorLivableArea"
+                  v-bind="totalInteriorLivableAreaAttrs"
                   type="number"
                   min="0"
                   step="0.01"
@@ -325,7 +329,8 @@
                 <Label for="yearBuilt">Année de construction</Label>
                 <Input
                   id="yearBuilt"
-                  v-model.number="form.yearBuilt"
+                  v-model.number="yearBuilt"
+                  v-bind="yearBuiltAttrs"
                   type="number"
                   min="1800"
                   :max="new Date().getFullYear()"
@@ -395,7 +400,8 @@
                 <Label for="hoaFee">Frais HOA</Label>
                 <Input
                   id="hoaFee"
-                  v-model.number="form.hoaFee"
+                  v-model.number="hoaFee"
+                  v-bind="hoaFeeAttrs"
                   type="number"
                   min="0"
                   step="0.01"
@@ -572,74 +578,90 @@ const isEdit = computed(() => !!propertyId.value)
 const loading = ref(false)
 const submitting = ref(false)
 
-const form = ref<PropertyCreate & { 
-  status?: PropertyStatus
-  fullBathrooms?: number
-  appliancesIncluded?: string
-  laundryLocation?: string
-  totalStructureArea?: number
-  totalInteriorLivableArea?: number
-  virtualTourUrl?: string
-  parkingFeatures?: string
-  hasGarage?: boolean
-  accessibilityFeatures?: string
-  patioPorch?: string
-  exteriorFeatures?: string
-  specialConditions?: string
-  homeType?: string
-  propertySubtype?: string
-  condition?: string
-  yearBuilt?: number
-  subdivision?: string
-  hasHOA?: boolean
-  hoaAmenities?: string
-  hoaServices?: string
-  hoaFee?: number
-  hoaFeeFrequency?: string
-  region?: string
-  pricePerSquareFoot?: number
-  dateOnMarket?: string
-}>({
-  title: '',
-  description: '',
-  price: 0,
-  address: '',
-  city: '',
-  country: '',
-  propertyType: PropertyType.APARTMENT,
-  bedrooms: undefined,
-  bathrooms: undefined,
-  area: undefined,
-  images: [],
-  status: PropertyStatus.DRAFT,
-  fullBathrooms: undefined,
-  appliancesIncluded: undefined,
-  laundryLocation: undefined,
-  totalStructureArea: undefined,
-  totalInteriorLivableArea: undefined,
-  virtualTourUrl: undefined,
-  parkingFeatures: undefined,
-  hasGarage: false,
-  accessibilityFeatures: undefined,
-  patioPorch: undefined,
-  exteriorFeatures: undefined,
-  specialConditions: undefined,
-  homeType: undefined,
-  propertySubtype: undefined,
-  condition: undefined,
-  yearBuilt: undefined,
-  subdivision: undefined,
-  hasHOA: false,
-  hoaAmenities: undefined,
-  hoaServices: undefined,
-  hoaFee: undefined,
-  hoaFeeFrequency: undefined,
-  region: undefined,
-  pricePerSquareFoot: undefined,
-  dateOnMarket: undefined
+const { handleSubmit, defineField, errors, setValues, values } = useForm<PropertyFormData>({
+  validationSchema: toTypedSchema(propertySchema),
+  initialValues: {
+    title: '',
+    description: '',
+    price: 0,
+    address: '',
+    city: '',
+    country: '',
+    propertyType: PropertyType.APARTMENT,
+    bedrooms: undefined,
+    bathrooms: undefined,
+    area: undefined,
+    images: [],
+    status: PropertyStatus.DRAFT,
+    fullBathrooms: undefined,
+    appliancesIncluded: undefined,
+    laundryLocation: undefined,
+    totalStructureArea: undefined,
+    totalInteriorLivableArea: undefined,
+    virtualTourUrl: undefined,
+    parkingFeatures: undefined,
+    hasGarage: false,
+    accessibilityFeatures: undefined,
+    patioPorch: undefined,
+    exteriorFeatures: undefined,
+    specialConditions: undefined,
+    homeType: undefined,
+    propertySubtype: undefined,
+    condition: undefined,
+    yearBuilt: undefined,
+    subdivision: undefined,
+    hasHOA: false,
+    hoaAmenities: undefined,
+    hoaServices: undefined,
+    hoaFee: undefined,
+    hoaFeeFrequency: undefined,
+    region: undefined,
+    pricePerSquareFoot: undefined,
+    dateOnMarket: undefined
+  }
 })
 
-const errors = ref<Record<string, string>>({})
+// Define fields with v-model support
+const [title, titleAttrs] = defineField('title')
+const [description, descriptionAttrs] = defineField('description')
+const [price, priceAttrs] = defineField('price')
+const [address, addressAttrs] = defineField('address')
+const [city, cityAttrs] = defineField('city')
+const [country, countryAttrs] = defineField('country')
+const [propertyType, propertyTypeAttrs] = defineField('propertyType')
+const [bedrooms, bedroomsAttrs] = defineField('bedrooms')
+const [bathrooms, bathroomsAttrs] = defineField('bathrooms')
+const [area, areaAttrs] = defineField('area')
+const [status, statusAttrs] = defineField('status')
+const [fullBathrooms, fullBathroomsAttrs] = defineField('fullBathrooms')
+const [appliancesIncluded, appliancesIncludedAttrs] = defineField('appliancesIncluded')
+const [laundryLocation, laundryLocationAttrs] = defineField('laundryLocation')
+const [totalStructureArea, totalStructureAreaAttrs] = defineField('totalStructureArea')
+const [totalInteriorLivableArea, totalInteriorLivableAreaAttrs] = defineField('totalInteriorLivableArea')
+const [virtualTourUrl, virtualTourUrlAttrs] = defineField('virtualTourUrl')
+const [parkingFeatures, parkingFeaturesAttrs] = defineField('parkingFeatures')
+const [hasGarage, hasGarageAttrs] = defineField('hasGarage')
+const [accessibilityFeatures, accessibilityFeaturesAttrs] = defineField('accessibilityFeatures')
+const [patioPorch, patioPorchAttrs] = defineField('patioPorch')
+const [exteriorFeatures, exteriorFeaturesAttrs] = defineField('exteriorFeatures')
+const [specialConditions, specialConditionsAttrs] = defineField('specialConditions')
+const [homeType, homeTypeAttrs] = defineField('homeType')
+const [propertySubtype, propertySubtypeAttrs] = defineField('propertySubtype')
+const [condition, conditionAttrs] = defineField('condition')
+const [yearBuilt, yearBuiltAttrs] = defineField('yearBuilt')
+const [subdivision, subdivisionAttrs] = defineField('subdivision')
+const [hasHOA, hasHOAAttrs] = defineField('hasHOA')
+const [hoaAmenities, hoaAmenitiesAttrs] = defineField('hoaAmenities')
+const [hoaServices, hoaServicesAttrs] = defineField('hoaServices')
+const [hoaFee, hoaFeeAttrs] = defineField('hoaFee')
+const [hoaFeeFrequency, hoaFeeFrequencyAttrs] = defineField('hoaFeeFrequency')
+const [region, regionAttrs] = defineField('region')
+const [pricePerSquareFoot, pricePerSquareFootAttrs] = defineField('pricePerSquareFoot')
+const [dateOnMarket, dateOnMarketAttrs] = defineField('dateOnMarket')
+
+// Keep form as computed for backward compatibility with template
+const form = computed(() => values)
+
 const imageUploadRef = ref<InstanceType<typeof ImageUpload>>()
 
 onMounted(async () => {

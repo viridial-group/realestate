@@ -83,6 +83,25 @@ export const API_ENDPOINTS = {
     MARK_READ: (id: number) => `/api/notifications/${id}/read`,
     MARK_ARCHIVED: (id: number) => `/api/notifications/${id}/archive`,
     UNREAD_COUNT: '/api/notifications/unread/count'
+  },
+  // Audit
+  AUDIT: {
+    BASE: '/api/audit',
+    BY_ID: (id: number) => `/api/audit/${id}`,
+    BY_TARGET: '/api/audit/target'
+  },
+  // Workflows
+  WORKFLOWS: {
+    BASE: '/api/workflows',
+    BY_ID: (id: number) => `/api/workflows/${id}`,
+    DEFAULT: '/api/workflows/default',
+    START: (id: number) => `/api/workflows/${id}/start`,
+    TASKS: {
+      BASE: '/api/workflows/tasks',
+      BY_ID: (id: number) => `/api/workflows/tasks/${id}`,
+      APPROVE: (id: number) => `/api/workflows/tasks/${id}/approve`,
+      REJECT: (id: number) => `/api/workflows/tasks/${id}/reject`
+    }
   }
 } as const
 

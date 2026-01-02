@@ -42,10 +42,43 @@ export interface Plan {
   description?: string
   price: number
   currency: string
-  billingCycle: 'MONTHLY' | 'YEARLY'
+  billingPeriod: 'MONTHLY' | 'YEARLY'
+  maxProperties?: number
+  maxUsers?: number
+  maxStorageGb?: number
   features?: string[] | string // Peut être un tableau ou une chaîne JSON
-  quotas?: Record<string, number>
   active: boolean
+  isDefault?: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface PlanCreate {
+  name: string
+  description?: string
+  price: number
+  currency?: string
+  billingPeriod?: 'MONTHLY' | 'YEARLY'
+  maxProperties?: number
+  maxUsers?: number
+  maxStorageGb?: number
+  features?: string[] | string
+  active?: boolean
+  isDefault?: boolean
+}
+
+export interface PlanUpdate {
+  name?: string
+  description?: string
+  price?: number
+  currency?: string
+  billingPeriod?: 'MONTHLY' | 'YEARLY'
+  maxProperties?: number
+  maxUsers?: number
+  maxStorageGb?: number
+  features?: string[] | string
+  active?: boolean
+  isDefault?: boolean
 }
 
 export interface BillingStats {

@@ -81,6 +81,9 @@ public class WorkflowService {
         if (workflowDetails.getIsDefault() != null) {
             workflow.setIsDefault(workflowDetails.getIsDefault());
         }
+        if (workflowDetails.getStatus() != null) {
+            workflow.setStatus(workflowDetails.getStatus());
+        }
 
         return workflowRepository.save(workflow);
     }

@@ -26,6 +26,7 @@ public class WorkflowDTO {
     private String requiredRoles; // JSON
     private Boolean active = true;
     private Boolean isDefault = false;
+    private String status = "PENDING"; // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -127,6 +128,14 @@ public class WorkflowDTO {
 
     public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreatedAt() {
