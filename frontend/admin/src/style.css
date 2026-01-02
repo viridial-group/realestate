@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Roboto Font - SaaS Optimized Configuration */
+/* Google Fonts CDN handles @font-face declarations automatically */
+/* Using font-display: swap via Google Fonts URL parameter for optimal performance */
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -10,10 +14,12 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    /* Primary: Purple/Violet vif comme dans les images */
+    --primary: 270 91% 65%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Pink/Rose vif */
+    --secondary: 330 81% 60%;
+    --secondary-foreground: 210 40% 98%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
@@ -22,13 +28,20 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 270 91% 65%;
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Couleurs pour les graphiques - palette vibrante */
+    --chart-1: 270 91% 65%; /* Purple */
+    --chart-2: 330 81% 60%; /* Pink */
+    --chart-3: 25 95% 53%; /* Orange */
+    --chart-4: 195 100% 50%; /* Cyan/Blue */
+    --chart-5: 142 76% 36%; /* Green */
+    --chart-6: 0 84% 60%; /* Red/Coral */
+    /* Couleurs supplémentaires pour les statuts */
+    --success: 142 76% 36%;
+    --warning: 25 95% 53%;
+    --info: 195 100% 50%;
+    --danger: 0 84% 60%;
   }
 
   .dark {
@@ -38,9 +51,11 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    /* Primary: Purple plus clair pour dark mode */
+    --primary: 270 85% 70%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    /* Secondary: Pink plus clair pour dark mode */
+    --secondary: 330 75% 65%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -50,12 +65,19 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --ring: 270 85% 70%;
+    /* Couleurs pour les graphiques - palette vibrante (dark mode) */
+    --chart-1: 270 85% 70%; /* Purple */
+    --chart-2: 330 75% 65%; /* Pink */
+    --chart-3: 25 90% 58%; /* Orange */
+    --chart-4: 195 95% 55%; /* Cyan/Blue */
+    --chart-5: 142 70% 41%; /* Green */
+    --chart-6: 0 78% 65%; /* Red/Coral */
+    /* Couleurs supplémentaires pour les statuts */
+    --success: 142 70% 41%;
+    --warning: 25 90% 58%;
+    --info: 195 95% 55%;
+    --danger: 0 78% 65%;
   }
 }
 
@@ -63,8 +85,158 @@
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    /* Roboto as primary font with system font fallbacks for SaaS reliability */
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 0.875rem; /* 14px - base font size comme Bootstrap Vyzor */
+    line-height: 1.5;
+    font-weight: 400;
+    /* Optimize font rendering for SaaS applications */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Typography - Tailles basées sur Bootstrap Vyzor */
+  h1, .h1 {
+    font-size: 2.5rem; /* 40px */
+    line-height: 1.2;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  h2, .h2 {
+    font-size: 2rem; /* 32px */
+    line-height: 1.3;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  h3, .h3 {
+    font-size: 1.75rem; /* 28px */
+    line-height: 1.4;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  h4, .h4 {
+    font-size: 1.5rem; /* 24px */
+    line-height: 1.4;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  h5, .h5 {
+    font-size: 1.25rem; /* 20px */
+    line-height: 1.5;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  h6, .h6 {
+    font-size: 1rem; /* 16px */
+    line-height: 1.5;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  small, .small {
+    font-size: 0.75rem; /* 12px */
+    line-height: 1.5;
+  }
+
+  .text-xs {
+    font-size: 0.625rem; /* 10px */
+    line-height: 1.5;
+  }
+
+  .text-sm {
+    font-size: 0.75rem; /* 12px */
+    line-height: 1.5;
+  }
+
+  .text-base {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.5;
+  }
+
+  .text-lg {
+    font-size: 1rem; /* 16px */
+    line-height: 1.5;
+  }
+
+  .text-xl {
+    font-size: 1.125rem; /* 18px */
+    line-height: 1.5;
+  }
+
+  .text-2xl {
+    font-size: 1.5rem; /* 24px */
+    line-height: 1.4;
+  }
+
+  .text-3xl {
+    font-size: 2rem; /* 32px */
+    line-height: 1.3;
+  }
+
+  .text-4xl {
+    font-size: 2.5rem; /* 40px */
+    line-height: 1.2;
+  }
+
+  /* Font weights */
+  .font-light {
+    font-weight: 300;
+  }
+
+  .font-normal {
+    font-weight: 400;
+  }
+
+  .font-medium {
+    font-weight: 500;
+  }
+
+  .font-semibold {
+    font-weight: 600;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  /* Line heights */
+  .leading-none {
+    line-height: 1;
+  }
+
+  .leading-tight {
+    line-height: 1.25;
+  }
+
+  .leading-snug {
+    line-height: 1.375;
+  }
+
+  .leading-normal {
+    line-height: 1.5;
+  }
+
+  .leading-relaxed {
+    line-height: 1.625;
+  }
+
+  .leading-loose {
+    line-height: 2;
   }
 }
 

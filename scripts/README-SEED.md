@@ -49,14 +49,45 @@ Ouvrez le fichier `scripts/seed-database.sql` et exécutez-le dans votre client 
 
 ## 🔑 Comptes de Test
 
-Tous les utilisateurs ont le mot de passe : **`password123`**
+### Compte Admin Principal :
+- **Email** : `admin@viridial.com`
+- **Password** : `admin123`
+
+### Autres utilisateurs :
+Tous les autres utilisateurs ont le mot de passe : **`password123`**
 
 ### Comptes principaux :
 
-- **Admin** : `admin@viridial.com`
-- **Directeur Paris** : `directeur@paris-immobilier.fr`
-- **Manager Lyon** : `manager@lyon-realestate.fr`
-- **Agent Marseille** : `agent1@marseille-property.fr`
+- **Admin** : `admin@viridial.com` (password: `admin123`)
+- **Directeur Paris** : `directeur@paris-immobilier.fr` (password: `password123`)
+- **Manager Lyon** : `manager@lyon-realestate.fr` (password: `password123`)
+- **Agent Marseille** : `agent1@marseille-property.fr` (password: `password123`)
+
+## 🔐 Génération de Hash de Mots de Passe
+
+Pour générer de nouveaux hash BCrypt pour vos scripts SQL, vous pouvez utiliser :
+
+### Option 1: Via le service Identity Service (Recommandé)
+
+```bash
+# Utiliser le script helper
+./scripts/generate-password-hash.sh "votre-mot-de-passe"
+
+# Ou directement via curl
+curl -X POST http://localhost:8081/api/identity/utils/password-hash \
+  -H "Content-Type: application/json" \
+  -d '{"password": "votre-mot-de-passe"}'
+```
+
+### Option 2: Via l'ancien script (si disponible)
+
+```bash
+./scripts/generate-bcrypt-hash.sh "votre-mot-de-passe"
+```
+
+### Option 3: En ligne
+
+Utilisez un générateur BCrypt en ligne comme https://bcrypt-generator.com/
 
 ### Liste complète des emails :
 

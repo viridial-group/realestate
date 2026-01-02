@@ -24,27 +24,41 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('ACTIVE')">
-        <CardHeader class="pb-2">
+      <!-- Organisations Actives Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #33d484;" @click="filterByStatus('ACTIVE')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Organisations Actives</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(51, 212, 132, 0.1);">
+            <CheckCircle class="h-5 w-5" style="color: #33d484;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-green-600">{{ stats.active || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #33d484;">{{ stats.active || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">En activité</p>
         </CardContent>
       </Card>
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('INACTIVE')">
-        <CardHeader class="pb-2">
+      
+      <!-- Inactives Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #fdb022;" @click="filterByStatus('INACTIVE')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Inactives</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(253, 176, 34, 0.1);">
+            <XCircle class="h-5 w-5" style="color: #fdb022;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-gray-600">{{ stats.inactive || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #fdb022;">{{ stats.inactive || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">Inactives</p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Total Card -->
+      <Card class="relative overflow-hidden border-l-4" style="border-left-color: #04c9ff;">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Total</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(4, 201, 255, 0.1);">
+            <Building2 class="h-5 w-5" style="color: #04c9ff;" />
+          </div>
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">{{ stats.total || 0 }}</div>

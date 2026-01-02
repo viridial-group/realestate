@@ -177,6 +177,10 @@ export default {
     info: 'Information',
     new: 'Nouveau'
   },
+  workflows: {
+    title: 'Workflows',
+    description: 'Gérez les workflows d\'approbation'
+  },
   validation: {
     required: 'Ce champ est requis',
     email: 'Format d\'email invalide',

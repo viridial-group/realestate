@@ -4,6 +4,7 @@ import com.realestate.common.event.PropertyCreatedEvent;
 import com.realestate.common.event.PropertyUpdatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -12,8 +13,10 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Service for publishing property-related events to Kafka.
+ * Conditionnel : ne sera créé que si KafkaTemplate bean existe (Kafka configuré)
  */
 @Service
+@ConditionalOnBean(KafkaTemplate.class)
 public class PropertyEventProducer {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyEventProducer.class);

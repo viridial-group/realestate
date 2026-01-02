@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold">Audit et Logs</h1>
+        <h1 class="text-2.5xl font-bold">Audit et Logs</h1>
         <p class="text-muted-foreground mt-1">Historique des actions et événements système</p>
       </div>
       <div class="flex gap-2">

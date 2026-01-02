@@ -23,8 +23,16 @@ if command -v docker &> /dev/null; then
         # Créer le réseau si nécessaire
         docker network create realestate-network 2>/dev/null || true
         
-        # Démarrer Zookeeper (requis pour Kafka < 3.0 ou avec Confluent)
-        if ! docker ps | grep -q "realestate-zookeeper"; then
+        # Gérer Zookeeper (supprimer si arrêté, redémarrer si nécessaire)
+        if docker ps | grep -q "realestate-zookeeper"; then
+            echo "✅ Zookeeper est déjà démarré"
+        else
+            # Supprimer le conteneur arrêté s'il existe
+            if docker ps -a | grep -q "realestate-zookeeper"; then
+                echo "🛑 Suppression du conteneur Zookeeper arrêté..."
+                docker rm realestate-zookeeper 2>/dev/null || true
+            fi
+            
             echo "🔄 Démarrage de Zookeeper..."
             docker run -d \
                 --name realestate-zookeeper \
@@ -34,6 +42,14 @@ if command -v docker &> /dev/null; then
                 -e ZOOKEEPER_TICK_TIME=2000 \
                 confluentinc/cp-zookeeper:7.5.0
             sleep 5
+        fi
+        
+        # Gérer Kafka (supprimer si arrêté, redémarrer si nécessaire)
+        if docker ps -a | grep -q "realestate-kafka"; then
+            if ! docker ps | grep -q "realestate-kafka"; then
+                echo "🛑 Suppression du conteneur Kafka arrêté..."
+                docker rm realestate-kafka 2>/dev/null || true
+            fi
         fi
         
         # Démarrer Kafka
@@ -58,7 +74,7 @@ if command -v docker &> /dev/null; then
             echo "📍 Bootstrap servers: localhost:9092"
         else
             echo "❌ Erreur lors du démarrage de Kafka"
-            docker logs realestate-kafka
+            docker logs realestate-kafka 2>/dev/null || echo "   (logs non disponibles)"
             exit 1
         fi
     fi

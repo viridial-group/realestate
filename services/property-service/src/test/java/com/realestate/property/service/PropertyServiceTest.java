@@ -63,10 +63,11 @@ class PropertyServiceTest {
     @Test
     void testCreateProperty_Success() {
         // Given
+        String authToken = "test-token";
         when(propertyRepository.save(any(Property.class))).thenReturn(testProperty);
 
         // When
-        Property result = propertyService.createProperty(testProperty);
+        Property result = propertyService.createProperty(testProperty, authToken);
 
         // Then
         assertNotNull(result);

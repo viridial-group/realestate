@@ -1,8 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { authGuard, guestGuard } from './guards/auth.guard'
-import { adminGuard } from './guards/role.guard'
+import { authGuard } from './guards/auth.guard'
 import { AdminLayout, AuthLayout } from './layouts'
+
+// Import modular routes
+import { dashboardRoutes } from './routes/dashboard.routes'
+import { userRoutes } from './routes/users.routes'
+import { propertyRoutes } from './routes/properties.routes'
+import { organizationRoutes } from './routes/organizations.routes'
+import { billingRoutes } from './routes/billing.routes'
+import { auditRoutes } from './routes/audit.routes'
+import { notificationRoutes } from './routes/notifications.routes'
+import { workflowRoutes } from './routes/workflows.routes'
+import { authRoutes } from './routes/auth.routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -10,165 +20,20 @@ const routes: RouteRecordRaw[] = [
     component: AdminLayout,
     beforeEnter: authGuard,
     children: [
-      {
-        path: '',
-        name: 'home',
-        component: () => import('@/views/Dashboard.vue'),
-        meta: { 
-          requiresAuth: true,
-          title: 'Dashboard'
-        }
-      },
-      {
-        path: 'users',
-        name: 'users',
-        component: () => import('@/views/users/Index.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Gestion des Utilisateurs'
-        },
-        beforeEnter: adminGuard
-      },
-      {
-        path: 'users/:id',
-        name: 'user-detail',
-        component: () => import('@/views/users/Detail.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Détails de l\'utilisateur'
-        },
-        beforeEnter: adminGuard
-      },
-      {
-        path: 'properties',
-        name: 'properties',
-        component: () => import('@/views/properties/Index.vue'),
-        meta: { 
-          requiresAuth: true,
-          title: 'Gestion des Propriétés'
-        }
-      },
-      {
-        path: 'properties/:id',
-        name: 'property-detail',
-        component: () => import('@/views/properties/Detail.vue'),
-        meta: { 
-          requiresAuth: true,
-          title: 'Détails de la propriété'
-        }
-      },
-      {
-        path: 'properties/new',
-        name: 'property-create',
-        component: () => import('@/views/properties/Form.vue'),
-        meta: { 
-          requiresAuth: true,
-          title: 'Nouvelle propriété'
-        }
-      },
-      {
-        path: 'properties/:id/edit',
-        name: 'property-edit',
-        component: () => import('@/views/properties/Form.vue'),
-        meta: { 
-          requiresAuth: true,
-          title: 'Modifier la propriété'
-        }
-      },
-      {
-        path: 'organizations',
-        name: 'organizations',
-        component: () => import('@/views/organizations/Index.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Gestion des Organisations'
-        },
-        beforeEnter: adminGuard
-      },
-      {
-        path: 'organizations/:id',
-        name: 'organization-detail',
-        component: () => import('@/views/organizations/Detail.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Détails de l\'organisation'
-        },
-        beforeEnter: adminGuard
-      },
-      {
-        path: 'billing',
-        name: 'billing',
-        component: () => import('@/views/billing/Index.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Facturation'
-        },
-        beforeEnter: adminGuard
-      },
-      {
-        path: 'audit',
-        name: 'audit',
-        component: () => import('@/views/audit/Index.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Audit et Logs'
-        },
-        beforeEnter: adminGuard
-      },
-      {
-        path: 'notifications',
-        name: 'notifications',
-        component: () => import('@/views/notifications/Index.vue'),
-        meta: { 
-          requiresAuth: true,
-          requiresAdmin: true,
-          title: 'Notifications'
-        },
-        beforeEnter: adminGuard
-      }
+      ...dashboardRoutes,
+      ...userRoutes,
+      ...propertyRoutes,
+      ...organizationRoutes,
+      ...billingRoutes,
+      ...auditRoutes,
+      ...notificationRoutes,
+      ...workflowRoutes
     ]
   },
   {
     path: '/',
     component: AuthLayout,
-    children: [
-      {
-        path: 'login',
-        name: 'login',
-        component: () => import('@/views/Login.vue'),
-        meta: { 
-          title: 'Connexion',
-          layout: 'auth'
-        },
-        beforeEnter: guestGuard
-      },
-      {
-        path: 'signup',
-        name: 'signup',
-        component: () => import('@/views/Signup.vue'),
-        meta: { 
-          title: 'Inscription',
-          layout: 'auth'
-        },
-        beforeEnter: guestGuard
-      },
-      {
-        path: 'forgot-password',
-        name: 'forgot-password',
-        component: () => import('@/views/ForgotPassword.vue'),
-        meta: { 
-          title: 'Mot de passe oublié',
-          layout: 'auth'
-        },
-        beforeEnter: guestGuard
-      }
-    ]
+    children: authRoutes
   }
 ]
 

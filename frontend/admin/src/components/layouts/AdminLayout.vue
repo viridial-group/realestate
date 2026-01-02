@@ -168,15 +168,15 @@ import {
   Users,
   Home,
   Building2,
-  FileText,
-  Settings,
   Bell,
   Menu,
   X,
   ChevronRight,
   ChevronDown,
-  User,
-  LogOut
+  LogOut,
+  CreditCard,
+  FileSearch,
+  Workflow
 } from 'lucide-vue-next'
 import LanguageSelector from '@/components/shared/LanguageSelector.vue'
 
@@ -190,46 +190,88 @@ const notificationCount = ref(0)
 
 const currentUser = computed(() => authStore.user || userStore.currentUser)
 
-const navigationItems = computed(() => [
-  {
-    name: 'dashboard',
-    label: t('dashboard.title'),
-    path: '/',
-    icon: LayoutDashboard
-  },
-  {
-    name: 'users',
-    label: t('users.title'),
-    path: '/users',
-    icon: Users,
-    badge: null
-  },
-  {
-    name: 'properties',
-    label: t('properties.title'),
-    path: '/properties',
-    icon: Home
-  },
-  {
-    name: 'organizations',
-    label: t('organizations.title'),
-    path: '/organizations',
-    icon: Building2
-  },
-  // Routes à implémenter plus tard
-  // {
-  //   name: 'documents',
-  //   label: t('common.view'),
-  //   path: '/documents',
-  //   icon: FileText
-  // },
-  // {
-  //   name: 'settings',
-  //   label: t('common.view'),
-  //   path: '/settings',
-  //   icon: Settings
-  // }
-])
+const currentUserRoles = computed(() => {
+  const user = currentUser.value
+  return user?.roles || []
+})
+
+const isAdmin = computed(() => {
+  const roles = currentUserRoles.value
+  return roles.some((role: string) => role === 'ADMIN' || role === 'SUPER_ADMIN')
+})
+
+const navigationItems = computed(() => {
+  const items: Array<{
+    name: string
+    label: string
+    path: string
+    icon: any
+    badge?: string | null
+    requiresAdmin?: boolean
+  }> = [
+    {
+      name: 'dashboard',
+      label: t('dashboard.title'),
+      path: '/',
+      icon: LayoutDashboard
+    },
+    {
+      name: 'properties',
+      label: t('properties.title'),
+      path: '/properties',
+      icon: Home
+    },
+    {
+      name: 'users',
+      label: t('users.title'),
+      path: '/users',
+      icon: Users,
+      requiresAdmin: true
+    },
+    {
+      name: 'organizations',
+      label: t('organizations.title'),
+      path: '/organizations',
+      icon: Building2,
+      requiresAdmin: true
+    },
+    {
+      name: 'workflows',
+      label: t('workflows.title', 'Workflows'),
+      path: '/workflows',
+      icon: Workflow
+    },
+    {
+      name: 'billing',
+      label: t('billing.title', 'Facturation'),
+      path: '/billing',
+      icon: CreditCard,
+      requiresAdmin: true
+    },
+    {
+      name: 'audit',
+      label: t('audit.title', 'Audit et Logs'),
+      path: '/audit',
+      icon: FileSearch,
+      requiresAdmin: true
+    },
+    {
+      name: 'notifications',
+      label: t('notifications.title'),
+      path: '/notifications',
+      icon: Bell,
+      requiresAdmin: true
+    }
+  ]
+
+  // Filter items based on user permissions
+  return items.filter(item => {
+    if (item.requiresAdmin && !isAdmin.value) {
+      return false
+    }
+    return true
+  })
+})
 
 const currentPageTitle = computed(() => {
   const item = navigationItems.value.find(item => item.path === route.path)

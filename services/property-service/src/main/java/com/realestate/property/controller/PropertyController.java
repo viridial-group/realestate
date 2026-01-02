@@ -160,4 +160,31 @@ public class PropertyController {
         propertyService.removeFeatureFromProperty(id, key);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/features")
+    @Operation(summary = "Get all features for property", description = "Returns all active features for a property")
+    public ResponseEntity<List<com.realestate.property.entity.PropertyFeature>> getPropertyFeatures(
+            @PathVariable Long id) {
+        List<com.realestate.property.entity.PropertyFeature> features = propertyService.getPropertyFeatures(id);
+        return ResponseEntity.ok(features);
+    }
+
+    @PostMapping("/{id}/features/batch")
+    @Operation(summary = "Add or update multiple features", description = "Adds or updates multiple features for a property")
+    public ResponseEntity<List<com.realestate.property.entity.PropertyFeature>> addFeaturesToProperty(
+            @PathVariable Long id,
+            @Valid @RequestBody List<com.realestate.property.entity.PropertyFeature> features) {
+        List<com.realestate.property.entity.PropertyFeature> added = propertyService.addFeaturesToProperty(id, features);
+        return ResponseEntity.ok(added);
+    }
+
+    @PostMapping("/{id}/features/sync/{key}")
+    @Operation(summary = "Sync features from JSON array", description = "Synchronizes features from a JSON array, replacing existing ones with the same key")
+    public ResponseEntity<List<com.realestate.property.entity.PropertyFeature>> syncFeaturesFromJsonArray(
+            @PathVariable Long id,
+            @PathVariable String key,
+            @RequestBody List<String> values) {
+        List<com.realestate.property.entity.PropertyFeature> synced = propertyService.syncFeaturesFromJsonArray(id, key, values);
+        return ResponseEntity.ok(synced);
+    }
 }

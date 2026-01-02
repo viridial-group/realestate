@@ -12,7 +12,8 @@ import java.util.List;
 
 /**
  * Service de recherche Elasticsearch pour les Properties
- * Conditionnel : ne sera créé que si PropertyDocumentRepository est disponible
+ * Conditionnel : ne sera créé que si PropertyDocumentRepository (Elasticsearch) bean existe
+ * Utilise @ConditionalOnBean pour vérifier l'existence du bean, pas seulement de la classe
  */
 @Service
 @ConditionalOnBean(PropertyDocumentRepository.class)

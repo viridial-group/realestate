@@ -7,7 +7,7 @@
           <ArrowLeft class="h-4 w-4" />
         </Button>
         <div>
-          <h1 class="text-3xl font-bold">{{ isEdit ? 'Modifier la propriété' : 'Nouvelle propriété' }}</h1>
+          <h1 class="text-2.5xl font-bold">{{ isEdit ? 'Modifier la propriété' : 'Nouvelle propriété' }}</h1>
           <p class="text-muted-foreground mt-1">
             {{ isEdit ? 'Modifiez les informations de la propriété' : 'Créez une nouvelle propriété immobilière' }}
           </p>
@@ -114,6 +114,17 @@
               </div>
 
               <div class="space-y-2">
+                <Label for="fullBathrooms">Salles de bain complètes</Label>
+                <Input
+                  id="fullBathrooms"
+                  v-model.number="form.fullBathrooms"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                />
+              </div>
+
+              <div class="space-y-2">
                 <Label for="area">Surface (m²)</Label>
                 <Input
                   id="area"
@@ -122,6 +133,322 @@
                   min="0"
                   step="0.01"
                   placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Interior Details -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Détails intérieurs</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="totalStructureArea">Surface totale structure (m²)</Label>
+                <Input
+                  id="totalStructureArea"
+                  v-model.number="form.totalStructureArea"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="totalInteriorLivableArea">Surface habitable intérieure (m²)</Label>
+                <Input
+                  id="totalInteriorLivableArea"
+                  v-model.number="form.totalInteriorLivableArea"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="appliancesIncluded">Équipements inclus (JSON array)</Label>
+                <Input
+                  id="appliancesIncluded"
+                  v-model="form.appliancesIncluded"
+                  placeholder='["Dishwasher", "Refrigerator"]'
+                />
+                <p class="text-xs text-muted-foreground">Format: ["Item1", "Item2"]</p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="laundryLocation">Localisation laverie</Label>
+                <Select v-model="form.laundryLocation">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inside">Intérieur</SelectItem>
+                    <SelectItem value="Outside">Extérieur</SelectItem>
+                    <SelectItem value="None">Aucune</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video & Virtual Tour -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Visite virtuelle</h2>
+            
+            <div class="space-y-2">
+              <Label for="virtualTourUrl">URL visite virtuelle</Label>
+              <Input
+                id="virtualTourUrl"
+                v-model="form.virtualTourUrl"
+                type="url"
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          <!-- Parking & Accessibility -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Parking et accessibilité</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="parkingFeatures">Caractéristiques parking (JSON array)</Label>
+                <Input
+                  id="parkingFeatures"
+                  v-model="form.parkingFeatures"
+                  placeholder='["Garage", "Street"]'
+                />
+                <p class="text-xs text-muted-foreground">Format: ["Feature1", "Feature2"]</p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="hasGarage">A un garage</Label>
+                <div class="flex items-center space-x-2 pt-2">
+                  <input
+                    id="hasGarage"
+                    v-model="form.hasGarage"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label for="hasGarage" class="cursor-pointer">Oui</Label>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="accessibilityFeatures">Caractéristiques accessibilité (JSON array)</Label>
+                <Input
+                  id="accessibilityFeatures"
+                  v-model="form.accessibilityFeatures"
+                  placeholder='["Wheelchair Access"]'
+                />
+                <p class="text-xs text-muted-foreground">Format: ["Feature1", "Feature2"]</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exterior Features -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Caractéristiques extérieures</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="patioPorch">Patio & Porche</Label>
+                <Input
+                  id="patioPorch"
+                  v-model="form.patioPorch"
+                  placeholder="Other, Patio, Porch, etc."
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="exteriorFeatures">Caractéristiques extérieures (JSON array)</Label>
+                <Input
+                  id="exteriorFeatures"
+                  v-model="form.exteriorFeatures"
+                  placeholder='["Courtyard", "Balcony"]'
+                />
+                <p class="text-xs text-muted-foreground">Format: ["Feature1", "Feature2"]</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Construction Details -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Détails de construction</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="homeType">Type de maison</Label>
+                <Select v-model="form.homeType">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Condo">Condominium</SelectItem>
+                    <SelectItem value="House">Maison</SelectItem>
+                    <SelectItem value="Townhouse">Maison de ville</SelectItem>
+                    <SelectItem value="Apartment">Appartement</SelectItem>
+                    <SelectItem value="Villa">Villa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="propertySubtype">Sous-type de propriété</Label>
+                <Input
+                  id="propertySubtype"
+                  v-model="form.propertySubtype"
+                  placeholder="Condominium, Single Family, etc."
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="condition">État</Label>
+                <Select v-model="form.condition">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="New">Neuf</SelectItem>
+                    <SelectItem value="Good">Bon</SelectItem>
+                    <SelectItem value="Fair">Correct</SelectItem>
+                    <SelectItem value="Needs Renovation">Nécessite rénovation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="yearBuilt">Année de construction</Label>
+                <Input
+                  id="yearBuilt"
+                  v-model.number="form.yearBuilt"
+                  type="number"
+                  min="1800"
+                  :max="new Date().getFullYear()"
+                  placeholder="1990"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="specialConditions">Conditions spéciales</Label>
+                <Input
+                  id="specialConditions"
+                  v-model="form.specialConditions"
+                  placeholder="Resale, New Construction, Foreclosure, etc."
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Community & HOA -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Communauté et HOA</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="subdivision">Subdivision</Label>
+                <Input
+                  id="subdivision"
+                  v-model="form.subdivision"
+                  placeholder="Nom de la subdivision"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="hasHOA">A une HOA</Label>
+                <div class="flex items-center space-x-2 pt-2">
+                  <input
+                    id="hasHOA"
+                    v-model="form.hasHOA"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label for="hasHOA" class="cursor-pointer">Oui</Label>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="hoaAmenities">Équipements HOA (JSON array)</Label>
+                <Input
+                  id="hoaAmenities"
+                  v-model="form.hoaAmenities"
+                  placeholder='["Laundry", "Elevator(s)", "Pool"]'
+                />
+                <p class="text-xs text-muted-foreground">Format: ["Item1", "Item2"]</p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="hoaServices">Services HOA (JSON array)</Label>
+                <Input
+                  id="hoaServices"
+                  v-model="form.hoaServices"
+                  placeholder='["Maintenance", "Security"]'
+                />
+                <p class="text-xs text-muted-foreground">Format: ["Service1", "Service2"]</p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="hoaFee">Frais HOA</Label>
+                <Input
+                  id="hoaFee"
+                  v-model.number="form.hoaFee"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="hoaFeeFrequency">Fréquence frais HOA</Label>
+                <Select v-model="form.hoaFeeFrequency">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensuel</SelectItem>
+                    <SelectItem value="quarterly">Trimestriel</SelectItem>
+                    <SelectItem value="annually">Annuel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial & Listing -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Financier et annonce</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="region">Région</Label>
+                <Input
+                  id="region"
+                  v-model="form.region"
+                  placeholder="Brooklyn, Manhattan, etc."
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="pricePerSquareFoot">Prix au m²</Label>
+                <Input
+                  id="pricePerSquareFoot"
+                  v-model.number="form.pricePerSquareFoot"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label for="dateOnMarket">Date de mise sur le marché</Label>
+                <Input
+                  id="dateOnMarket"
+                  v-model="form.dateOnMarket"
+                  type="date"
                 />
               </div>
             </div>
@@ -165,6 +492,16 @@
                 <p v-if="errors.country" class="text-sm text-destructive">{{ errors.country }}</p>
               </div>
             </div>
+          </div>
+
+          <!-- Images -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Images</h2>
+            <ImageUpload
+              ref="imageUploadRef"
+              v-model="form.images"
+              :property-id="propertyId || undefined"
+            />
           </div>
 
           <!-- Statut (uniquement en édition) -->
@@ -214,7 +551,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
-import { propertyService, type Property, type PropertyCreate, type PropertyUpdate, PropertyType, PropertyStatus } from '@viridial/shared'
+import { propertyService, documentService, type PropertyCreate, type PropertyUpdate, PropertyType, PropertyStatus } from '@viridial/shared'
+import ImageUpload from '@/components/properties/ImageUpload.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -229,7 +567,34 @@ const isEdit = computed(() => !!propertyId.value)
 const loading = ref(false)
 const submitting = ref(false)
 
-const form = ref<PropertyCreate & { status?: PropertyStatus }>({
+const form = ref<PropertyCreate & { 
+  status?: PropertyStatus
+  fullBathrooms?: number
+  appliancesIncluded?: string
+  laundryLocation?: string
+  totalStructureArea?: number
+  totalInteriorLivableArea?: number
+  virtualTourUrl?: string
+  parkingFeatures?: string
+  hasGarage?: boolean
+  accessibilityFeatures?: string
+  patioPorch?: string
+  exteriorFeatures?: string
+  specialConditions?: string
+  homeType?: string
+  propertySubtype?: string
+  condition?: string
+  yearBuilt?: number
+  subdivision?: string
+  hasHOA?: boolean
+  hoaAmenities?: string
+  hoaServices?: string
+  hoaFee?: number
+  hoaFeeFrequency?: string
+  region?: string
+  pricePerSquareFoot?: number
+  dateOnMarket?: string
+}>({
   title: '',
   description: '',
   price: 0,
@@ -241,10 +606,36 @@ const form = ref<PropertyCreate & { status?: PropertyStatus }>({
   bathrooms: undefined,
   area: undefined,
   images: [],
-  status: PropertyStatus.DRAFT
+  status: PropertyStatus.DRAFT,
+  fullBathrooms: undefined,
+  appliancesIncluded: undefined,
+  laundryLocation: undefined,
+  totalStructureArea: undefined,
+  totalInteriorLivableArea: undefined,
+  virtualTourUrl: undefined,
+  parkingFeatures: undefined,
+  hasGarage: false,
+  accessibilityFeatures: undefined,
+  patioPorch: undefined,
+  exteriorFeatures: undefined,
+  specialConditions: undefined,
+  homeType: undefined,
+  propertySubtype: undefined,
+  condition: undefined,
+  yearBuilt: undefined,
+  subdivision: undefined,
+  hasHOA: false,
+  hoaAmenities: undefined,
+  hoaServices: undefined,
+  hoaFee: undefined,
+  hoaFeeFrequency: undefined,
+  region: undefined,
+  pricePerSquareFoot: undefined,
+  dateOnMarket: undefined
 })
 
 const errors = ref<Record<string, string>>({})
+const imageUploadRef = ref<InstanceType<typeof ImageUpload>>()
 
 onMounted(async () => {
   if (isEdit.value && propertyId.value) {
@@ -257,6 +648,20 @@ const loadProperty = async () => {
   loading.value = true
   try {
     const property = await propertyService.getById(propertyId.value)
+    
+    // Charger les documents (images) associés à la propriété
+    let imageUrls: string[] = []
+    try {
+      const documents = await documentService.getByPropertyId(propertyId.value)
+      imageUrls = documents
+        .filter((doc: any) => doc.mimeType?.startsWith('image/'))
+        .map((doc: any) => documentService.getViewUrl(doc.id))
+    } catch (error) {
+      console.warn('Could not load property documents:', error)
+      // Utiliser les images du property si disponibles
+      imageUrls = property.images || []
+    }
+    
     form.value = {
       title: property.title || '',
       description: property.description || '',
@@ -268,8 +673,33 @@ const loadProperty = async () => {
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       area: property.area,
-      images: property.images || [],
-      status: property.status || PropertyStatus.DRAFT
+      images: imageUrls.length > 0 ? imageUrls : (property.images || []),
+      status: property.status || PropertyStatus.DRAFT,
+      fullBathrooms: (property as any).fullBathrooms,
+      appliancesIncluded: (property as any).appliancesIncluded,
+      laundryLocation: (property as any).laundryLocation,
+      totalStructureArea: (property as any).totalStructureArea,
+      totalInteriorLivableArea: (property as any).totalInteriorLivableArea,
+      virtualTourUrl: (property as any).virtualTourUrl,
+      parkingFeatures: (property as any).parkingFeatures,
+      hasGarage: (property as any).hasGarage || false,
+      accessibilityFeatures: (property as any).accessibilityFeatures,
+      patioPorch: (property as any).patioPorch,
+      exteriorFeatures: (property as any).exteriorFeatures,
+      specialConditions: (property as any).specialConditions,
+      homeType: (property as any).homeType,
+      propertySubtype: (property as any).propertySubtype,
+      condition: (property as any).condition,
+      yearBuilt: (property as any).yearBuilt,
+      subdivision: (property as any).subdivision,
+      hasHOA: (property as any).hasHOA || false,
+      hoaAmenities: (property as any).hoaAmenities,
+      hoaServices: (property as any).hoaServices,
+      hoaFee: (property as any).hoaFee,
+      hoaFeeFrequency: (property as any).hoaFeeFrequency,
+      region: (property as any).region,
+      pricePerSquareFoot: (property as any).pricePerSquareFoot,
+      dateOnMarket: (property as any).dateOnMarket ? new Date((property as any).dateOnMarket).toISOString().split('T')[0] : undefined
     }
   } catch (error: any) {
     toast({
@@ -326,7 +756,7 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     if (isEdit.value && propertyId.value) {
-      const updateData: PropertyUpdate = {
+      const updateData: PropertyUpdate & any = {
         title: form.value.title,
         description: form.value.description,
         price: form.value.price,
@@ -338,7 +768,32 @@ const handleSubmit = async () => {
         bathrooms: form.value.bathrooms,
         area: form.value.area,
         images: form.value.images,
-        status: form.value.status
+        status: form.value.status,
+        fullBathrooms: form.value.fullBathrooms,
+        appliancesIncluded: form.value.appliancesIncluded,
+        laundryLocation: form.value.laundryLocation,
+        totalStructureArea: form.value.totalStructureArea,
+        totalInteriorLivableArea: form.value.totalInteriorLivableArea,
+        virtualTourUrl: form.value.virtualTourUrl,
+        parkingFeatures: form.value.parkingFeatures,
+        hasGarage: form.value.hasGarage,
+        accessibilityFeatures: form.value.accessibilityFeatures,
+        patioPorch: form.value.patioPorch,
+        exteriorFeatures: form.value.exteriorFeatures,
+        specialConditions: form.value.specialConditions,
+        homeType: form.value.homeType,
+        propertySubtype: form.value.propertySubtype,
+        condition: form.value.condition,
+        yearBuilt: form.value.yearBuilt,
+        subdivision: form.value.subdivision,
+        hasHOA: form.value.hasHOA,
+        hoaAmenities: form.value.hoaAmenities,
+        hoaServices: form.value.hoaServices,
+        hoaFee: form.value.hoaFee,
+        hoaFeeFrequency: form.value.hoaFeeFrequency,
+        region: form.value.region,
+        pricePerSquareFoot: form.value.pricePerSquareFoot,
+        dateOnMarket: form.value.dateOnMarket
       }
       await propertyService.update(propertyId.value, updateData)
       toast({
@@ -347,7 +802,7 @@ const handleSubmit = async () => {
       })
       router.push(`/properties/${propertyId.value}`)
     } else {
-      const createData: PropertyCreate = {
+      const createData: PropertyCreate & any = {
         title: form.value.title,
         description: form.value.description,
         price: form.value.price,
@@ -358,9 +813,49 @@ const handleSubmit = async () => {
         bedrooms: form.value.bedrooms,
         bathrooms: form.value.bathrooms,
         area: form.value.area,
-        images: form.value.images
+        images: form.value.images,
+        fullBathrooms: form.value.fullBathrooms,
+        appliancesIncluded: form.value.appliancesIncluded,
+        laundryLocation: form.value.laundryLocation,
+        totalStructureArea: form.value.totalStructureArea,
+        totalInteriorLivableArea: form.value.totalInteriorLivableArea,
+        virtualTourUrl: form.value.virtualTourUrl,
+        parkingFeatures: form.value.parkingFeatures,
+        hasGarage: form.value.hasGarage,
+        accessibilityFeatures: form.value.accessibilityFeatures,
+        patioPorch: form.value.patioPorch,
+        exteriorFeatures: form.value.exteriorFeatures,
+        specialConditions: form.value.specialConditions,
+        homeType: form.value.homeType,
+        propertySubtype: form.value.propertySubtype,
+        condition: form.value.condition,
+        yearBuilt: form.value.yearBuilt,
+        subdivision: form.value.subdivision,
+        hasHOA: form.value.hasHOA,
+        hoaAmenities: form.value.hoaAmenities,
+        hoaServices: form.value.hoaServices,
+        hoaFee: form.value.hoaFee,
+        hoaFeeFrequency: form.value.hoaFeeFrequency,
+        region: form.value.region,
+        pricePerSquareFoot: form.value.pricePerSquareFoot,
+        dateOnMarket: form.value.dateOnMarket
       }
       const newProperty = await propertyService.create(createData)
+      
+      // Uploader les images en attente si le composant ImageUpload a des images non uploadées
+      if (imageUploadRef.value && newProperty.id) {
+        try {
+          await imageUploadRef.value.uploadPendingImages(newProperty.id)
+        } catch (error: any) {
+          console.error('Error uploading pending images:', error)
+          toast({
+            title: 'Avertissement',
+            description: 'La propriété a été créée mais certaines images n\'ont pas pu être uploadées',
+            variant: 'default'
+          })
+        }
+      }
+      
       toast({
         title: 'Propriété créée',
         description: 'La propriété a été créée avec succès'

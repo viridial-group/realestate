@@ -63,7 +63,7 @@ class PropertyControllerTest {
     void testCreateProperty_Success() throws Exception {
         // Given
         Property property = createTestProperty();
-        when(propertyService.createProperty(any(Property.class))).thenReturn(property);
+        when(propertyService.createProperty(any(Property.class), anyString())).thenReturn(property);
 
         // When & Then
         mockMvc.perform(post("/api/properties")
@@ -106,7 +106,10 @@ class PropertyControllerTest {
         // Given
         Long organizationId = 100L;
         List<Property> properties = Arrays.asList(createTestProperty());
-        when(propertyService.getPropertiesByOrganizationId(organizationId)).thenReturn(properties);
+        when(propertyService.getAllPropertiesWithFilters(
+                eq(organizationId), any(), any(), any(), any(), any(), any(), 
+                any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(properties);
 
         // When & Then
         mockMvc.perform(get("/api/properties")

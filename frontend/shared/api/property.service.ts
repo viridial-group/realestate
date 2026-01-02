@@ -1,6 +1,7 @@
 import { httpClient } from './http.client'
 import { API_ENDPOINTS } from '../constants/api.constants'
 import type { Property, PropertyCreate, PropertyUpdate, PropertySearchParams } from '../types/property.types'
+import type { PropertyFeature } from '../types/property-feature.types'
 
 /**
  * Service de gestion des propriétés
@@ -50,6 +51,14 @@ export const propertyService = {
    */
   async search(params: PropertySearchParams): Promise<Property[]> {
     const response = await httpClient.get<Property[]>(API_ENDPOINTS.PROPERTIES.SEARCH, { params })
+    return response.data || []
+  },
+
+  /**
+   * Récupérer les features d'une propriété
+   */
+  async getPropertyFeatures(id: number): Promise<PropertyFeature[]> {
+    const response = await httpClient.get<PropertyFeature[]>(API_ENDPOINTS.PROPERTIES.FEATURES(id))
     return response.data || []
   }
 }

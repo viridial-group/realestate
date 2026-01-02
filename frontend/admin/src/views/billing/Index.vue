@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold">Facturation</h1>
+        <h1 class="text-2.5xl font-bold">Facturation</h1>
         <p class="text-muted-foreground mt-1">Gérez les abonnements et factures</p>
       </div>
       <Button @click="refreshData" variant="outline" :disabled="loading">
@@ -14,36 +14,55 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('ACTIVE')">
-        <CardHeader class="pb-2">
+      <!-- Abonnements Actifs Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-r-4" style="border-right-color: #33d484;" @click="filterByStatus('ACTIVE')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Abonnements Actifs</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(51, 212, 132, 0.1);">
+            <CheckCircle class="h-5 w-5" style="color: #33d484;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-green-600">{{ stats.activeSubscriptions || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #33d484;">{{ stats.activeSubscriptions || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">En cours</p>
         </CardContent>
       </Card>
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('PENDING')">
-        <CardHeader class="pb-2">
+      
+      <!-- En Attente Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-r-4" style="border-right-color: #fdb022;" @click="filterByStatus('PENDING')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>En Attente</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(253, 176, 34, 0.1);">
+            <Clock class="h-5 w-5" style="color: #fdb022;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-yellow-600">{{ stats.pendingPayments || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #fdb022;">{{ stats.pendingPayments || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">Paiements</p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Revenus ce Mois Card -->
+      <Card class="relative overflow-hidden border-r-4" style="border-right-color: #04c9ff;">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Revenus ce Mois</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(4, 201, 255, 0.1);">
+            <DollarSign class="h-5 w-5" style="color: #04c9ff;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-primary">{{ formatCurrency(stats.monthlyRevenue || 0) }}</div>
+          <div class="text-2xl font-bold" style="color: #04c9ff;">{{ formatCurrency(stats.monthlyRevenue || 0) }}</div>
           <p class="text-xs text-muted-foreground mt-1">EUR</p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Revenus Total Card -->
+      <Card class="relative overflow-hidden border-r-4 border-r-[hsl(var(--chart-1))]">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Revenus Total</CardDescription>
+          <div class="h-10 w-10 rounded-lg bg-[hsl(var(--chart-1))]/10 flex items-center justify-center">
+            <TrendingUp class="h-5 w-5 text-[hsl(var(--chart-1))]" />
+          </div>
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">{{ formatCurrency(stats.totalRevenue || 0) }}</div>
@@ -222,7 +241,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { RefreshCw, X, MoreVertical, Eye, FileText, XCircle } from 'lucide-vue-next'
+import { RefreshCw, X, MoreVertical, Eye, FileText, XCircle, CheckCircle, Clock, DollarSign, TrendingUp } from 'lucide-vue-next'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const { toast } = useToast()

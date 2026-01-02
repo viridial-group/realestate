@@ -1,6 +1,6 @@
 {
   "name": "@viridial/shared",
-  "version": "1.0.18",
+  "version": "1.0.26",
   "type": "module",
   "description": "Shared modules for Real Estate frontend applications - Vue 3, TypeScript, Pinia, Axios",
   "main": "./dist/index.js",

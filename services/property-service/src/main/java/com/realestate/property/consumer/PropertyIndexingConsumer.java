@@ -8,6 +8,9 @@ import com.realestate.property.entity.Property;
 import com.realestate.property.repository.PropertyRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -18,8 +21,21 @@ import java.util.Optional;
 
 /**
  * Consumer Kafka pour indexer les Properties dans Elasticsearch
+ * 
+ * Ce consumer n'est créé que si:
+ * 1. PropertyDocumentRepository (Elasticsearch) bean existe
+ * 2. Les classes d'événements Kafka sont dans le classpath
+ * 3. Kafka est configuré (vérifié via @ConditionalOnBean sur PropertyDocumentRepository)
+ * 
+ * Utilise @ConditionalOnBean pour vérifier l'existence du repository Elasticsearch.
+ * Les dépendances sont optionnelles pour permettre le démarrage sans Elasticsearch.
  */
 @Component
+@ConditionalOnBean(PropertyDocumentRepository.class)
+@ConditionalOnClass(name = {
+    "com.realestate.common.event.PropertyCreatedEvent",
+    "com.realestate.common.event.PropertyUpdatedEvent"
+})
 public class PropertyIndexingConsumer {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyIndexingConsumer.class);
@@ -28,7 +44,7 @@ public class PropertyIndexingConsumer {
     private final PropertyRepository propertyRepository;
 
     public PropertyIndexingConsumer(
-            PropertyDocumentRepository propertyDocumentRepository,
+            @Autowired(required = false) PropertyDocumentRepository propertyDocumentRepository,
             PropertyRepository propertyRepository) {
         this.propertyDocumentRepository = propertyDocumentRepository;
         this.propertyRepository = propertyRepository;
@@ -37,6 +53,12 @@ public class PropertyIndexingConsumer {
     @KafkaListener(topics = "property-created", groupId = "property-indexing-group")
     @Transactional
     public void handlePropertyCreated(@Payload PropertyCreatedEvent event, Acknowledgment acknowledgment) {
+        if (propertyDocumentRepository == null) {
+            logger.debug("PropertyDocumentRepository not available, skipping indexing");
+            if (acknowledgment != null) acknowledgment.acknowledge();
+            return;
+        }
+        
         try {
             Optional<Property> propertyOpt = propertyRepository.findById(event.getPropertyId());
             
@@ -58,6 +80,12 @@ public class PropertyIndexingConsumer {
     @KafkaListener(topics = "property-updated", groupId = "property-indexing-group")
     @Transactional
     public void handlePropertyUpdated(@Payload PropertyUpdatedEvent event, Acknowledgment acknowledgment) {
+        if (propertyDocumentRepository == null) {
+            logger.debug("PropertyDocumentRepository not available, skipping indexing");
+            if (acknowledgment != null) acknowledgment.acknowledge();
+            return;
+        }
+        
         try {
             Optional<Property> propertyOpt = propertyRepository.findById(event.getPropertyId());
             

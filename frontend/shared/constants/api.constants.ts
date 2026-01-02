@@ -16,7 +16,9 @@ export const API_ENDPOINTS = {
   PROPERTIES: {
     BASE: '/api/properties',
     SEARCH: '/api/properties/search',
-    BY_ID: (id: number) => `/api/properties/${id}`
+    BY_ID: (id: number) => `/api/properties/${id}`,
+    FEATURES: (id: number) => `/api/properties/${id}/features`,
+    STATS: '/api/properties/stats/dashboard'
   },
   // Users
   USERS: {
@@ -36,6 +38,13 @@ export const API_ENDPOINTS = {
     CHILDREN: (parentId: number) => `/api/identity/organizations/${parentId}/children`,
     STATS: '/api/identity/organizations/stats',
     SEARCH: '/api/identity/organizations/search'
+  },
+  // Documents
+  DOCUMENTS: {
+    BASE: '/api/documents',
+    BY_ID: (id: number) => `/api/documents/${id}`,
+    UPLOAD: '/api/documents/upload',
+    DOWNLOAD: (id: number) => `/api/documents/${id}/download`
   }
 } as const
 

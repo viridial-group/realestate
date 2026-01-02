@@ -7,7 +7,7 @@
           <ArrowLeft class="h-4 w-4" />
         </Button>
         <div>
-          <h1 class="text-3xl font-bold">{{ user.name }}</h1>
+          <h1 class="text-2.5xl font-bold">{{ user.name }}</h1>
           <p class="text-muted-foreground mt-1">{{ user.email }}</p>
         </div>
       </div>

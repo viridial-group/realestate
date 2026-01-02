@@ -8,6 +8,8 @@ export { authService } from './api/auth.service'
 export { propertyService } from './api/property.service'
 export { userService } from './api/user.service'
 export { organizationService } from './api/organization.service'
+export { documentService } from './api/document.service'
+export { statsService } from './api/stats.service'
 export type {
   Organization,
   OrganizationCreate,
@@ -31,7 +33,10 @@ export { useUser } from './composables/useUser'
 export type * from './types/api.types'
 export type * from './types/auth.types'
 export type * from './types/property.types'
+export type * from './types/property-feature.types'
 export type * from './types/user.types'
+export type * from './types/document.types'
+export type * from './types/stats.types'
 
 // Enums from property.types (exported as values, not types)
 export { PropertyType, PropertyStatus } from './types/property.types'

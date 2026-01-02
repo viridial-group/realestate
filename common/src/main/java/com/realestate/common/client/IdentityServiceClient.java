@@ -1,5 +1,6 @@
 package com.realestate.common.client;
 
+import com.realestate.common.client.dto.OrganizationInfoDTO;
 import com.realestate.common.client.dto.PermissionCheckDTO;
 import com.realestate.common.client.dto.UserInfoDTO;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -134,9 +135,41 @@ public class IdentityServiceClient {
         return Mono.just(Optional.empty());
     }
 
+    /**
+     * Get organization information by ID
+     */
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "getOrganizationByIdFallback")
+    @Retry(name = RETRY_NAME)
+    public Mono<Optional<OrganizationInfoDTO>> getOrganizationById(Long organizationId, String authToken) {
+        return webClient.get()
+                .uri("/api/identity/organizations/{id}", organizationId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + authToken)
+                .retrieve()
+                .bodyToMono(OrganizationInfoDTO.class)
+                .map(Optional::of)
+                .timeout(Duration.ofSeconds(5))
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    if (ex.getStatusCode().value() == 404) {
+                        logger.warn("Organization not found: {}", organizationId);
+                        return Mono.just(Optional.empty());
+                    }
+                    logger.error("Error fetching organization {}: {}", organizationId, ex.getMessage());
+                    return Mono.just(Optional.empty());
+                })
+                .onErrorResume(ex -> {
+                    logger.error("Unexpected error fetching organization {}: {}", organizationId, ex.getMessage());
+                    return Mono.just(Optional.empty());
+                });
+    }
+
     private Mono<Boolean> checkPermissionFallback(Long userId, String permission, String resourceType, Long resourceId, String authToken, Exception ex) {
         logger.error("Circuit breaker opened for checkPermission. User: {}, Permission: {}", userId, permission, ex);
         return Mono.just(false); // Fail closed - deny access
+    }
+
+    private Mono<Optional<OrganizationInfoDTO>> getOrganizationByIdFallback(Long organizationId, String authToken, Exception ex) {
+        logger.error("Circuit breaker opened for getOrganizationById. Organization: {}", organizationId, ex);
+        return Mono.just(Optional.empty());
     }
 }
 

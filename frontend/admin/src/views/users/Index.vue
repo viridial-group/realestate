@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold">{{ t('users.title') }}</h1>
+        <h1 class="text-2.5xl font-bold">{{ t('users.title') }}</h1>
         <p class="text-muted-foreground mt-1">{{ t('users.description') }}</p>
       </div>
       <div class="flex gap-2">
@@ -105,36 +105,55 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card>
-        <CardHeader class="pb-2">
+      <!-- Total Utilisateurs Card -->
+      <Card class="relative overflow-hidden border-l-4 border-l-[hsl(var(--chart-1))]">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Total Utilisateurs</CardDescription>
+          <div class="h-10 w-10 rounded-lg bg-[hsl(var(--chart-1))]/10 flex items-center justify-center">
+            <Users class="h-5 w-5 text-[hsl(var(--chart-1))]" />
+          </div>
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">{{ total }}</div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Actifs Card -->
+      <Card class="relative overflow-hidden border-l-4" style="border-left-color: #33d484;">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Actifs</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(51, 212, 132, 0.1);">
+            <UserCheck class="h-5 w-5" style="color: #33d484;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-green-600">{{ activeUsers.length }}</div>
+          <div class="text-2xl font-bold" style="color: #33d484;">{{ activeUsers.length }}</div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Inactifs Card -->
+      <Card class="relative overflow-hidden border-l-4" style="border-left-color: #fdb022;">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Inactifs</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(253, 176, 34, 0.1);">
+            <UserX class="h-5 w-5" style="color: #fdb022;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-gray-600">{{ inactiveUsers.length }}</div>
+          <div class="text-2xl font-bold" style="color: #fdb022;">{{ inactiveUsers.length }}</div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Suspendus Card -->
+      <Card class="relative overflow-hidden border-l-4" style="border-left-color: #04c9ff;">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Suspendus</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(4, 201, 255, 0.1);">
+            <Ban class="h-5 w-5" style="color: #04c9ff;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-red-600">{{ suspendedUsers.length }}</div>
+          <div class="text-2xl font-bold" style="color: #04c9ff;">{{ suspendedUsers.length }}</div>
         </CardContent>
       </Card>
     </div>
@@ -385,7 +404,10 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
+  Users,
+  UserCheck,
+  UserX
 } from 'lucide-vue-next'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/components/ui/toast'

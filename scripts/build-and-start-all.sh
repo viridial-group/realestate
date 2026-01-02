@@ -20,28 +20,86 @@ echo ""
 mkdir -p "$LOGS_DIR"
 
 # ========================
-# Build des Services
+# Build et Installation des Services (APIs)
 # ========================
-echo "🔨 Compilation des services (Maven clean package -DskipTests=true -Dmaven.test.skip=true)..."
+echo "🔨 Build et Installation des Services (APIs)..."
 echo ""
 
 cd "$PROJECT_ROOT"
 
-# Build parent et common d'abord
-echo "📦 Build du parent POM et common module..."
+# 1. Build du parent POM
+echo "📦 [1/3] Build du parent POM..."
 mvn clean install -DskipTests=true -Dmaven.test.skip=true -N -q
-mvn clean install -DskipTests=true -Dmaven.test.skip=true -pl common -q
-
-# Build tous les services
-echo "📦 Build de tous les services..."
-mvn clean package -DskipTests=true -Dmaven.test.skip=true -q
-
 if [ $? -ne 0 ]; then
-    echo "❌ Erreur lors de la compilation"
+    echo "❌ Erreur lors du build du parent POM"
+    exit 1
+fi
+echo "   ✅ Parent POM installé"
+
+# 2. Build et installation du module common
+echo "📦 [2/3] Build et installation du module common..."
+mvn clean install -DskipTests=true -Dmaven.test.skip=true -pl common -q
+if [ $? -ne 0 ]; then
+    echo "❌ Erreur lors du build du module common"
+    exit 1
+fi
+echo "   ✅ Module common installé"
+
+# 3. Build et installation de tous les services (APIs)
+echo "📦 [3/3] Build et installation de tous les services (APIs)..."
+echo "   • Gateway"
+echo "   • Identity Service"
+echo "   • Property Service"
+echo "   • Resource Service"
+echo "   • Document Service"
+echo "   • Workflow Service"
+echo "   • Notification Service"
+echo "   • Emailing Service"
+echo "   • Audit Service"
+echo "   • Billing Service"
+echo ""
+
+mvn clean install -DskipTests=true -Dmaven.test.skip=true -q
+if [ $? -ne 0 ]; then
+    echo "❌ Erreur lors de la compilation des services"
     exit 1
 fi
 
-echo "✅ Compilation terminée"
+# Vérifier que les JARs sont bien créés
+echo ""
+echo "🔍 Vérification des JARs créés..."
+services_to_check=(
+    "gateway:gateway-*.jar"
+    "services/identity-service:identity-service-*.jar"
+    "services/property-service:property-service-*.jar"
+    "services/resource-service:resource-service-*.jar"
+    "services/document-service:document-service-*.jar"
+    "services/workflow-service:workflow-service-*.jar"
+    "services/notification-service:notification-service-*.jar"
+    "services/emailing-service:emailing-service-*.jar"
+    "services/audit-service:audit-service-*.jar"
+    "services/billing-service:billing-service-*.jar"
+)
+
+all_jars_found=true
+for service_check in "${services_to_check[@]}"; do
+    IFS=':' read -r service_dir jar_pattern <<< "$service_check"
+    jar_path=$(find "$PROJECT_ROOT/$service_dir/target" -name "$jar_pattern" -type f 2>/dev/null | head -1)
+    if [ -z "$jar_path" ]; then
+        echo "   ⚠️  JAR non trouvé: $service_dir/$jar_pattern"
+        all_jars_found=false
+    else
+        echo "   ✅ $(basename "$jar_path")"
+    fi
+done
+
+if [ "$all_jars_found" = false ]; then
+    echo ""
+    echo "⚠️  Certains JARs n'ont pas été trouvés, mais on continue..."
+fi
+
+echo ""
+echo "✅ Build et installation des APIs terminés"
 echo ""
 
 # ========================
@@ -106,15 +164,24 @@ start_service() {
 start_infrastructure_service() {
     local service_name=$1
     local script_path="$SCRIPT_DIR/start-${service_name}.sh"
+    local required=${2:-false}  # Par défaut, non requis
     
     if [ -f "$script_path" ]; then
         echo "🔧 Démarrage de $service_name..."
-        bash "$script_path" || {
-            echo "⚠️  Erreur lors du démarrage de $service_name (continuons...)"
-        }
-        sleep 2
+        if bash "$script_path"; then
+            echo "   ✅ $service_name démarré"
+            sleep 2
+        else
+            if [ "$required" = "true" ]; then
+                echo "   ❌ Erreur lors du démarrage de $service_name (requis)"
+                return 1
+            else
+                echo "   ⚠️  Erreur lors du démarrage de $service_name (continuons...)"
+                sleep 1
+            fi
+        fi
     else
-        echo "⚠️  Script de démarrage introuvable pour $service_name: $script_path"
+        echo "   ⚠️  Script de démarrage introuvable pour $service_name: $script_path"
     fi
 }
 
@@ -155,7 +222,17 @@ else
     # 4. Kibana (après Elasticsearch)
     start_infrastructure_service "kibana"
     
-    # 5. Kafka (avec Zookeeper)
+    # 5. Kafka (avec Zookeeper) - Gestion spéciale pour les conteneurs arrêtés
+    echo "🔧 Démarrage de kafka..."
+    # Nettoyer les conteneurs arrêtés avant de démarrer
+    if docker ps -a | grep -q "realestate-zookeeper.*Exited"; then
+        echo "   🧹 Nettoyage du conteneur Zookeeper arrêté..."
+        docker rm realestate-zookeeper 2>/dev/null || true
+    fi
+    if docker ps -a | grep -q "realestate-kafka.*Exited"; then
+        echo "   🧹 Nettoyage du conteneur Kafka arrêté..."
+        docker rm realestate-kafka 2>/dev/null || true
+    fi
     start_infrastructure_service "kafka"
     
     # 6. Prometheus

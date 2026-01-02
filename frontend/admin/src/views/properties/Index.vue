@@ -3,7 +3,7 @@
     <!-- Header avec Actions Rapides -->
     <div class="flex items-center justify-between flex-wrap gap-4">
       <div>
-        <h1 class="text-3xl font-bold">Gestion des Propriétés</h1>
+        <h1 class="text-2.5xl font-bold">Gestion des Propriétés</h1>
         <p class="text-muted-foreground mt-1">Gérez toutes les propriétés immobilières</p>
       </div>
       <div class="flex gap-2">
@@ -24,36 +24,55 @@
 
     <!-- Stats Cards avec Actions Rapides -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('AVAILABLE')">
-        <CardHeader class="pb-2">
+      <!-- Disponibles Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #33d484;" @click="filterByStatus('AVAILABLE')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Disponibles</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(51, 212, 132, 0.1);">
+            <Home class="h-5 w-5" style="color: #33d484;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-green-600">{{ stats.available || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #33d484;">{{ stats.available || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">En vente/location</p>
         </CardContent>
       </Card>
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('SOLD')">
-        <CardHeader class="pb-2">
+      
+      <!-- Vendues Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #fdb022;" @click="filterByStatus('SOLD')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Vendues</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(253, 176, 34, 0.1);">
+            <CheckCircle class="h-5 w-5" style="color: #fdb022;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-blue-600">{{ stats.sold || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #fdb022;">{{ stats.sold || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">Vendues</p>
         </CardContent>
       </Card>
-      <Card class="cursor-pointer hover:shadow-md transition-shadow" @click="filterByStatus('RENTED')">
-        <CardHeader class="pb-2">
+      
+      <!-- Louées Card -->
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #04c9ff;" @click="filterByStatus('RENTED')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Louées</CardDescription>
+          <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(4, 201, 255, 0.1);">
+            <Key class="h-5 w-5" style="color: #04c9ff;" />
+          </div>
         </CardHeader>
         <CardContent>
-          <div class="text-2xl font-bold text-purple-600">{{ stats.rented || 0 }}</div>
+          <div class="text-2xl font-bold" style="color: #04c9ff;">{{ stats.rented || 0 }}</div>
           <p class="text-xs text-muted-foreground mt-1">En location</p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader class="pb-2">
+      
+      <!-- Total Card -->
+      <Card class="relative overflow-hidden border-l-4 border-l-[hsl(var(--chart-1))]">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Total</CardDescription>
+          <div class="h-10 w-10 rounded-lg bg-[hsl(var(--chart-1))]/10 flex items-center justify-center">
+            <Home class="h-5 w-5 text-[hsl(var(--chart-1))]" />
+          </div>
         </CardHeader>
         <CardContent>
           <div class="text-2xl font-bold">{{ stats.total || 0 }}</div>
@@ -65,54 +84,178 @@
     <!-- Filtres Avancés -->
     <Card>
       <CardContent class="p-4">
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div class="space-y-2">
-            <Label>Recherche</Label>
-            <Input v-model="searchQuery" placeholder="Titre, adresse..." @input="handleSearch" />
+        <div class="space-y-6">
+          <!-- Recherche et Filtres de base -->
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="space-y-2">
+              <Label>Recherche</Label>
+              <Input v-model="searchQuery" placeholder="Titre, adresse..." @input="handleSearch" />
+            </div>
+            <div class="space-y-2">
+              <Label>Organisation</Label>
+              <Select v-model="selectedOrganizationId" @update:model-value="handleFilter">
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">Toutes</SelectItem>
+                  <SelectItem 
+                    v-for="org in organizations" 
+                    :key="org.id" 
+                    :value="org.id"
+                  >
+                    {{ org.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-2">
+              <Label>Type</Label>
+              <Select v-model="selectedType" @update:model-value="handleFilter">
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">Tous</SelectItem>
+                  <SelectItem value="HOUSE">Maison</SelectItem>
+                  <SelectItem value="APARTMENT">Appartement</SelectItem>
+                  <SelectItem value="VILLA">Villa</SelectItem>
+                  <SelectItem value="LAND">Terrain</SelectItem>
+                  <SelectItem value="COMMERCIAL">Commercial</SelectItem>
+                  <SelectItem value="OTHER">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-2">
+              <Label>Statut</Label>
+              <Select v-model="selectedStatus" @update:model-value="handleFilter">
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">Tous</SelectItem>
+                  <SelectItem value="AVAILABLE">Disponible</SelectItem>
+                  <SelectItem value="SOLD">Vendu</SelectItem>
+                  <SelectItem value="RENTED">Loué</SelectItem>
+                  <SelectItem value="PENDING">En attente</SelectItem>
+                  <SelectItem value="DRAFT">Brouillon</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="flex items-end">
+              <Button variant="outline" @click="resetFilters" class="w-full">
+                <X class="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            </div>
           </div>
-          <div class="space-y-2">
-            <Label>Type</Label>
-            <Select v-model="selectedType" @update:model-value="handleFilter">
-              <SelectTrigger>
-                <SelectValue placeholder="Tous" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem :value="null">Tous</SelectItem>
-                <SelectItem value="HOUSE">Maison</SelectItem>
-                <SelectItem value="APARTMENT">Appartement</SelectItem>
-                <SelectItem value="LAND">Terrain</SelectItem>
-                <SelectItem value="COMMERCIAL">Commercial</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="space-y-2">
-            <Label>Statut</Label>
-            <Select v-model="selectedStatus" @update:model-value="handleFilter">
-              <SelectTrigger>
-                <SelectValue placeholder="Tous" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem :value="null">Tous</SelectItem>
-                <SelectItem value="AVAILABLE">Disponible</SelectItem>
-                <SelectItem value="SOLD">Vendu</SelectItem>
-                <SelectItem value="RENTED">Loué</SelectItem>
-                <SelectItem value="PENDING">En attente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="space-y-2">
-            <Label>Prix min</Label>
-            <Input v-model="priceMin" type="number" placeholder="0" @input="handleFilter" />
-          </div>
-          <div class="space-y-2">
-            <Label>Prix max</Label>
-            <Input v-model="priceMax" type="number" placeholder="∞" @input="handleFilter" />
-          </div>
-          <div class="flex items-end">
-            <Button variant="outline" @click="resetFilters" class="w-full">
-              <X class="mr-2 h-4 w-4" />
-              Réinitialiser
-            </Button>
+
+          <!-- Filtres avancés avec sliders -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4 border-t">
+            <!-- Prix -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <Label>Prix (€)</Label>
+                <span class="text-sm text-muted-foreground">
+                  {{ formatPrice(priceRange[0]) }} - {{ formatPrice(priceRange[1]) }}
+                </span>
+              </div>
+              <Slider
+                v-model="priceRange"
+                :min="0"
+                :max="maxPrice"
+                :step="1000"
+                class="w-full"
+              />
+              <div class="flex gap-2">
+                <Input
+                  v-model.number="priceMin"
+                  type="number"
+                  placeholder="Min"
+                  class="flex-1"
+                  :min="0"
+                  @input="handlePriceInput"
+                />
+                <Input
+                  v-model.number="priceMax"
+                  type="number"
+                  placeholder="Max"
+                  class="flex-1"
+                  :min="0"
+                  @input="handlePriceInput"
+                />
+              </div>
+            </div>
+
+            <!-- Surface -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <Label>Surface (m²)</Label>
+                <span class="text-sm text-muted-foreground">
+                  {{ surfaceRange[0] }} - {{ surfaceRange[1] }} m²
+                </span>
+              </div>
+              <Slider
+                v-model="surfaceRange"
+                :min="0"
+                :max="maxSurface"
+                :step="5"
+                class="w-full"
+              />
+              <div class="flex gap-2">
+                <Input
+                  v-model.number="surfaceMin"
+                  type="number"
+                  placeholder="Min"
+                  class="flex-1"
+                  :min="0"
+                  @input="handleSurfaceInput"
+                />
+                <Input
+                  v-model.number="surfaceMax"
+                  type="number"
+                  placeholder="Max"
+                  class="flex-1"
+                  :min="0"
+                  @input="handleSurfaceInput"
+                />
+              </div>
+            </div>
+
+            <!-- Chambres -->
+            <div class="space-y-2">
+              <Label>Chambres</Label>
+              <Select v-model="selectedBedrooms" @update:model-value="handleFilter">
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">Toutes</SelectItem>
+                  <SelectItem :value="1">1+</SelectItem>
+                  <SelectItem :value="2">2+</SelectItem>
+                  <SelectItem :value="3">3+</SelectItem>
+                  <SelectItem :value="4">4+</SelectItem>
+                  <SelectItem :value="5">5+</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <!-- Salles de bain -->
+            <div class="space-y-2">
+              <Label>Salles de bain</Label>
+              <Select v-model="selectedBathrooms" @update:model-value="handleFilter">
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="null">Toutes</SelectItem>
+                  <SelectItem :value="1">1+</SelectItem>
+                  <SelectItem :value="2">2+</SelectItem>
+                  <SelectItem :value="3">3+</SelectItem>
+                  <SelectItem :value="4">4+</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -184,7 +327,7 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-sm text-muted-foreground">Type</span>
-              <span class="text-sm font-medium">{{ property.propertyType }}</span>
+              <span class="text-sm font-medium">{{ getPropertyTypeLabel(getPropertyType(property)) }}</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-muted-foreground">Prix</span>
@@ -229,6 +372,7 @@
                   <Checkbox v-model="selectAll" />
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Propriété</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Organisation</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Type</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Prix</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Statut</th>
@@ -255,7 +399,13 @@
                     <div class="text-sm text-muted-foreground">{{ property.address }}</div>
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ property.propertyType }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  {{ getPropertyOrganizationName(property) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  {{ getPropertyAssignedUserName(property) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ getPropertyTypeLabel(getPropertyType(property)) }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">{{ formatPrice(property.price) }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <Badge :variant="getStatusVariant(property.status)">
@@ -314,7 +464,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '@/components/ui/toast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
@@ -340,19 +490,30 @@ import {
   MoreVertical,
   Eye,
   Grid3x3,
-  List
+  List,
+  CheckCircle,
+  Key
 } from 'lucide-vue-next'
 import { Checkbox } from '@/components/ui/checkbox'
-import { propertyService, type Property } from '@viridial/shared'
+import { Slider } from '@/components/ui/slider'
+import { propertyService, organizationService, type Property, type Organization } from '@viridial/shared'
 
 const router = useRouter()
 const { toast } = useToast()
 const loading = ref(false)
 const searchQuery = ref('')
+const selectedOrganizationId = ref<number | null>(null)
 const selectedType = ref<string | null>(null)
 const selectedStatus = ref<string | null>(null)
-const priceMin = ref('')
-const priceMax = ref('')
+const organizations = ref<Organization[]>([])
+const priceMin = ref<number | ''>('')
+const priceMax = ref<number | ''>('')
+const priceRange = ref<number[]>([0, 1000000])
+const surfaceMin = ref<number | ''>('')
+const surfaceMax = ref<number | ''>('')
+const surfaceRange = ref<number[]>([0, 500])
+const selectedBedrooms = ref<number | null>(null)
+const selectedBathrooms = ref<number | null>(null)
 const viewMode = ref<'grid' | 'list'>('grid')
 const sortBy = ref('createdAt')
 const currentPage = ref(1)
@@ -361,6 +522,17 @@ const pageSize = 12
 const properties = ref<Property[]>([])
 const statsData = ref({ total: 0, available: 0, sold: 0, rented: 0 })
 const selectedIds = ref<number[]>([])
+
+// Calculer les valeurs max pour les sliders
+const maxPrice = computed(() => {
+  if (properties.value.length === 0) return 1000000
+  return Math.max(...properties.value.map(p => p.price), 1000000)
+})
+
+const maxSurface = computed(() => {
+  if (properties.value.length === 0) return 500
+  return Math.max(...properties.value.filter(p => p.area).map(p => p.area || 0), 500)
+})
 
 const stats = computed(() => statsData.value)
 
@@ -385,6 +557,22 @@ const filteredProperties = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return filtered.slice(start, start + pageSize)
 })
+
+const getPropertyType = (property: Property) => {
+  return (property as any).type || property.propertyType
+}
+
+const getPropertyOrganizationId = (property: Property) => {
+  return (property as any).organizationId
+}
+
+const getPropertyOrganizationName = (property: Property) => {
+  return (property as any).organizationName || getOrganizationName(getPropertyOrganizationId(property))
+}
+
+const getPropertyAssignedUserName = (property: Property) => {
+  return (property as any).assignedUserName || '-'
+}
 
 const total = computed(() => properties.value.length)
 const totalPages = computed(() => Math.ceil(total.value / pageSize))
@@ -446,11 +634,48 @@ const handleSort = () => {
 
 const resetFilters = () => {
   searchQuery.value = ''
+  selectedOrganizationId.value = null
   selectedType.value = null
   selectedStatus.value = null
   priceMin.value = ''
   priceMax.value = ''
+  priceRange.value = [0, maxPrice.value]
+  surfaceMin.value = ''
+  surfaceMax.value = ''
+  surfaceRange.value = [0, maxSurface.value]
+  selectedBedrooms.value = null
+  selectedBathrooms.value = null
   currentPage.value = 1
+  loadProperties()
+}
+
+// Watch pour synchroniser les sliders avec les inputs
+watch(priceRange, (newValue) => {
+  if (newValue && newValue.length === 2) {
+    priceMin.value = newValue[0] === 0 ? '' : newValue[0]
+    priceMax.value = newValue[1] === maxPrice.value ? '' : newValue[1]
+    handleFilter()
+  }
+}, { deep: true })
+
+watch(surfaceRange, (newValue) => {
+  if (newValue && newValue.length === 2) {
+    surfaceMin.value = newValue[0] === 0 ? '' : newValue[0]
+    surfaceMax.value = newValue[1] === maxSurface.value ? '' : newValue[1]
+    handleFilter()
+  }
+}, { deep: true })
+
+const handlePriceInput = () => {
+  const min = typeof priceMin.value === 'number' ? priceMin.value : 0
+  const max = typeof priceMax.value === 'number' ? priceMax.value : maxPrice.value
+  priceRange.value = [min, max]
+}
+
+const handleSurfaceInput = () => {
+  const min = typeof surfaceMin.value === 'number' ? surfaceMin.value : 0
+  const max = typeof surfaceMax.value === 'number' ? surfaceMax.value : maxSurface.value
+  surfaceRange.value = [min, max]
 }
 
 const filterByStatus = (status: string) => {
@@ -539,7 +764,7 @@ const exportToCSV = async () => {
     const rows = propertiesToExport.map((property: any) => [
       property.id,
       property.title,
-      property.propertyType,
+      getPropertyTypeLabel(getPropertyType(property)),
       formatPrice(property.price),
       property.address,
       property.city,
@@ -596,7 +821,7 @@ const exportToExcel = async () => {
     const rows = propertiesToExport.map((property: any) => [
       property.id,
       property.title,
-      property.propertyType,
+      getPropertyTypeLabel(getPropertyType(property)),
       formatPrice(property.price),
       property.address,
       property.city,
@@ -651,9 +876,30 @@ const getStatusLabel = (status: string) => {
     AVAILABLE: 'Disponible',
     SOLD: 'Vendu',
     RENTED: 'Loué',
-    PENDING: 'En attente'
+    PENDING: 'En attente',
+    DRAFT: 'Brouillon',
+    PUBLISHED: 'Publié',
+    ARCHIVED: 'Archivé'
   }
   return labels[status] || status
+}
+
+const getPropertyTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    APARTMENT: 'Appartement',
+    HOUSE: 'Maison',
+    VILLA: 'Villa',
+    LAND: 'Terrain',
+    COMMERCIAL: 'Commercial',
+    OTHER: 'Autre'
+  }
+  return labels[type] || type
+}
+
+const getOrganizationName = (organizationId: number | undefined) => {
+  if (!organizationId) return '-'
+  const org = organizations.value.find(o => o.id === organizationId)
+  return org?.name || '-'
 }
 
 const formatPrice = (price: number) => {
@@ -673,14 +919,51 @@ const loadProperties = async () => {
   try {
     const params: any = {}
     
+    if (selectedOrganizationId.value) params.organizationId = selectedOrganizationId.value
     if (selectedType.value) params.propertyType = selectedType.value
     if (selectedStatus.value) params.status = selectedStatus.value
     if (searchQuery.value) params.search = searchQuery.value
-    if (priceMin.value) params.priceMin = Number(priceMin.value)
-    if (priceMax.value) params.priceMax = Number(priceMax.value)
+    
+    // Prix
+    if (priceMin.value !== '' && typeof priceMin.value === 'number') {
+      params.minPrice = priceMin.value
+    }
+    if (priceMax.value !== '' && typeof priceMax.value === 'number') {
+      params.maxPrice = priceMax.value
+    }
+    
+    // Surface
+    if (surfaceMin.value !== '' && typeof surfaceMin.value === 'number') {
+      params.minSurface = surfaceMin.value
+    }
+    if (surfaceMax.value !== '' && typeof surfaceMax.value === 'number') {
+      params.maxSurface = surfaceMax.value
+    }
+    
+    // Chambres et salles de bain
+    if (selectedBedrooms.value !== null) {
+      params.bedrooms = selectedBedrooms.value
+    }
+    if (selectedBathrooms.value !== null) {
+      params.bathrooms = selectedBathrooms.value
+    }
 
     const result = await propertyService.getAll(params)
     properties.value = Array.isArray(result) ? result : []
+
+    // Mettre à jour les sliders avec les nouvelles valeurs max après chargement
+    if (properties.value.length > 0) {
+      const newMaxPrice = Math.max(...properties.value.map(p => p.price), 1000000)
+      const newMaxSurface = Math.max(...properties.value.filter(p => p.area).map(p => p.area || 0), 500)
+      
+      // Mettre à jour les ranges si nécessaire
+      if (priceRange.value[1] === maxPrice.value || priceRange.value[1] > newMaxPrice) {
+        priceRange.value[1] = newMaxPrice
+      }
+      if (surfaceRange.value[1] === maxSurface.value || surfaceRange.value[1] > newMaxSurface) {
+        surfaceRange.value[1] = newMaxSurface
+      }
+    }
 
     // Calculate stats
     statsData.value = {
@@ -701,7 +984,17 @@ const loadProperties = async () => {
   }
 }
 
-onMounted(() => {
-  loadProperties()
+const loadOrganizations = async () => {
+  try {
+    const result = await organizationService.getAll()
+    organizations.value = result.organizations
+  } catch (error: any) {
+    console.error('Error loading organizations:', error)
+  }
+}
+
+onMounted(async () => {
+  await loadOrganizations()
+  await loadProperties()
 })
 </script>
