@@ -8,32 +8,37 @@
         </DialogDescription>
       </DialogHeader>
 
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form @submit="onSubmit" class="space-y-4">
         <div class="space-y-2">
           <Label for="name">Nom *</Label>
-          <Input id="name" v-model="form.name" placeholder="Nom de l'organisation" required />
+          <Input id="name" v-model="name" v-bind="nameAttrs" placeholder="Nom de l'organisation" />
+          <p v-if="errors.name" class="text-sm text-destructive">{{ errors.name }}</p>
         </div>
 
         <div class="space-y-2">
           <Label for="description">Description</Label>
           <textarea
             id="description"
-            v-model="form.description"
+            v-model="description"
+            v-bind="descriptionAttrs"
             placeholder="Description de l'organisation"
             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
+          <p v-if="errors.description" class="text-sm text-destructive">{{ errors.description }}</p>
         </div>
 
         <div class="space-y-2">
           <Label for="domain">Domaine</Label>
-          <Input id="domain" v-model="form.domain" placeholder="example.com" />
+          <Input id="domain" v-model="domain" v-bind="domainAttrs" placeholder="example.com" />
+          <p v-if="errors.domain" class="text-sm text-destructive">{{ errors.domain }}</p>
         </div>
 
         <div class="space-y-2">
           <div class="flex items-center space-x-2">
-            <Checkbox id="active" v-model:checked="form.active" />
+            <Checkbox id="active" v-model:checked="active" v-bind="activeAttrs" />
             <Label for="active" class="cursor-pointer">Organisation active</Label>
           </div>
+          <p v-if="errors.active" class="text-sm text-destructive">{{ errors.active }}</p>
         </div>
 
         <DialogFooter>
@@ -50,6 +55,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
 import { useToast } from '@/components/ui/toast'
 import { organizationService, type Organization, type OrganizationCreate, type OrganizationUpdate } from '@viridial/shared'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -58,6 +65,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-vue-next'
+import { organizationSchema } from '@/schemas/organization.schema'
 
 interface Props {
   open: boolean
@@ -78,45 +86,56 @@ const loading = ref(false)
 
 const isEdit = computed(() => !!props.organization)
 
-const form = ref({
-  name: '',
-  description: '',
-  domain: '',
-  active: true,
-  parentId: undefined as number | undefined
+const { handleSubmit, defineField, errors, setValues, resetForm } = useForm({
+  validationSchema: toTypedSchema(organizationSchema),
+  initialValues: {
+    name: '',
+    description: '',
+    domain: '',
+    active: true,
+    parentId: undefined as number | undefined
+  }
 })
+
+const [name, nameAttrs] = defineField('name')
+const [description, descriptionAttrs] = defineField('description')
+const [domain, domainAttrs] = defineField('domain')
+const [active, activeAttrs] = defineField('active', { type: 'checkbox' })
+const [parentId, parentIdAttrs] = defineField('parentId', { type: 'number' })
 
 watch(() => props.organization, (org) => {
   if (org) {
-    form.value = {
+    setValues({
       name: org.name || '',
       description: org.description || '',
       domain: org.domain || '',
       active: org.active !== undefined ? org.active : true,
       parentId: org.parentId
-    }
+    })
   } else {
-    form.value = {
-      name: '',
-      description: '',
-      domain: '',
-      active: true,
-      parentId: undefined
-    }
+    resetForm({
+      values: {
+        name: '',
+        description: '',
+        domain: '',
+        active: true,
+        parentId: undefined
+      }
+    })
   }
 }, { immediate: true })
 
-const handleSubmit = async () => {
+const onSubmit = handleSubmit(async (formData) => {
   loading.value = true
   try {
     if (isEdit.value && props.organization) {
-      await organizationService.update(props.organization.id, form.value as OrganizationUpdate)
+      await organizationService.update(props.organization.id, formData as OrganizationUpdate)
       toast({
         title: 'Organisation modifiée',
         description: 'Les modifications ont été enregistrées avec succès'
       })
     } else {
-      await organizationService.create(form.value as OrganizationCreate)
+      await organizationService.create(formData as OrganizationCreate)
       toast({
         title: 'Organisation créée',
         description: 'L\'organisation a été créée avec succès'
@@ -134,6 +153,6 @@ const handleSubmit = async () => {
   } finally {
     loading.value = false
   }
-}
+})
 </script>
 

@@ -8,27 +8,29 @@
         </DialogDescription>
       </DialogHeader>
 
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form @submit="onSubmit" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="name">Nom complet *</Label>
             <Input
               id="name"
-              v-model="form.name"
+              v-model="name"
+              v-bind="nameAttrs"
               placeholder="John Doe"
-              required
             />
+            <p v-if="errors.name" class="text-sm text-destructive">{{ errors.name }}</p>
           </div>
           <div class="space-y-2">
             <Label for="email">Email *</Label>
             <Input
               id="email"
-              v-model="form.email"
+              v-model="email"
+              v-bind="emailAttrs"
               type="email"
               placeholder="john@example.com"
-              required
               :disabled="isEdit"
             />
+            <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
           </div>
         </div>
 
@@ -37,17 +39,21 @@
             <Label for="firstName">Prénom</Label>
             <Input
               id="firstName"
-              v-model="form.firstName"
+              v-model="firstName"
+              v-bind="firstNameAttrs"
               placeholder="John"
             />
+            <p v-if="errors.firstName" class="text-sm text-destructive">{{ errors.firstName }}</p>
           </div>
           <div class="space-y-2">
             <Label for="lastName">Nom</Label>
             <Input
               id="lastName"
-              v-model="form.lastName"
+              v-model="lastName"
+              v-bind="lastNameAttrs"
               placeholder="Doe"
             />
+            <p v-if="errors.lastName" class="text-sm text-destructive">{{ errors.lastName }}</p>
           </div>
         </div>
 
@@ -55,27 +61,30 @@
           <Label for="phone">Téléphone</Label>
           <Input
             id="phone"
-            v-model="form.phone"
+            v-model="phone"
+            v-bind="phoneAttrs"
             type="tel"
             placeholder="+33 6 12 34 56 78"
           />
+          <p v-if="errors.phone" class="text-sm text-destructive">{{ errors.phone }}</p>
         </div>
 
         <div v-if="!isEdit" class="space-y-2">
           <Label for="password">Mot de passe *</Label>
           <Input
             id="password"
-            v-model="form.password"
+            v-model="password"
+            v-bind="passwordAttrs"
             type="password"
             placeholder="••••••••"
-            required
           />
+          <p v-if="errors.password" class="text-sm text-destructive">{{ errors.password }}</p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="status">Statut</Label>
-            <Select v-model="form.status">
+            <Select v-model="status" v-bind="statusAttrs">
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un statut" />
               </SelectTrigger>
@@ -86,6 +95,7 @@
                 <SelectItem value="SUSPENDED">Suspendu</SelectItem>
               </SelectContent>
             </Select>
+            <p v-if="errors.status" class="text-sm text-destructive">{{ errors.status }}</p>
           </div>
           <div class="space-y-2">
             <Label>Rôles *</Label>
@@ -97,7 +107,7 @@
               >
                 <Checkbox
                   :id="`role-${role.value}`"
-                  :checked="form.roles.includes(role.value)"
+                  :checked="(roles || []).includes(role.value)"
                   @update:checked="(checked) => toggleRole(role.value, checked)"
                 />
                 <Label :for="`role-${role.value}`" class="cursor-pointer text-sm">
@@ -105,9 +115,7 @@
                 </Label>
               </div>
             </div>
-            <p v-if="form.roles.length === 0" class="text-sm text-destructive">
-              Au moins un rôle doit être sélectionné
-            </p>
+            <p v-if="errors.roles" class="text-sm text-destructive">{{ errors.roles }}</p>
           </div>
         </div>
 
@@ -127,6 +135,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
 import { useUser, UserStatus, UserRole } from '@viridial/shared'
 import type { User, UserCreate, UserUpdate } from '@viridial/shared'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -137,6 +147,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/components/ui/toast'
 import { Loader2 } from 'lucide-vue-next'
+import { userCreateSchema, userUpdateSchema } from '@/schemas/user.schema'
 
 interface Props {
   open: boolean
@@ -164,114 +175,79 @@ const availableRoles = [
   { value: UserRole.USER, label: 'Utilisateur' }
 ]
 
-const form = ref<UserCreate | UserUpdate>({
-  name: '',
-  email: '',
-  firstName: '',
-  lastName: '',
-  phone: '',
-  password: '',
-  status: UserStatus.ACTIVE,
-  roles: [UserRole.USER]
+const isEdit = computed(() => !!props.user)
+
+const { handleSubmit, defineField, errors, setValues, resetForm } = useForm({
+  validationSchema: toTypedSchema(isEdit.value ? userUpdateSchema : userCreateSchema),
+  initialValues: {
+    name: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    password: '',
+    status: UserStatus.ACTIVE,
+    roles: [UserRole.USER]
+  }
 })
 
-const isEdit = computed(() => !!props.user)
+const [name, nameAttrs] = defineField('name')
+const [email, emailAttrs] = defineField('email')
+const [firstName, firstNameAttrs] = defineField('firstName')
+const [lastName, lastNameAttrs] = defineField('lastName')
+const [phone, phoneAttrs] = defineField('phone')
+const [password, passwordAttrs] = defineField('password')
+const [status, statusAttrs] = defineField('status')
+const [roles, rolesAttrs] = defineField('roles')
 
 watch(() => props.user, (user) => {
   if (user) {
-    form.value = {
+    setValues({
       name: user.name,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phone: user.phone,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      phone: user.phone || '',
       status: user.status,
       roles: user.roles
-    }
+    })
   } else {
-    form.value = {
-      name: '',
-      email: '',
-      firstName: '',
-      lastName: '',
-      phone: '',
-      password: '',
-      status: UserStatus.ACTIVE,
-      roles: [UserRole.USER]
-    }
+    resetForm({
+      values: {
+        name: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        password: '',
+        status: UserStatus.ACTIVE,
+        roles: [UserRole.USER]
+      }
+    })
   }
 }, { immediate: true })
 
 const toggleRole = (role: UserRole, checked: boolean) => {
+  const currentRoles = roles.value || []
   if (checked) {
-    if (!form.value.roles.includes(role)) {
-      form.value.roles.push(role)
+    if (!currentRoles.includes(role)) {
+      roles.value = [...currentRoles, role]
     }
   } else {
-    const index = form.value.roles.indexOf(role)
-    if (index > -1) {
-      form.value.roles.splice(index, 1)
-    }
+    roles.value = currentRoles.filter(r => r !== role)
   }
 }
 
-const validateForm = (): boolean => {
-  if (!form.value.name || form.value.name.trim() === '') {
-    toast({
-      title: 'Erreur de validation',
-      description: 'Le nom complet est requis',
-      variant: 'destructive'
-    })
-    return false
-  }
-  if (!form.value.email || form.value.email.trim() === '') {
-    toast({
-      title: 'Erreur de validation',
-      description: 'L\'email est requis',
-      variant: 'destructive'
-    })
-    return false
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(form.value.email)) {
-    toast({
-      title: 'Erreur de validation',
-      description: 'L\'email n\'est pas valide',
-      variant: 'destructive'
-    })
-    return false
-  }
-  if (!isEdit.value && (!form.value.password || form.value.password.length < 8)) {
-    toast({
-      title: 'Erreur de validation',
-      description: 'Le mot de passe doit contenir au moins 8 caractères',
-      variant: 'destructive'
-    })
-    return false
-  }
-  if (form.value.roles.length === 0) {
-    toast({
-      title: 'Erreur de validation',
-      description: 'Au moins un rôle doit être sélectionné',
-      variant: 'destructive'
-    })
-    return false
-  }
-  return true
-}
-
-const handleSubmit = async () => {
-  if (!validateForm()) return
-  
+const onSubmit = handleSubmit(async (formData) => {
   try {
     if (isEdit.value && props.user) {
-      await updateUser(props.user.id, form.value as UserUpdate)
+      await updateUser(props.user.id, formData as UserUpdate)
       toast({
         title: 'Utilisateur modifié',
         description: 'L\'utilisateur a été modifié avec succès'
       })
     } else {
-      await createUser(form.value as UserCreate)
+      await createUser(formData as UserCreate)
       toast({
         title: 'Utilisateur créé',
         description: 'L\'utilisateur a été créé avec succès'
@@ -286,6 +262,6 @@ const handleSubmit = async () => {
       variant: 'destructive'
     })
   }
-}
+})
 </script>
 

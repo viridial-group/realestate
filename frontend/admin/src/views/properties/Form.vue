@@ -21,7 +21,7 @@
 
     <Card v-else>
       <CardContent class="p-6">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
+        <form @submit="onSubmit" class="space-y-6">
           <!-- Informations principales -->
           <div class="space-y-4">
             <h2 class="text-xl font-semibold">Informations principales</h2>
@@ -31,18 +31,18 @@
                 <Label for="title">Titre *</Label>
                 <Input
                   id="title"
-                  v-model="form.title"
+                  v-model="title"
+                  v-bind="titleAttrs"
                   placeholder="Ex: Appartement 3 pièces centre-ville"
-                  required
                 />
                 <p v-if="errors.title" class="text-sm text-destructive">{{ errors.title }}</p>
               </div>
 
               <div class="space-y-2">
                 <Label for="propertyType">Type de propriété *</Label>
-                <Select v-model="form.propertyType" required>
+                <Select v-model="propertyType" v-bind="propertyTypeAttrs">
                   <SelectTrigger>
-                    <SelectValue :placeholder="form.propertyType ? undefined : 'Sélectionnez un type'" />
+                    <SelectValue :placeholder="propertyType ? undefined : 'Sélectionnez un type'" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem :value="PropertyType.APARTMENT">Appartement</SelectItem>
@@ -61,11 +61,11 @@
               <Label for="description">Description *</Label>
               <textarea
                 id="description"
-                v-model="form.description"
+                v-model="description"
+                v-bind="descriptionAttrs"
                 placeholder="Description détaillée de la propriété..."
                 rows="4"
                 class="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
               />
               <p v-if="errors.description" class="text-sm text-destructive">{{ errors.description }}</p>
             </div>
@@ -80,12 +80,12 @@
                 <Label for="price">Prix (€) *</Label>
                 <Input
                   id="price"
-                  v-model.number="form.price"
+                  v-model.number="price"
+                  v-bind="priceAttrs"
                   type="number"
                   min="0"
                   step="0.01"
                   placeholder="0.00"
-                  required
                 />
                 <p v-if="errors.price" class="text-sm text-destructive">{{ errors.price }}</p>
               </div>
@@ -94,7 +94,8 @@
                 <Label for="bedrooms">Chambres</Label>
                 <Input
                   id="bedrooms"
-                  v-model.number="form.bedrooms"
+                  v-model.number="bedrooms"
+                  v-bind="bedroomsAttrs"
                   type="number"
                   min="0"
                   placeholder="0"
@@ -105,7 +106,8 @@
                 <Label for="bathrooms">Salles de bain</Label>
                 <Input
                   id="bathrooms"
-                  v-model.number="form.bathrooms"
+                  v-model.number="bathrooms"
+                  v-bind="bathroomsAttrs"
                   type="number"
                   min="0"
                   step="0.5"
@@ -463,9 +465,9 @@
                 <Label for="address">Adresse *</Label>
                 <Input
                   id="address"
-                  v-model="form.address"
+                  v-model="address"
+                  v-bind="addressAttrs"
                   placeholder="Ex: 123 Rue de la République"
-                  required
                 />
                 <p v-if="errors.address" class="text-sm text-destructive">{{ errors.address }}</p>
               </div>
@@ -474,9 +476,9 @@
                 <Label for="city">Ville *</Label>
                 <Input
                   id="city"
-                  v-model="form.city"
+                  v-model="city"
+                  v-bind="cityAttrs"
                   placeholder="Ex: Paris"
-                  required
                 />
                 <p v-if="errors.city" class="text-sm text-destructive">{{ errors.city }}</p>
               </div>
@@ -485,9 +487,9 @@
                 <Label for="country">Pays *</Label>
                 <Input
                   id="country"
-                  v-model="form.country"
+                  v-model="country"
+                  v-bind="countryAttrs"
                   placeholder="Ex: France"
-                  required
                 />
                 <p v-if="errors.country" class="text-sm text-destructive">{{ errors.country }}</p>
               </div>
@@ -510,9 +512,9 @@
             
             <div class="space-y-2">
               <Label for="status">Statut</Label>
-              <Select v-model="form.status">
+              <Select v-model="status" v-bind="statusAttrs">
                 <SelectTrigger>
-                  <SelectValue :placeholder="form.status ? undefined : 'Sélectionnez un statut'" />
+                  <SelectValue :placeholder="status ? undefined : 'Sélectionnez un statut'" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem :value="PropertyStatus.AVAILABLE">Disponible</SelectItem>
@@ -544,6 +546,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
 import { useToast } from '@/components/ui/toast'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -553,6 +557,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 import { propertyService, documentService, type PropertyCreate, type PropertyUpdate, PropertyType, PropertyStatus } from '@viridial/shared'
 import ImageUpload from '@/components/properties/ImageUpload.vue'
+import { propertySchema, type PropertyFormData } from '@/schemas/property.schema'
 
 const route = useRoute()
 const router = useRouter()
@@ -662,7 +667,7 @@ const loadProperty = async () => {
       imageUrls = property.images || []
     }
     
-    form.value = {
+    setValues({
       title: property.title || '',
       description: property.description || '',
       price: property.price || 0,
@@ -700,7 +705,7 @@ const loadProperty = async () => {
       region: (property as any).region,
       pricePerSquareFoot: (property as any).pricePerSquareFoot,
       dateOnMarket: (property as any).dateOnMarket ? new Date((property as any).dateOnMarket).toISOString().split('T')[0] : undefined
-    }
+    })
   } catch (error: any) {
     toast({
       title: 'Erreur',
@@ -713,87 +718,49 @@ const loadProperty = async () => {
   }
 }
 
-const validate = (): boolean => {
-  errors.value = {}
-  
-  if (!form.value.title || form.value.title.trim().length === 0) {
-    errors.value.title = 'Le titre est requis'
-  }
-  
-  if (!form.value.description || form.value.description.trim().length === 0) {
-    errors.value.description = 'La description est requise'
-  }
-  
-  if (!form.value.price || form.value.price <= 0) {
-    errors.value.price = 'Le prix doit être supérieur à 0'
-  }
-  
-  if (!form.value.address || form.value.address.trim().length === 0) {
-    errors.value.address = 'L\'adresse est requise'
-  }
-  
-  if (!form.value.city || form.value.city.trim().length === 0) {
-    errors.value.city = 'La ville est requise'
-  }
-  
-  if (!form.value.country || form.value.country.trim().length === 0) {
-    errors.value.country = 'Le pays est requis'
-  }
-  
-  return Object.keys(errors.value).length === 0
-}
-
-const handleSubmit = async () => {
-  if (!validate()) {
-    toast({
-      title: 'Erreur de validation',
-      description: 'Veuillez corriger les erreurs dans le formulaire',
-      variant: 'destructive'
-    })
-    return
-  }
+const onSubmit = handleSubmit(async (formData) => {
 
   submitting.value = true
   try {
     if (isEdit.value && propertyId.value) {
       const updateData: PropertyUpdate & any = {
-        title: form.value.title,
-        description: form.value.description,
-        price: form.value.price,
-        address: form.value.address,
-        city: form.value.city,
-        country: form.value.country,
-        propertyType: form.value.propertyType,
-        bedrooms: form.value.bedrooms,
-        bathrooms: form.value.bathrooms,
-        area: form.value.area,
-        images: form.value.images,
-        status: form.value.status,
-        fullBathrooms: form.value.fullBathrooms,
-        appliancesIncluded: form.value.appliancesIncluded,
-        laundryLocation: form.value.laundryLocation,
-        totalStructureArea: form.value.totalStructureArea,
-        totalInteriorLivableArea: form.value.totalInteriorLivableArea,
-        virtualTourUrl: form.value.virtualTourUrl,
-        parkingFeatures: form.value.parkingFeatures,
-        hasGarage: form.value.hasGarage,
-        accessibilityFeatures: form.value.accessibilityFeatures,
-        patioPorch: form.value.patioPorch,
-        exteriorFeatures: form.value.exteriorFeatures,
-        specialConditions: form.value.specialConditions,
-        homeType: form.value.homeType,
-        propertySubtype: form.value.propertySubtype,
-        condition: form.value.condition,
-        yearBuilt: form.value.yearBuilt,
-        subdivision: form.value.subdivision,
-        hasHOA: form.value.hasHOA,
-        hoaAmenities: form.value.hoaAmenities,
-        hoaServices: form.value.hoaServices,
-        hoaFee: form.value.hoaFee,
-        hoaFeeFrequency: form.value.hoaFeeFrequency,
-        region: form.value.region,
-        pricePerSquareFoot: form.value.pricePerSquareFoot,
-        dateOnMarket: form.value.dateOnMarket
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        address: formData.address,
+        city: formData.city,
+        country: formData.country,
+        propertyType: formData.propertyType,
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        area: formData.area,
+        images: formData.images || [],
+        status: formData.status,
+        fullBathrooms: formData.fullBathrooms,
+        appliancesIncluded: formData.appliancesIncluded,
+        laundryLocation: formData.laundryLocation,
+        totalStructureArea: formData.totalStructureArea,
+        totalInteriorLivableArea: formData.totalInteriorLivableArea,
+        virtualTourUrl: formData.virtualTourUrl,
+        parkingFeatures: formData.parkingFeatures,
+        hasGarage: formData.hasGarage,
+        accessibilityFeatures: formData.accessibilityFeatures,
+        patioPorch: formData.patioPorch,
+        exteriorFeatures: formData.exteriorFeatures,
+        specialConditions: formData.specialConditions,
+        homeType: formData.homeType,
+        propertySubtype: formData.propertySubtype,
+        condition: formData.condition,
+        yearBuilt: formData.yearBuilt,
+        subdivision: formData.subdivision,
+        hasHOA: formData.hasHOA,
+        hoaAmenities: formData.hoaAmenities,
+        hoaServices: formData.hoaServices,
+        hoaFee: formData.hoaFee,
+        hoaFeeFrequency: formData.hoaFeeFrequency,
+        region: formData.region,
+        pricePerSquareFoot: formData.pricePerSquareFoot,
+        dateOnMarket: formData.dateOnMarket
       }
       await propertyService.update(propertyId.value, updateData)
       toast({
@@ -803,42 +770,42 @@ const handleSubmit = async () => {
       router.push(`/properties/${propertyId.value}`)
     } else {
       const createData: PropertyCreate & any = {
-        title: form.value.title,
-        description: form.value.description,
-        price: form.value.price,
-        address: form.value.address,
-        city: form.value.city,
-        country: form.value.country,
-        propertyType: form.value.propertyType,
-        bedrooms: form.value.bedrooms,
-        bathrooms: form.value.bathrooms,
-        area: form.value.area,
-        images: form.value.images,
-        fullBathrooms: form.value.fullBathrooms,
-        appliancesIncluded: form.value.appliancesIncluded,
-        laundryLocation: form.value.laundryLocation,
-        totalStructureArea: form.value.totalStructureArea,
-        totalInteriorLivableArea: form.value.totalInteriorLivableArea,
-        virtualTourUrl: form.value.virtualTourUrl,
-        parkingFeatures: form.value.parkingFeatures,
-        hasGarage: form.value.hasGarage,
-        accessibilityFeatures: form.value.accessibilityFeatures,
-        patioPorch: form.value.patioPorch,
-        exteriorFeatures: form.value.exteriorFeatures,
-        specialConditions: form.value.specialConditions,
-        homeType: form.value.homeType,
-        propertySubtype: form.value.propertySubtype,
-        condition: form.value.condition,
-        yearBuilt: form.value.yearBuilt,
-        subdivision: form.value.subdivision,
-        hasHOA: form.value.hasHOA,
-        hoaAmenities: form.value.hoaAmenities,
-        hoaServices: form.value.hoaServices,
-        hoaFee: form.value.hoaFee,
-        hoaFeeFrequency: form.value.hoaFeeFrequency,
-        region: form.value.region,
-        pricePerSquareFoot: form.value.pricePerSquareFoot,
-        dateOnMarket: form.value.dateOnMarket
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        address: formData.address,
+        city: formData.city,
+        country: formData.country,
+        propertyType: formData.propertyType,
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        area: formData.area,
+        images: formData.images || [],
+        fullBathrooms: formData.fullBathrooms,
+        appliancesIncluded: formData.appliancesIncluded,
+        laundryLocation: formData.laundryLocation,
+        totalStructureArea: formData.totalStructureArea,
+        totalInteriorLivableArea: formData.totalInteriorLivableArea,
+        virtualTourUrl: formData.virtualTourUrl,
+        parkingFeatures: formData.parkingFeatures,
+        hasGarage: formData.hasGarage,
+        accessibilityFeatures: formData.accessibilityFeatures,
+        patioPorch: formData.patioPorch,
+        exteriorFeatures: formData.exteriorFeatures,
+        specialConditions: formData.specialConditions,
+        homeType: formData.homeType,
+        propertySubtype: formData.propertySubtype,
+        condition: formData.condition,
+        yearBuilt: formData.yearBuilt,
+        subdivision: formData.subdivision,
+        hasHOA: formData.hasHOA,
+        hoaAmenities: formData.hoaAmenities,
+        hoaServices: formData.hoaServices,
+        hoaFee: formData.hoaFee,
+        hoaFeeFrequency: formData.hoaFeeFrequency,
+        region: formData.region,
+        pricePerSquareFoot: formData.pricePerSquareFoot,
+        dateOnMarket: formData.dateOnMarket
       }
       const newProperty = await propertyService.create(createData)
       
@@ -871,7 +838,7 @@ const handleSubmit = async () => {
   } finally {
     submitting.value = false
   }
-}
+})
 
 const goBack = () => {
   router.push('/properties')

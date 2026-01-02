@@ -7,16 +7,17 @@
           <ArrowLeft class="h-4 w-4" />
         </Button>
         <div>
-          <h1 class="text-2.5xl font-bold">Détails de l'abonnement</h1>
+          <h1 class="text-2.5xl font-bold">{{ t('billing.subscriptionDetails') }}</h1>
           <p class="text-muted-foreground mt-1" v-if="subscription">
-            {{ subscription.organizationName || `Organisation #${subscription.organizationId}` }}
+            <span v-if="subscription.organizationName" class="font-semibold">{{ subscription.organizationName }}</span>
+            <span v-else>{{ t('billing.organization') }} #{{ subscription.organizationId }}</span>
           </p>
         </div>
       </div>
       <div class="flex gap-2">
         <Button variant="outline" @click="viewInvoices" :disabled="loading">
           <FileText class="mr-2 h-4 w-4" />
-          Voir les factures
+          {{ t('billing.viewInvoices') }}
         </Button>
         <Button 
           v-if="subscription?.status === 'ACTIVE'" 
@@ -25,7 +26,7 @@
           :disabled="loading"
         >
           <XCircle class="mr-2 h-4 w-4" />
-          Annuler l'abonnement
+          {{ t('billing.cancel') }}
         </Button>
       </div>
     </div>
@@ -42,44 +43,44 @@
           <!-- Informations de l'abonnement -->
           <Card>
             <CardHeader>
-              <CardTitle>Informations de l'abonnement</CardTitle>
+              <CardTitle>{{ t('billing.subscriptionDetails') }}</CardTitle>
             </CardHeader>
             <CardContent>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-1">
-                  <p class="text-sm text-muted-foreground">Plan</p>
-                  <p class="font-semibold text-lg">{{ subscription.planName || 'Plan inconnu' }}</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.plan') }}</p>
+                  <p class="font-semibold text-lg">{{ subscription.planName || t('billing.plan') }}</p>
                 </div>
                 <div class="space-y-1">
-                  <p class="text-sm text-muted-foreground">Statut</p>
+                  <p class="text-sm text-muted-foreground">{{ t('common.status') }}</p>
                   <Badge :variant="getStatusVariant(subscription.status)">
                     {{ getStatusLabel(subscription.status) }}
                   </Badge>
                 </div>
                 <div class="space-y-1">
-                  <p class="text-sm text-muted-foreground">Date de début</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.startDate') }}</p>
                   <p class="font-semibold">{{ formatDate(subscription.startDate) }}</p>
                 </div>
                 <div class="space-y-1">
-                  <p class="text-sm text-muted-foreground">Date de fin</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.endDate') }}</p>
                   <p class="font-semibold">{{ formatDate(subscription.endDate) }}</p>
                 </div>
                 <div class="space-y-1" v-if="subscription.trialEndDate">
-                  <p class="text-sm text-muted-foreground">Fin de période d'essai</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.trialEndDate') }}</p>
                   <p class="font-semibold">{{ formatDate(subscription.trialEndDate) }}</p>
                 </div>
                 <div class="space-y-1">
-                  <p class="text-sm text-muted-foreground">Renouvellement automatique</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.autoRenewal') }}</p>
                   <Badge :variant="subscription.autoRenew ? 'default' : 'secondary'">
-                    {{ subscription.autoRenew ? 'Activé' : 'Désactivé' }}
+                    {{ subscription.autoRenew ? t('billing.activated') : t('billing.deactivated') }}
                   </Badge>
                 </div>
                 <div class="space-y-1" v-if="subscription.amount">
-                  <p class="text-sm text-muted-foreground">Montant</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.amount') }}</p>
                   <p class="font-semibold text-lg">{{ formatCurrency(subscription.amount) }}</p>
                 </div>
                 <div class="space-y-1" v-if="subscription.cancelledAt">
-                  <p class="text-sm text-muted-foreground">Date d'annulation</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.cancelledAt') }}</p>
                   <p class="font-semibold">{{ formatDate(subscription.cancelledAt) }}</p>
                 </div>
               </div>
@@ -89,7 +90,7 @@
           <!-- Fonctionnalités de l'abonnement -->
           <Card v-if="plan">
             <CardHeader>
-              <CardTitle>Fonctionnalités de l'abonnement</CardTitle>
+              <CardTitle>{{ t('billing.subscriptionFeatures') }}</CardTitle>
               <p v-if="plan.description" class="text-sm text-muted-foreground mt-1">
                 {{ plan.description }}
               </p>
@@ -97,7 +98,7 @@
             <CardContent>
               <!-- Liste des fonctionnalités -->
               <div v-if="parsedFeatures && parsedFeatures.length > 0" class="space-y-3">
-                <h4 class="text-sm font-semibold mb-3">Fonctionnalités incluses</h4>
+                <h4 class="text-sm font-semibold mb-3">{{ t('billing.includedFeatures') }}</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div
                     v-for="(feature, index) in parsedFeatures"
@@ -117,17 +118,17 @@
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    <span class="text-sm">{{ feature }}</span>
+                    <span class="text-sm">{{ getFeatureName(feature) }}</span>
                   </div>
                 </div>
               </div>
               <div v-else class="text-sm text-muted-foreground">
-                Aucune fonctionnalité spécifiée pour ce plan
+                {{ t('billing.noFeaturesSpecified') }}
               </div>
 
               <!-- Quotas -->
               <div v-if="plan.quotas && Object.keys(plan.quotas).length > 0" class="mt-6 space-y-3">
-                <h4 class="text-sm font-semibold mb-3">Limites et quotas</h4>
+                <h4 class="text-sm font-semibold mb-3">{{ t('billing.limitsAndQuotas') }}</h4>
                 <div class="space-y-2">
                   <div
                     v-for="(value, key) in plan.quotas"
@@ -149,16 +150,18 @@
           <!-- Organisation -->
           <Card>
             <CardHeader>
-              <CardTitle>Organisation</CardTitle>
+              <CardTitle>{{ t('billing.organization') }}</CardTitle>
             </CardHeader>
             <CardContent>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                  <p class="text-sm text-muted-foreground">Nom</p>
-                  <p class="font-semibold">{{ subscription.organizationName || `Organisation #${subscription.organizationId}` }}</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.organizationName') }}</p>
+                  <p class="font-semibold text-lg">
+                    {{ subscription.organizationName || `${t('billing.organization')} #${subscription.organizationId}` }}
+                  </p>
                 </div>
                 <div class="space-y-1" v-if="subscription.organizationEmail">
-                  <p class="text-sm text-muted-foreground">Email</p>
+                  <p class="text-sm text-muted-foreground">{{ t('billing.organizationEmail') }}</p>
                   <p class="font-semibold">{{ subscription.organizationEmail }}</p>
                 </div>
               </div>
@@ -168,7 +171,7 @@
           <!-- Factures récentes -->
           <Card>
             <CardHeader class="flex items-center justify-between">
-              <CardTitle>Factures récentes</CardTitle>
+              <CardTitle>{{ t('billing.recentInvoices') }}</CardTitle>
               <Button variant="ghost" size="sm" @click="loadInvoices">
                 <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loadingInvoices }" />
               </Button>
@@ -178,7 +181,7 @@
                 <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
               <div v-else-if="invoices.length === 0" class="text-center py-8 text-muted-foreground">
-                Aucune facture trouvée
+                {{ t('billing.noInvoicesFound') }}
               </div>
               <div v-else class="space-y-4">
                 <div
@@ -217,12 +220,12 @@
           <!-- Actions rapides -->
           <Card>
             <CardHeader>
-              <CardTitle>Actions</CardTitle>
+              <CardTitle>{{ t('common.actions') }}</CardTitle>
             </CardHeader>
             <CardContent class="space-y-2">
               <Button variant="outline" class="w-full justify-start" @click="viewInvoices">
                 <FileText class="mr-2 h-4 w-4" />
-                Toutes les factures
+                {{ t('billing.allInvoices') }}
               </Button>
               <Button 
                 v-if="subscription.status === 'ACTIVE' && !subscription.autoRenew"
@@ -231,7 +234,7 @@
                 @click="enableAutoRenew"
               >
                 <RefreshCw class="mr-2 h-4 w-4" />
-                Activer le renouvellement
+                {{ t('billing.activateRenewal') }}
               </Button>
               <Button 
                 v-if="subscription.status === 'ACTIVE' && subscription.autoRenew"
@@ -240,7 +243,7 @@
                 @click="disableAutoRenew"
               >
                 <XCircle class="mr-2 h-4 w-4" />
-                Désactiver le renouvellement
+                {{ t('billing.deactivateRenewal') }}
               </Button>
               <Button 
                 v-if="subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED'"
@@ -249,7 +252,7 @@
                 @click="renewSubscription"
               >
                 <RefreshCw class="mr-2 h-4 w-4" />
-                Renouveler l'abonnement
+                {{ t('billing.renewSubscription') }}
               </Button>
             </CardContent>
           </Card>
@@ -257,7 +260,7 @@
           <!-- Informations système -->
           <Card>
             <CardHeader>
-              <CardTitle>Informations système</CardTitle>
+              <CardTitle>{{ t('billing.systemInformation') }}</CardTitle>
             </CardHeader>
             <CardContent class="space-y-3">
               <div class="flex justify-between">
@@ -279,9 +282,9 @@
     </div>
 
     <div v-else class="text-center py-12">
-      <p class="text-muted-foreground">Abonnement introuvable</p>
+      <p class="text-muted-foreground">{{ t('billing.subscriptionNotFound') }}</p>
       <Button variant="outline" class="mt-4" @click="goBack">
-        Retour
+        {{ t('common.back') }}
       </Button>
     </div>
   </div>
@@ -290,12 +293,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { billingService, useAuthStore, type Subscription, type Invoice, type Plan } from '@viridial/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, FileText, XCircle, RefreshCw, Download, Eye, Loader2 } from 'lucide-vue-next'
 import { useToast } from '@/components/ui/toast'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -609,6 +615,23 @@ const parsedFeatures = computed((): string[] => {
   
   return []
 })
+
+const getFeatureName = (featureKey: string): string => {
+  // Essayer de traduire la clé de fonctionnalité
+  const translationKey = `billing.features.${featureKey}`
+  const translated = t(translationKey)
+  
+  // Si la traduction existe (et n'est pas la clé elle-même), la retourner
+  if (translated && translated !== translationKey) {
+    return translated
+  }
+  
+  // Sinon, formater la clé en nom lisible (ex: "property_listing" -> "Property Listing")
+  return featureKey
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 onMounted(() => {
   loadSubscription()
