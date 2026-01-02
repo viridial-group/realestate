@@ -153,7 +153,9 @@ export default {
     },
     mapView: {
       legend: 'Legend',
-      propertiesOnMap: 'properties on map'
+      propertiesOnMap: 'properties on map',
+      propertiesFound: 'properties found',
+      clickToView: 'Click to view details'
     }
   },
   billing: {
@@ -256,9 +258,10 @@ export default {
     maxStorageHint: 'Set -1 for unlimited',
     unlimited: 'Unlimited',
     unlimitedPlaceholder: '-1 for unlimited',
-    features: 'Features',
+    featuresLabel: 'Features',
     featuresDescription: 'Features included in this plan',
     noFeatures: 'No features defined',
+    more: 'more',
     addFeature: 'Add Feature',
     featurePlaceholder: 'Feature name',
     jsonPreview: 'JSON Preview',
@@ -276,28 +279,35 @@ export default {
       saveFailed: 'Error saving plan',
       deleteFailed: 'Error deleting plan'
     },
-    'features.property_management': 'Property Management',
-    'features.user_management': 'User Management',
-    'features.organization_management': 'Organization Management',
-    'features.advanced_search': 'Advanced Search',
-    'features.analytics': 'Analytics',
-    'features.reports': 'Reports',
-    'features.email_notifications': 'Email Notifications',
-    'features.basic_analytics': 'Basic Analytics',
-    'features.advanced_analytics': 'Advanced Analytics',
-    'features.mobile_app': 'Mobile App',
-    'features.crm_integration': 'CRM Integration',
-    'features.lead_management': 'Lead Management',
-    'features.document_management': 'Document Management',
-    'features.team_collaboration': 'Team Collaboration',
-    'features.custom_branding': 'Custom Branding',
-    'features.priority_support': 'Priority Support',
-    'features.api_access': 'API Access',
-    'features.white_label': 'White Label',
-    'features.multi_location': 'Multi-Location',
-    'features.workflow_automation': 'Workflow Automation',
-    'features.custom_reports': 'Custom Reports',
-    'features.dedicated_account_manager': 'Dedicated Account Manager'
+    features: {
+      property_listing: 'Property Listings',
+      basic_search: 'Basic Search',
+      advanced_search: 'Advanced Search',
+      property_details: 'Property Details',
+      photo_upload: 'Photo Upload',
+      virtual_tours: 'Virtual Tours',
+      email_notifications: 'Email Notifications',
+      basic_analytics: 'Basic Analytics',
+      advanced_analytics: 'Advanced Analytics',
+      mobile_app: 'Mobile App',
+      crm_integration: 'CRM Integration',
+      lead_management: 'Lead Management',
+      document_management: 'Document Management',
+      team_collaboration: 'Team Collaboration',
+      custom_branding: 'Custom Branding',
+      priority_support: 'Priority Support',
+      api_access: 'API Access',
+      white_label: 'White Label',
+      multi_location: 'Multi-Location',
+      workflow_automation: 'Workflow Automation',
+      custom_reports: 'Custom Reports',
+      dedicated_account_manager: 'Dedicated Account Manager',
+      property_management: 'Property Management',
+      user_management: 'User Management',
+      organization_management: 'Organization Management',
+      analytics: 'Analytics',
+      reports: 'Reports'
+    }
   },
   audit: {
     title: 'Audit & Logs',
@@ -578,7 +588,8 @@ export default {
           description: 'To start creating a property:',
           item1: 'Go to the Properties module',
           item2: 'Click on the "New Property" button',
-          item3: 'The creation form opens'
+          item3: 'The creation form opens',
+          item4: 'You are ready to fill in the property information'
         },
         step2: {
           title: 'Fill in Information',

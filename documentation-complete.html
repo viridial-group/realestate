@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation Complète - Real Estate Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .toc {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .toc ul {
+            list-style: none;
+        }
+        
+        .toc li {
+            margin: 10px 0;
+        }
+        
+        .toc a {
+            color: #333;
+            text-decoration: none;
+            padding: 8px 12px;
+            display: block;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        
+        .toc a:hover {
+            background: #f0f0f0;
+            color: #667eea;
+        }
+        
+        .section {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .section h3 {
+            color: #555;
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .section h4 {
+            color: #666;
+            font-size: 1.2em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-top: 10px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .grid-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+        }
+        
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .badge-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .badge-info {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .tip {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .tip strong {
+            color: #856404;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            margin-top: 50px;
+        }
+        
+        @media print {
+            .toc {
+                page-break-after: always;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📚 Documentation Complète</h1>
+        <p>Guide complet pour utiliser la plateforme Real Estate Admin</p>
+    </header>
+
+    <div class="container">
+        <!-- Table des matières -->
+        <div class="toc">
+            <h2>Table des matières</h2>
+            <ul>
+                <li><a href="#getting-started">1. Premiers pas</a></li>
+                <li><a href="#properties">2. Gestion des Propriétés</a></li>
+                <li><a href="#users">3. Gestion des Utilisateurs</a></li>
+                <li><a href="#organizations">4. Gestion des Organisations</a></li>
+                <li><a href="#workflows">5. Workflows d'approbation</a></li>
+                <li><a href="#billing">6. Facturation et Abonnements</a></li>
+                <li><a href="#notifications">7. Notifications</a></li>
+                <li><a href="#documents">8. Gestion des Documents</a></li>
+                <li><a href="#map">9. Carte Interactive</a></li>
+                <li><a href="#faq">10. FAQ</a></li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Premiers pas -->
+        <div id="getting-started" class="section">
+            <h2>1. Premiers pas</h2>
+            <p>Guide de démarrage rapide pour utiliser la plateforme</p>
+            
+            <div class="card">
+                <h3>Bienvenue</h3>
+                <p>Bienvenue sur la plateforme Real Estate Admin. Cette documentation vous guidera à travers toutes les fonctionnalités disponibles.</p>
+                <ul>
+                    <li>Gestion complète des propriétés immobilières</li>
+                    <li>Système multi-tenant avec organisations</li>
+                    <li>Workflows d'approbation configurables</li>
+                    <li>Carte interactive pour visualiser les propriétés</li>
+                </ul>
+            </div>
+
+            <h3>Premières étapes</h3>
+            
+            <div class="step">
+                <h4><span class="step-number">1</span> Connexion</h4>
+                <p>Connectez-vous avec vos identifiants administrateur :</p>
+                <code>admin@viridial.com / admin123</code>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Explorer le Dashboard</h4>
+                <p>Le tableau de bord vous donne un aperçu de :</p>
+                <ul>
+                    <li>Statistiques des propriétés</li>
+                    <li>Activités récentes</li>
+                    <li>Graphiques et métriques</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Créer votre première propriété</h4>
+                <p>Commencez par créer une propriété pour explorer toutes les fonctionnalités.</p>
+            </div>
+
+            <h3>Navigation</h3>
+            <p>La barre latérale vous permet d'accéder à tous les modules :</p>
+            <div class="grid">
+                <div class="grid-item">
+                    <strong>📊 Dashboard</strong>
+                    <p>Vue d'ensemble de votre activité</p>
+                </div>
+                <div class="grid-item">
+                    <strong>🏠 Propriétés</strong>
+                    <p>Gestion de vos propriétés</p>
+                </div>
+                <div class="grid-item">
+                    <strong>👥 Utilisateurs</strong>
+                    <p>Administration des utilisateurs</p>
+                </div>
+                <div class="grid-item">
+                    <strong>🏢 Organisations</strong>
+                    <p>Gestion des organisations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Propriétés -->
+        <div id="properties" class="section">
+            <h2>2. Gestion des Propriétés</h2>
+            <p>Guide complet pour gérer vos propriétés immobilières</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Le module Propriétés vous permet de gérer toutes vos annonces immobilières.</p>
+                <ul>
+                    <li>Création et édition de propriétés</li>
+                    <li>Upload d'images multiples</li>
+                    <li>Filtres et recherche avancée</li>
+                    <li>Visualisation sur carte interactive</li>
+                </ul>
+            </div>
+
+            <h3>Créer une propriété</h3>
+            <p>Guide étape par étape pour créer une nouvelle propriété</p>
+
+            <div class="step">
+                <h4><span class="step-number">1</span> Accéder au formulaire</h4>
+                <p>Pour commencer à créer une propriété :</p>
+                <ol>
+                    <li>Allez dans le module Propriétés</li>
+                    <li>Cliquez sur le bouton "Nouvelle propriété"</li>
+                    <li>Le formulaire de création s'ouvre</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Remplir les informations</h4>
+                <p>Remplissez tous les champs du formulaire :</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>Titre et description</strong>
+                        <p>Donnez un titre accrocheur et une description détaillée</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Localisation</strong>
+                        <p>Adresse complète, ville, code postal et coordonnées GPS</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Caractéristiques</strong>
+                        <p>Prix, surface, nombre de chambres, salles de bain, etc.</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Type et statut</strong>
+                        <p>Sélectionnez le type (Appartement, Maison, etc.) et le statut initial</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Ajouter des images</h4>
+                <p>Uploadez des images pour illustrer votre propriété :</p>
+                <div class="tip">
+                    <strong>Astuce : </strong>La première image sera utilisée comme image principale. Vous pouvez uploader plusieurs images.
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">4</span> Sauvegarder</h4>
+                <p>Cliquez sur "Créer" pour enregistrer votre propriété. Elle sera créée avec le statut sélectionné.</p>
+            </div>
+
+            <h3>Modes d'affichage</h3>
+            <div class="grid">
+                <div class="grid-item">
+                    <strong>📋 Vue en grille</strong>
+                    <p>Affichez vos propriétés sous forme de cartes avec images.</p>
+                    <p><em>Idéal pour une navigation visuelle rapide. Cliquez sur une carte pour voir les détails.</em></p>
+                </div>
+                <div class="grid-item">
+                    <strong>📊 Vue en liste</strong>
+                    <p>Affichez vos propriétés dans un tableau détaillé.</p>
+                    <p><em>Parfait pour comparer plusieurs propriétés côte à côte avec toutes les informations visibles.</em></p>
+                </div>
+                <div class="grid-item">
+                    <strong>🗺️ Vue carte</strong>
+                    <p>Visualisez vos propriétés sur une carte interactive avec marqueurs.</p>
+                    <p><em>Utile pour voir la répartition géographique de vos propriétés. Cliquez sur un marqueur pour voir les détails.</em></p>
+                </div>
+            </div>
+
+            <h3>Filtres disponibles</h3>
+            <p>Utilisez les filtres pour trouver rapidement les propriétés :</p>
+            <div class="grid">
+                <div class="grid-item">
+                    <strong>Par organisation</strong>
+                    <p>Filtrez les propriétés par organisation</p>
+                </div>
+                <div class="grid-item">
+                    <strong>Par type</strong>
+                    <p>Appartement, Maison, Terrain, etc.</p>
+                </div>
+                <div class="grid-item">
+                    <strong>Par prix</strong>
+                    <p>Filtrez par fourchette de prix</p>
+                </div>
+                <div class="grid-item">
+                    <strong>Par statut</strong>
+                    <p>Disponible, Vendu, Loué, etc.</p>
+                </div>
+            </div>
+
+            <h3>Modifier une propriété</h3>
+            <p>Pour modifier une propriété existante :</p>
+            <ol>
+                <li>Trouvez la propriété dans la liste et cliquez dessus</li>
+                <li>Cliquez sur le bouton "Modifier"</li>
+                <li>Modifiez les champs souhaités et sauvegardez</li>
+            </ol>
+        </div>
+
+        <!-- Section 3: Utilisateurs -->
+        <div id="users" class="section">
+            <h2>3. Gestion des Utilisateurs</h2>
+            <p>Guide pour administrer les utilisateurs et leurs permissions</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Le module Utilisateurs permet de gérer tous les utilisateurs de la plateforme, leurs rôles et leurs permissions.</p>
+            </div>
+
+            <h3>Créer un utilisateur</h3>
+            <div class="step">
+                <h4><span class="step-number">1</span> Accéder au module Utilisateurs</h4>
+                <p>Allez dans le menu latéral et cliquez sur "Utilisateurs", puis sur "Nouvel utilisateur".</p>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Remplir le formulaire</h4>
+                <p>Remplissez les informations de l'utilisateur :</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>Nom et prénom</strong>
+                        <p>Nom complet de l'utilisateur</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Email</strong>
+                        <p>Adresse email unique (servira d'identifiant de connexion)</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Mot de passe</strong>
+                        <p>Mot de passe sécurisé (minimum 8 caractères)</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Rôles</strong>
+                        <p>Sélectionnez un ou plusieurs rôles pour définir les permissions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Sauvegarder</h4>
+                <p>Cliquez sur "Créer" pour enregistrer le nouvel utilisateur.</p>
+            </div>
+
+            <h3>Rôles disponibles</h3>
+            <div class="grid">
+                <div class="grid-item">
+                    <strong>🛡️ ADMIN</strong>
+                    <p>Accès complet à toutes les fonctionnalités</p>
+                    <p><strong>Permissions :</strong> Tous les modules, gestion des utilisateurs, organisations, facturation, audit</p>
+                </div>
+                <div class="grid-item">
+                    <strong>👔 MANAGER</strong>
+                    <p>Gestion des propriétés et équipes</p>
+                    <p><strong>Permissions :</strong> Gestion des propriétés, équipes, workflows, documents</p>
+                </div>
+                <div class="grid-item">
+                    <strong>👤 AGENT</strong>
+                    <p>Gestion de ses propres propriétés</p>
+                    <p><strong>Permissions :</strong> Création et gestion de ses propres propriétés, consultation des documents</p>
+                </div>
+            </div>
+
+            <h3>Gérer les utilisateurs</h3>
+            <h4>Modifier un utilisateur</h4>
+            <p>Pour modifier les informations d'un utilisateur :</p>
+            <ol>
+                <li>Trouvez l'utilisateur dans la liste</li>
+                <li>Cliquez sur "Modifier"</li>
+                <li>Modifiez les champs souhaités et sauvegardez</li>
+            </ol>
+
+            <h4>Supprimer un utilisateur</h4>
+            <p>La suppression d'un utilisateur est définitive. Assurez-vous que l'utilisateur n'a plus de propriétés ou de tâches assignées.</p>
+        </div>
+
+        <!-- Section 4: Organisations -->
+        <div id="organizations" class="section">
+            <h2>4. Gestion des Organisations</h2>
+            <p>Guide pour gérer les organisations multi-tenant</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Les organisations permettent de séparer les données par client dans un système multi-tenant.</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>🏢 Isolation des données</strong>
+                        <p>Chaque organisation a ses propres données, utilisateurs et propriétés</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>🎯 Gestion centralisée</strong>
+                        <p>Administrez plusieurs clients depuis une seule interface</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Créer une organisation</h3>
+            <div class="step">
+                <h4><span class="step-number">1</span> Accéder au module Organisations</h4>
+                <p>Allez dans le menu latéral et cliquez sur "Organisations", puis sur "Nouvelle organisation".</p>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Remplir les informations</h4>
+                <p>Remplissez les champs suivants :</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>Nom</strong>
+                        <p>Nom de l'organisation (ex: "Agence Immobilière Paris")</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Description</strong>
+                        <p>Description de l'organisation et de ses activités</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Domaine</strong>
+                        <p>Domaine web de l'organisation (optionnel)</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Organisation parente</strong>
+                        <p>Sélectionnez une organisation parente si cette organisation est une filiale (optionnel)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Sauvegarder</h4>
+                <p>Cliquez sur "Créer" pour enregistrer la nouvelle organisation. Vous pourrez ensuite y ajouter des utilisateurs.</p>
+            </div>
+
+            <h3>Gérer les organisations</h3>
+            <h4>Ajouter des utilisateurs</h4>
+            <p>Pour ajouter des utilisateurs à une organisation :</p>
+            <ol>
+                <li>Allez dans la page de détail de l'organisation</li>
+                <li>Cliquez sur "Ajouter un utilisateur"</li>
+                <li>Sélectionnez l'utilisateur et son rôle dans l'organisation</li>
+            </ol>
+
+            <h4>Hiérarchie des organisations</h4>
+            <p>Vous pouvez créer des organisations parentes et filiales pour gérer des structures complexes. Les filiales héritent certaines configurations de l'organisation parente.</p>
+        </div>
+
+        <!-- Section 5: Workflows -->
+        <div id="workflows" class="section">
+            <h2>5. Workflows d'approbation</h2>
+            <p>Guide pour configurer et utiliser les workflows</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Les workflows permettent de définir des processus d'approbation personnalisés pour vos propriétés et documents.</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>⚙️ Automatisation</strong>
+                        <p>Automatisez les processus d'approbation pour gagner du temps</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>📋 Traçabilité</strong>
+                        <p>Suivez chaque étape d'approbation avec un historique complet</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>🔧 Flexibilité</strong>
+                        <p>Configurez des workflows adaptés à vos besoins métier</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>🔒 Sécurité</strong>
+                        <p>Contrôlez qui peut approuver quoi avec les rôles requis</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Créer un Workflow</h3>
+            <div class="step">
+                <h4><span class="step-number">1</span> Accéder au module Workflows</h4>
+                <p>Pour commencer à créer un workflow :</p>
+                <ol>
+                    <li>Allez dans le menu latéral et cliquez sur "Workflows"</li>
+                    <li>Cliquez sur le bouton "Créer un workflow"</li>
+                    <li>Le formulaire de création s'ouvre</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Remplir les informations de base</h4>
+                <p>Remplissez les champs suivants :</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>Nom du workflow</strong>
+                        <p>Donnez un nom clair et descriptif (ex: "Approbation création propriété")</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Description</strong>
+                        <p>Décrivez le but et le contexte du workflow</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Action</strong>
+                        <p>Sélectionnez l'action déclencheuse (PROPERTY_CREATE, PROPERTY_UPDATE, etc.)</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Statut</strong>
+                        <p>Activez ou désactivez le workflow (seuls les workflows actifs peuvent être utilisés)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Configurer les étapes d'approbation</h4>
+                <p>Définissez les étapes séquentielles de votre workflow :</p>
+                <div class="card">
+                    <strong>Exemple de workflow en 3 étapes :</strong>
+                    <ol>
+                        <li><strong>Validation initiale</strong> - Rôle: AGENT</li>
+                        <li><strong>Révision manager</strong> - Rôle: MANAGER</li>
+                        <li><strong>Approbation finale</strong> - Rôle: ADMIN</li>
+                    </ol>
+                </div>
+                <div class="tip">
+                    <strong>Astuce : </strong>Les étapes sont exécutées dans l'ordre. Chaque étape doit être approuvée avant de passer à la suivante.
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">4</span> Définir les rôles requis</h4>
+                <p>Spécifiez quels rôles peuvent participer au workflow :</p>
+                <ol>
+                    <li>Cliquez sur "Ajouter un rôle"</li>
+                    <li>Sélectionnez un rôle dans la liste déroulante</li>
+                    <li>Répétez pour tous les rôles nécessaires</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">5</span> Sauvegarder le workflow</h4>
+                <p>Cliquez sur "Créer" pour enregistrer votre workflow. Vous pouvez le marquer comme "Par défaut" pour qu'il soit automatiquement utilisé pour l'action sélectionnée.</p>
+            </div>
+
+            <h3>Utiliser un Workflow</h3>
+            <h4>Démarrer un workflow</h4>
+            <p>Pour démarrer un workflow sur une ressource :</p>
+            <ol>
+                <li>Allez dans la page de détail du workflow</li>
+                <li>Cliquez sur "Démarrer le workflow"</li>
+                <li>Entrez l'ID de la ressource cible (propriété, document, etc.)</li>
+            </ol>
+
+            <h4>Gérer les tâches</h4>
+            <p>Les tâches représentent les étapes à approuver. Statuts disponibles :</p>
+            <div class="grid">
+                <div class="grid-item">
+                    <strong>PENDING</strong>
+                    <p>En attente d'assignation</p>
+                </div>
+                <div class="grid-item">
+                    <strong>IN_PROGRESS</strong>
+                    <p>En cours de traitement</p>
+                </div>
+                <div class="grid-item">
+                    <strong>APPROVED</strong>
+                    <p>Approuvée et validée</p>
+                </div>
+                <div class="grid-item">
+                    <strong>REJECTED</strong>
+                    <p>Rejetée</p>
+                </div>
+                <div class="grid-item">
+                    <strong>CANCELLED</strong>
+                    <p>Annulée</p>
+                </div>
+            </div>
+
+            <h3>Bonnes pratiques</h3>
+            <ul>
+                <li><strong>Nommez clairement vos workflows</strong> - Utilisez des noms descriptifs qui indiquent clairement le but du workflow.</li>
+                <li><strong>Limitez le nombre d'étapes</strong> - Un workflow avec trop d'étapes peut ralentir les processus. 3-5 étapes sont généralement optimales.</li>
+                <li><strong>Testez avant de marquer comme défaut</strong> - Testez votre workflow sur quelques cas avant de le marquer comme workflow par défaut.</li>
+            </ul>
+        </div>
+
+        <!-- Section 6: Facturation -->
+        <div id="billing" class="section">
+            <h2>6. Facturation et Abonnements</h2>
+            <p>Guide pour gérer les abonnements et factures</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Le module Facturation gère les abonnements, plans tarifaires et factures.</p>
+                <ul>
+                    <li>Gestion des abonnements par organisation</li>
+                    <li>Suivi des factures et paiements</li>
+                    <li>Plans tarifaires avec quotas et fonctionnalités</li>
+                </ul>
+            </div>
+
+            <h3>Abonnements</h3>
+            <h4>Consulter les abonnements</h4>
+            <p>Pour voir les abonnements d'une organisation :</p>
+            <ol>
+                <li>Allez dans le module Facturation</li>
+                <li>Sélectionnez une organisation dans la liste</li>
+                <li>Consultez les détails de l'abonnement actif</li>
+            </ol>
+
+            <h4>Détails d'un abonnement</h4>
+            <p>La page de détail affiche :</p>
+            <div class="grid">
+                <div class="grid-item">
+                    <strong>Plan tarifaire</strong>
+                    <p>Plan tarifaire et fonctionnalités incluses</p>
+                </div>
+                <div class="grid-item">
+                    <strong>Quotas</strong>
+                    <p>Quotas utilisés (propriétés, utilisateurs, etc.)</p>
+                </div>
+                <div class="grid-item">
+                    <strong>Dates</strong>
+                    <p>Dates de début et de fin</p>
+                </div>
+                <div class="grid-item">
+                    <strong>Statut</strong>
+                    <p>Statut de l'abonnement (ACTIF, EXPIRÉ, etc.)</p>
+                </div>
+            </div>
+
+            <h3>Factures</h3>
+            <h4>Consulter les factures</h4>
+            <p>Pour voir les factures :</p>
+            <ol>
+                <li>Allez dans le module Facturation</li>
+                <li>Cliquez sur l'onglet "Factures"</li>
+                <li>Filtrez par organisation ou statut si nécessaire</li>
+            </ol>
+
+            <h4>Télécharger une facture</h4>
+            <p>Cliquez sur le bouton de téléchargement à côté d'une facture pour la télécharger au format PDF.</p>
+        </div>
+
+        <!-- Section 7: Notifications -->
+        <div id="notifications" class="section">
+            <h2>7. Notifications</h2>
+            <p>Guide pour utiliser le système de notifications</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Le système de notifications vous permet de recevoir et gérer toutes vos notifications en temps réel.</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>🔔 Notifications en temps réel</strong>
+                        <p>Recevez des notifications instantanées pour les événements importants</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>📋 Gestion centralisée</strong>
+                        <p>Consultez et gérez toutes vos notifications depuis un seul endroit</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Envoyer une notification</h3>
+            <div class="step">
+                <h4><span class="step-number">1</span> Accéder au module Notifications</h4>
+                <p>Allez dans le menu latéral et cliquez sur "Notifications", puis sur "Envoyer une notification".</p>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Remplir le formulaire</h4>
+                <p>Remplissez les informations suivantes :</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>Destinataire</strong>
+                        <p>Sélectionnez l'utilisateur qui recevra la notification</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Titre</strong>
+                        <p>Titre de la notification (ex: "Nouvelle propriété à valider")</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Message</strong>
+                        <p>Contenu détaillé de la notification</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Type</strong>
+                        <p>Type de notification (INFO, WARNING, ERROR, SUCCESS)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Envoyer</h4>
+                <p>Cliquez sur "Envoyer" pour envoyer la notification. Le destinataire la recevra immédiatement.</p>
+            </div>
+
+            <h3>Gérer les notifications</h3>
+            <h4>Marquer comme lu</h4>
+            <p>Pour marquer une notification comme lue :</p>
+            <ol>
+                <li>Cliquez sur la notification dans la liste</li>
+                <li>Elle sera automatiquement marquée comme lue</li>
+            </ol>
+
+            <h4>Notifications dans l'en-tête</h4>
+            <p>L'icône de cloche dans l'en-tête affiche le nombre de notifications non lues. Cliquez dessus pour voir les notifications récentes.</p>
+        </div>
+
+        <!-- Section 8: Documents -->
+        <div id="documents" class="section">
+            <h2>8. Gestion des Documents</h2>
+            <p>Guide pour uploader et gérer les documents</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>Le module Documents permet d'uploader, stocker et gérer tous vos documents liés aux propriétés.</p>
+                <ul>
+                    <li>Upload sécurisé de fichiers (PDF, images, etc.)</li>
+                    <li>Association avec des propriétés ou ressources</li>
+                    <li>Téléchargement et prévisualisation</li>
+                </ul>
+            </div>
+
+            <h3>Uploader un document</h3>
+            <div class="step">
+                <h4><span class="step-number">1</span> Accéder au module Documents</h4>
+                <p>Allez dans le menu latéral et cliquez sur "Documents", puis sur "Uploader un document".</p>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">2</span> Remplir le formulaire</h4>
+                <p>Remplissez les informations suivantes :</p>
+                <div class="grid">
+                    <div class="grid-item">
+                        <strong>Fichier</strong>
+                        <p>Sélectionnez le fichier à uploader (PDF, images, documents Word, etc.)</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Nom</strong>
+                        <p>Donnez un nom descriptif au document</p>
+                    </div>
+                    <div class="grid-item">
+                        <strong>Propriété associée</strong>
+                        <p>Sélectionnez la propriété à laquelle ce document est lié (optionnel)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h4><span class="step-number">3</span> Uploader</h4>
+                <p>Cliquez sur "Uploader" pour envoyer le fichier. Le document sera stocké de manière sécurisée.</p>
+                <div class="tip">
+                    <strong>Limite : </strong>La taille maximale d'un fichier est de 50 MB. Formats acceptés : PDF, images (JPG, PNG), documents (DOC, DOCX).
+                </div>
+            </div>
+
+            <h3>Gérer les documents</h3>
+            <h4>Consulter les documents</h4>
+            <p>Pour voir tous les documents :</p>
+            <ol>
+                <li>Allez dans le module Documents</li>
+                <li>Filtrez par propriété ou type si nécessaire</li>
+            </ol>
+
+            <h4>Télécharger un document</h4>
+            <p>Cliquez sur le bouton de téléchargement à côté d'un document pour le télécharger sur votre ordinateur.</p>
+
+            <h4>Supprimer un document</h4>
+            <p>La suppression d'un document est définitive. Assurez-vous de ne plus en avoir besoin avant de le supprimer.</p>
+        </div>
+
+        <!-- Section 9: Carte -->
+        <div id="map" class="section">
+            <h2>9. Carte Interactive</h2>
+            <p>Guide pour utiliser la carte interactive</p>
+
+            <div class="card">
+                <h3>Vue d'ensemble</h3>
+                <p>La carte interactive vous permet de visualiser toutes vos propriétés sur une carte avec des marqueurs colorés selon leur statut.</p>
+            </div>
+
+            <h3>Fonctionnalités</h3>
+            <h4>Marqueurs colorés</h4>
+            <p>Chaque propriété est représentée par un marqueur dont la couleur indique son statut :</p>
+            <div class="grid">
+                <div class="grid-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #33d484;"></div>
+                        <span><strong>Disponible</strong></span>
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #fdb022;"></div>
+                        <span><strong>Vendu</strong></span>
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #04c9ff;"></div>
+                        <span><strong>Loué</strong></span>
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #8b5cf6;"></div>
+                        <span><strong>En attente</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <h4>Regroupement automatique</h4>
+            <p>Les propriétés proches sont automatiquement regroupées en clusters pour une meilleure lisibilité.</p>
+
+            <h4>Popups informatifs</h4>
+            <p>Cliquez sur un marqueur pour voir les détails de la propriété dans un popup.</p>
+        </div>
+
+        <!-- Section 10: FAQ -->
+        <div id="faq" class="section">
+            <h2>10. Questions Fréquentes</h2>
+            <p>Trouvez des réponses aux questions les plus courantes</p>
+
+            <div class="card">
+                <h3>Comment créer une nouvelle propriété ?</h3>
+                <p>Allez dans le module Propriétés, cliquez sur "Nouvelle propriété", remplissez le formulaire et sauvegardez.</p>
+            </div>
+
+            <div class="card">
+                <h3>Comment changer mon mot de passe ?</h3>
+                <p>Allez dans votre profil utilisateur et utilisez l'option "Changer le mot de passe".</p>
+            </div>
+
+            <div class="card">
+                <h3>Comment filtrer les propriétés ?</h3>
+                <p>Utilisez les filtres en haut de la liste des propriétés pour filtrer par type, prix, statut, etc.</p>
+            </div>
+
+            <div class="card">
+                <h3>Comment ajouter des images à une propriété ?</h3>
+                <p>Lors de la création ou modification d'une propriété, utilisez la section "Images" pour uploader plusieurs images.</p>
+            </div>
+
+            <div class="card">
+                <h3>Comment configurer un workflow d'approbation ?</h3>
+                <p>Allez dans le module Workflows, créez un nouveau workflow et configurez les étapes d'approbation avec les rôles requis.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2024 Real Estate Admin - Documentation complète</p>
+        <p>Dernière mise à jour : <span id="date"></span></p>
+    </footer>
+
+    <script>
+        document.getElementById('date').textContent = new Date().toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    </script>
+</body>
+</html>
+

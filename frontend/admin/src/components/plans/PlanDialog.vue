@@ -131,7 +131,7 @@
 
         <!-- Fonctionnalités -->
         <div class="space-y-2">
-          <Label>{{ t('plans.features') }}</Label>
+          <Label>{{ t('plans.featuresLabel') }}</Label>
           <PlanFeaturesEditor
             v-model="form.features"
             :show-json="false"

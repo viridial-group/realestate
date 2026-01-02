@@ -1,47 +1,148 @@
 <template>
-  <div class="relative w-full h-[600px] rounded-lg overflow-hidden border bg-background shadow-lg">
-    <div ref="mapContainer" class="w-full h-full"></div>
-    
-    <!-- Légende -->
-    <div class="absolute top-4 right-4 z-[1000] bg-white/98 backdrop-blur-sm rounded-lg shadow-xl p-4 border border-gray-200">
-      <h3 class="text-sm font-semibold mb-3 text-gray-900">{{ t('properties.mapView.legend') }}</h3>
-      <div class="space-y-2">
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #33d484;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.available') }}</span>
+  <div class="relative w-full h-[calc(100vh-200px)] rounded-lg overflow-hidden border bg-background shadow-lg flex">
+    <!-- Sidebar avec liste des propriétés (style Zillow) -->
+    <div 
+      v-if="showSidebar"
+      class="w-full lg:w-96 bg-white border-r border-gray-200 overflow-y-auto flex flex-col transition-all duration-300 absolute lg:relative z-[2000] lg:z-auto h-full"
+    >
+      <!-- Header de la sidebar -->
+      <div class="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900">
+            {{ propertiesWithLocation.length }} {{ t('properties.mapView.propertiesFound') }}
+          </h3>
+          <p class="text-xs text-gray-500 mt-0.5">{{ t('properties.mapView.clickToView') }}</p>
         </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #fdb022;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.sold') }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #04c9ff;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.rented') }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #8b5cf6;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.pending') }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #6b7280;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.draft') }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #10b981;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.published') }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #9ca3af;"></div>
-          <span class="text-xs text-gray-700">{{ t('properties.status.archived') }}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="lg:hidden"
+          @click="showSidebar = false"
+        >
+          <X class="h-4 w-4" />
+        </Button>
+      </div>
+
+      <!-- Liste des propriétés -->
+      <div class="flex-1 overflow-y-auto">
+        <div
+          v-for="property in propertiesWithLocation"
+          :key="property.id"
+          class="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+          :class="{ 'bg-blue-50 border-l-4 border-l-blue-500': selectedPropertyId === property.id }"
+          @click="selectProperty(property.id)"
+        >
+          <div class="p-4">
+            <!-- Image -->
+            <div class="relative w-full h-48 rounded-lg overflow-hidden mb-3 bg-gradient-to-br from-gray-200 to-gray-300">
+              <img
+                v-if="property.images && property.images.length > 0"
+                :src="property.images[0]"
+                :alt="property.title"
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+                <Home class="h-12 w-12" />
+              </div>
+              <!-- Badge de statut -->
+              <div
+                class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold text-white shadow-lg"
+                :style="{ backgroundColor: getStatusColor(property.status) }"
+              >
+                {{ getStatusLabel(property.status) }}
+              </div>
+              <!-- Prix -->
+              <div class="absolute bottom-2 left-2 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg shadow-md">
+                <span class="text-lg font-bold text-gray-900">{{ formatPrice(property.price) }}</span>
+              </div>
+            </div>
+
+            <!-- Titre et adresse -->
+            <h4 class="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm leading-snug">
+              {{ property.title }}
+            </h4>
+            <p class="text-xs text-gray-500 mb-3 line-clamp-1 flex items-center gap-1">
+              <MapPin class="h-3 w-3 flex-shrink-0" />
+              {{ property.address }}
+            </p>
+
+            <!-- Détails (chambres, salles de bain, surface) -->
+            <div class="flex items-center gap-4 text-xs text-gray-600">
+              <div v-if="property.bedrooms" class="flex items-center gap-1">
+                <span>🛏️</span>
+                <span class="font-medium">{{ property.bedrooms }}</span>
+              </div>
+              <div v-if="property.bathrooms" class="flex items-center gap-1">
+                <span>🚿</span>
+                <span class="font-medium">{{ property.bathrooms }}</span>
+              </div>
+              <div v-if="property.area" class="flex items-center gap-1">
+                <span>📐</span>
+                <span class="font-medium">{{ property.area }} m²</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Compteur de propriétés -->
-    <div class="absolute top-4 left-4 z-[1000] bg-white/98 backdrop-blur-sm rounded-lg shadow-xl px-4 py-2.5 border border-gray-200">
-      <span class="text-sm font-semibold text-gray-900">
-        {{ propertiesWithLocation.length }} {{ t('properties.mapView.propertiesOnMap') }}
-      </span>
+    <!-- Zone de la carte -->
+    <div class="flex-1 relative w-full h-full">
+      <div ref="mapContainer" class="w-full h-full"></div>
+      
+      <!-- Bouton pour afficher/masquer la sidebar -->
+      <Button
+        v-if="!showSidebar"
+        variant="default"
+        size="icon"
+        class="absolute top-4 left-4 z-[1000] bg-white hover:bg-gray-50 text-gray-900 shadow-lg border border-gray-200"
+        @click="showSidebar = true"
+      >
+        <List class="h-4 w-4" />
+      </Button>
+
+      <!-- Légende -->
+      <div class="absolute top-4 right-4 z-[1000] bg-white/98 backdrop-blur-sm rounded-lg shadow-xl p-4 border border-gray-200 max-w-[200px]">
+        <h3 class="text-sm font-semibold mb-3 text-gray-900">{{ t('properties.mapView.legend') }}</h3>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #33d484;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.available') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #fdb022;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.sold') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #04c9ff;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.rented') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #8b5cf6;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.pending') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #6b7280;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.draft') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #10b981;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.published') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: #9ca3af;"></div>
+            <span class="text-xs text-gray-700">{{ t('properties.status.archived') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compteur de propriétés (si sidebar masquée) -->
+      <div v-if="!showSidebar" class="absolute top-4 left-14 z-[1000] bg-white/98 backdrop-blur-sm rounded-lg shadow-xl px-4 py-2.5 border border-gray-200">
+        <span class="text-sm font-semibold text-gray-900">
+          {{ propertiesWithLocation.length }} {{ t('properties.mapView.propertiesOnMap') }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -55,6 +156,8 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import * as MarkerClusterGroup from 'leaflet.markercluster'
 import type { Property } from '@viridial/shared'
+import { Button } from '@/components/ui/button'
+import { List, X, Home, MapPin } from 'lucide-vue-next'
 
 // Fix pour les icônes par défaut de Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -79,6 +182,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const mapContainer = ref<HTMLElement | null>(null)
+// Afficher la sidebar par défaut sur desktop, masquer sur mobile
+const showSidebar = ref(window.innerWidth >= 1024)
 let map: L.Map | null = null
 let markerClusterGroup: L.MarkerClusterGroup | null = null
 let markers: L.Marker[] = []
@@ -166,12 +271,18 @@ const initMap = () => {
     keyboard: true
   })
 
-  // Ajouter le tile layer avec un style plus moderne (CartoDB Positron)
+  // Ajouter le tile layer avec un style moderne (style Zillow-like)
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap contributors © CARTO',
     maxZoom: 19,
     subdomains: 'abcd'
   }).addTo(map)
+
+  // Alternative: Style plus coloré comme Zillow (décommentez pour activer)
+  // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  //   attribution: '© OpenStreetMap contributors',
+  //   maxZoom: 19
+  // }).addTo(map)
 
   // Ajouter les contrôles de zoom personnalisés
   L.control.zoom({
@@ -380,7 +491,7 @@ const updateMarkers = () => {
             onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';"
             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)';"
           >
-            Voir les détails
+            ${t('common.view')} ${t('common.details')}
           </button>
         </div>
       </div>
@@ -429,6 +540,54 @@ const getStatusLabel = (status: string): string => {
   return t(`properties.status.${status.toLowerCase()}`)
 }
 
+// Sélectionner une propriété depuis la sidebar
+const selectProperty = (propertyId: number) => {
+  emit('property-click', propertyId)
+  
+  // Centrer la carte sur la propriété sélectionnée
+  if (map) {
+    const property = propertiesWithLocation.value.find(p => p.id === propertyId)
+    if (property) {
+      map.setView([property.latitude!, property.longitude!], 16, {
+        animate: true,
+        duration: 0.5
+      })
+      // Ouvrir le popup
+      setTimeout(() => {
+        const marker = markers.find((_, index) => 
+          propertiesWithLocation.value[index].id === propertyId
+        )
+        if (marker) {
+          marker.openPopup()
+        }
+      }, 500)
+    }
+  }
+}
+
+// Gérer les erreurs d'image
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.style.display = 'none'
+}
+
+// Gérer le redimensionnement de la fenêtre
+const handleResize = () => {
+  if (window.innerWidth < 1024) {
+    showSidebar.value = false
+  } else if (window.innerWidth >= 1024 && !showSidebar.value) {
+    // Optionnel: réafficher la sidebar sur desktop si elle était masquée
+    // showSidebar.value = true
+  }
+  
+  // Redimensionner la carte si nécessaire
+  if (map) {
+    setTimeout(() => {
+      map?.invalidateSize()
+    }, 100)
+  }
+}
+
 // Écouter les événements depuis les popups
 onMounted(() => {
   initMap()
@@ -437,6 +596,9 @@ onMounted(() => {
   window.addEventListener('property-click', ((e: CustomEvent) => {
     emit('property-click', e.detail)
   }) as EventListener)
+  
+  // Écouter le redimensionnement
+  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
@@ -450,6 +612,7 @@ onBeforeUnmount(() => {
     map = null
   }
   window.removeEventListener('property-click', (() => {}) as EventListener)
+  window.removeEventListener('resize', handleResize)
 })
 
 // Watchers

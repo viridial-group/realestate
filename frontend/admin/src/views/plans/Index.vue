@@ -169,7 +169,7 @@
 
                 <!-- Fonctionnalités -->
                 <div v-if="parsedFeatures(plan).length > 0" class="mt-4">
-                  <p class="text-sm text-muted-foreground mb-2">{{ t('plans.features') }}:</p>
+                  <p class="text-sm text-muted-foreground mb-2">{{ t('plans.featuresLabel') }}:</p>
                   <div class="flex flex-wrap gap-2">
                     <Badge
                       v-for="(feature, index) in parsedFeatures(plan).slice(0, 5)"

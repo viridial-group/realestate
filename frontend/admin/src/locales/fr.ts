@@ -151,7 +151,9 @@ export default {
     },
     mapView: {
       legend: 'Légende',
-      propertiesOnMap: 'propriétés sur la carte'
+      propertiesOnMap: 'propriétés sur la carte',
+      propertiesFound: 'propriétés trouvées',
+      clickToView: 'Cliquez pour voir les détails'
     }
   },
   billing: {
@@ -254,9 +256,10 @@ export default {
     maxStorageHint: 'Mettez -1 pour illimité',
     unlimited: 'Illimité',
     unlimitedPlaceholder: '-1 pour illimité',
-    features: 'Fonctionnalités',
+    featuresLabel: 'Fonctionnalités',
     featuresDescription: 'Fonctionnalités incluses dans ce plan',
     noFeatures: 'Aucune fonctionnalité définie',
+    more: 'de plus',
     addFeature: 'Ajouter une fonctionnalité',
     featurePlaceholder: 'Nom de la fonctionnalité',
     jsonPreview: 'Aperçu JSON',
@@ -274,28 +277,35 @@ export default {
       saveFailed: 'Erreur lors de la sauvegarde du plan',
       deleteFailed: 'Erreur lors de la suppression du plan'
     },
-    'features.property_management': 'Gestion des propriétés',
-    'features.user_management': 'Gestion des utilisateurs',
-    'features.organization_management': 'Gestion des organisations',
-    'features.advanced_search': 'Recherche avancée',
-    'features.analytics': 'Analytique',
-    'features.reports': 'Rapports',
-    'features.email_notifications': 'Notifications par email',
-    'features.basic_analytics': 'Statistiques de base',
-    'features.advanced_analytics': 'Statistiques avancées',
-    'features.mobile_app': 'Application mobile',
-    'features.crm_integration': 'Intégration CRM',
-    'features.lead_management': 'Gestion des leads',
-    'features.document_management': 'Gestion des documents',
-    'features.team_collaboration': 'Collaboration d\'équipe',
-    'features.custom_branding': 'Personnalisation de la marque',
-    'features.priority_support': 'Support prioritaire',
-    'features.api_access': 'Accès API',
-    'features.white_label': 'Marque blanche',
-    'features.multi_location': 'Multi-localisation',
-    'features.workflow_automation': 'Automatisation des workflows',
-    'features.custom_reports': 'Rapports personnalisés',
-    'features.dedicated_account_manager': 'Gestionnaire de compte dédié'
+    features: {
+      property_listing: 'Annonces immobilières',
+      basic_search: 'Recherche de base',
+      advanced_search: 'Recherche avancée',
+      property_details: 'Détails des propriétés',
+      photo_upload: 'Upload de photos',
+      virtual_tours: 'Visites virtuelles',
+      email_notifications: 'Notifications par email',
+      basic_analytics: 'Statistiques de base',
+      advanced_analytics: 'Statistiques avancées',
+      mobile_app: 'Application mobile',
+      crm_integration: 'Intégration CRM',
+      lead_management: 'Gestion des leads',
+      document_management: 'Gestion des documents',
+      team_collaboration: 'Collaboration d\'équipe',
+      custom_branding: 'Personnalisation de la marque',
+      priority_support: 'Support prioritaire',
+      api_access: 'Accès API',
+      white_label: 'Marque blanche',
+      multi_location: 'Multi-localisation',
+      workflow_automation: 'Automatisation des workflows',
+      custom_reports: 'Rapports personnalisés',
+      dedicated_account_manager: 'Gestionnaire de compte dédié',
+      property_management: 'Gestion des propriétés',
+      user_management: 'Gestion des utilisateurs',
+      organization_management: 'Gestion des organisations',
+      analytics: 'Analytique',
+      reports: 'Rapports'
+    }
   },
   audit: {
     title: 'Audit et Logs',
@@ -576,7 +586,8 @@ export default {
           description: 'Pour commencer à créer une propriété :',
           item1: 'Allez dans le module Propriétés',
           item2: 'Cliquez sur le bouton "Nouvelle propriété"',
-          item3: 'Le formulaire de création s\'ouvre'
+          item3: 'Le formulaire de création s\'ouvre',
+          item4: 'Vous êtes prêt à remplir les informations de la propriété'
         },
         step2: {
           title: 'Remplir les informations',

@@ -114,7 +114,7 @@
           <!-- Fonctionnalités -->
           <Card>
             <CardHeader>
-              <CardTitle>{{ t('plans.features') }}</CardTitle>
+              <CardTitle>{{ t('plans.featuresLabel') }}</CardTitle>
               <CardDescription>{{ t('plans.featuresDescription') }}</CardDescription>
             </CardHeader>
             <CardContent>
