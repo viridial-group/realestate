@@ -10,9 +10,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,10 +31,13 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
     private final InvoiceMapper invoiceMapper;
+    private final com.realestate.billing.service.InvoicePdfService invoicePdfService;
 
-    public InvoiceController(InvoiceService invoiceService, InvoiceMapper invoiceMapper) {
+    public InvoiceController(InvoiceService invoiceService, InvoiceMapper invoiceMapper, 
+                           com.realestate.billing.service.InvoicePdfService invoicePdfService) {
         this.invoiceService = invoiceService;
         this.invoiceMapper = invoiceMapper;
+        this.invoicePdfService = invoicePdfService;
     }
 
     @PostMapping
@@ -114,6 +122,35 @@ public class InvoiceController {
                 .map(invoiceMapper::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(invoiceDTOs);
+    }
+
+    @GetMapping("/{id}/download")
+    @Operation(summary = "Download invoice PDF", description = "Downloads the invoice as a PDF file")
+    public ResponseEntity<Resource> downloadInvoicePdf(@PathVariable Long id) {
+        Invoice invoice = invoiceService.getInvoiceById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", id));
+        
+        try {
+            byte[] pdfBytes = invoicePdfService.generateInvoicePdf(invoice);
+            ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, 
+                            "attachment; filename=invoice-" + invoice.getInvoiceNumber() + ".html")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentLength(pdfBytes.length)
+                    .body(resource);
+        } catch (IOException e) {
+            throw new RuntimeException("Error generating invoice PDF", e);
+        }
+    }
+
+    @PostMapping("/subscription/{subscriptionId}/generate")
+    @Operation(summary = "Generate invoice for subscription", description = "Automatically generates an invoice for a subscription")
+    public ResponseEntity<InvoiceDTO> generateInvoiceForSubscription(@PathVariable Long subscriptionId) {
+        Invoice invoice = invoiceService.generateInvoiceForSubscription(subscriptionId);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(invoiceMapper.toDTO(invoice));
     }
 }
 

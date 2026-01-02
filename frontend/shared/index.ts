@@ -10,6 +10,8 @@ export { userService } from './api/user.service'
 export { organizationService } from './api/organization.service'
 export { documentService } from './api/document.service'
 export { statsService } from './api/stats.service'
+export { billingService } from './api/billing.service'
+export { notificationService } from './api/notification.service'
 export type {
   Organization,
   OrganizationCreate,
@@ -37,6 +39,8 @@ export type * from './types/property-feature.types'
 export type * from './types/user.types'
 export type * from './types/document.types'
 export type * from './types/stats.types'
+export type * from './types/billing.types'
+export type * from './types/notification.types'
 
 // Enums from property.types (exported as values, not types)
 export { PropertyType, PropertyStatus } from './types/property.types'

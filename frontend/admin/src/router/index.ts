@@ -12,6 +12,7 @@ import { billingRoutes } from './routes/billing.routes'
 import { auditRoutes } from './routes/audit.routes'
 import { notificationRoutes } from './routes/notifications.routes'
 import { workflowRoutes } from './routes/workflows.routes'
+import { documentRoutes } from './routes/documents.routes'
 import { authRoutes } from './routes/auth.routes'
 
 const routes: RouteRecordRaw[] = [
@@ -27,7 +28,8 @@ const routes: RouteRecordRaw[] = [
       ...billingRoutes,
       ...auditRoutes,
       ...notificationRoutes,
-      ...workflowRoutes
+      ...workflowRoutes,
+      ...documentRoutes
     ]
   },
   {

@@ -110,6 +110,14 @@ class HttpClient {
     }
   }
 
+  async getBlob(url: string, config?: AxiosRequestConfig): Promise<Blob> {
+    const response = await this.client.get(url, {
+      ...config,
+      responseType: 'blob'
+    })
+    return response.data as Blob
+  }
+
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     const response = await this.client.post<T>(url, data, config)
     return {

@@ -18,18 +18,22 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class DocumentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
 
     private final DocumentRepository documentRepository;
     private final StorageRepository storageRepository;
     private final DocumentEventProducer eventProducer;
 
-    @Value("${storage.base-path:/var/realestate/storage}")
+    @Value("${storage.base-path:./storage}")
     private String baseStoragePath;
 
-    @Value("${storage.allowed-types:image/jpeg,image/png,image/gif,image/webp,application/pdf}")
+    @Value("${storage.allowed-types:image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*}")
     private String allowedTypes;
 
     public DocumentService(
@@ -61,10 +65,28 @@ public class DocumentService {
         // Obtenir le stockage par défaut
         Storage storage = storageRepository.findDefaultStorage()
                 .orElseGet(() -> {
+                    logger.info("No default storage found, creating one with base path: {}", baseStoragePath);
                     Storage defaultStorage = new Storage("FILESYSTEM", baseStoragePath);
                     defaultStorage.setIsDefault(true);
-                    return storageRepository.save(defaultStorage);
+                    defaultStorage.setActive(true);
+                    defaultStorage.setDescription("Default filesystem storage");
+                    try {
+                        Storage saved = storageRepository.save(defaultStorage);
+                        logger.info("Default storage created successfully with ID: {}", saved.getId());
+                        return saved;
+                    } catch (Exception e) {
+                        logger.error("Failed to create default storage", e);
+                        throw new RuntimeException("Failed to create default storage: " + e.getMessage(), e);
+                    }
                 });
+        
+        // Mettre à jour le chemin de base si nécessaire (pour éviter les problèmes de permissions)
+        if (storage.getBasePath() != null && (storage.getBasePath().startsWith("/var/") || storage.getBasePath().startsWith("/usr/"))) {
+            logger.warn("Storage base path is in system directory ({}), updating to relative path: {}", storage.getBasePath(), baseStoragePath);
+            storage.setBasePath(baseStoragePath);
+            storage = storageRepository.save(storage);
+            logger.info("Storage base path updated successfully");
+        }
 
         // Générer un nom de fichier unique
         String originalFilename = file.getOriginalFilename();
@@ -74,14 +96,36 @@ public class DocumentService {
         String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
 
         // Créer le répertoire de l'organisation si nécessaire
-        Path orgPath = Paths.get(storage.getBasePath(), organizationId.toString());
-        Files.createDirectories(orgPath);
+        // Utiliser un chemin absolu pour éviter les problèmes de permissions
+        String storagePath = storage.getBasePath();
+        if (storagePath == null || storagePath.isEmpty()) {
+            storagePath = baseStoragePath;
+        }
+        // Convertir le chemin relatif en absolu si nécessaire
+        Path basePath = Paths.get(storagePath);
+        if (!basePath.isAbsolute()) {
+            basePath = Paths.get(System.getProperty("user.dir"), storagePath).toAbsolutePath().normalize();
+        }
+        Path orgPath = basePath.resolve(organizationId.toString());
+        try {
+            Files.createDirectories(orgPath);
+            logger.debug("Created directory: {}", orgPath);
+        } catch (IOException e) {
+            logger.error("Failed to create directory: {}", orgPath, e);
+            throw new IOException("Failed to create storage directory: " + e.getMessage() + ". Path: " + orgPath, e);
+        }
 
         // Chemin complet du fichier
         Path filePath = orgPath.resolve(uniqueFilename);
 
         // Sauvegarder le fichier
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            logger.debug("File saved successfully: {}", filePath);
+        } catch (IOException e) {
+            logger.error("Failed to save file: {}", filePath, e);
+            throw new IOException("Failed to save file: " + e.getMessage(), e);
+        }
 
         // Déterminer le type de document
         String documentType = determineDocumentType(file.getContentType());
@@ -93,7 +137,9 @@ public class DocumentService {
         document.setType(documentType);
         document.setMimeType(file.getContentType());
         document.setFileSize(file.getSize());
-        document.setFilePath(filePath.toString().replace(storage.getBasePath() + "/", ""));
+        // Stocker le chemin relatif au répertoire de base
+        String relativePath = basePath.relativize(filePath).toString().replace("\\", "/");
+        document.setFilePath(relativePath);
         document.setOrganizationId(organizationId);
         document.setCreatedBy(createdBy);
         document.setPropertyId(propertyId);
@@ -144,7 +190,19 @@ public class DocumentService {
     public Path getDocumentPath(Document document) {
         Storage storage = storageRepository.findDefaultStorage()
                 .orElseThrow(() -> new RuntimeException("Default storage not found"));
-        return Paths.get(storage.getBasePath(), document.getFilePath());
+        
+        String storagePath = storage.getBasePath();
+        if (storagePath == null || storagePath.isEmpty()) {
+            storagePath = baseStoragePath;
+        }
+        
+        // Convertir le chemin relatif en absolu si nécessaire
+        Path basePath = Paths.get(storagePath);
+        if (!basePath.isAbsolute()) {
+            basePath = Paths.get(System.getProperty("user.dir"), storagePath).toAbsolutePath().normalize();
+        }
+        
+        return basePath.resolve(document.getFilePath());
     }
 
     @Transactional
@@ -191,15 +249,22 @@ public class DocumentService {
         String[] allowed = allowedTypes.split(",");
         boolean isAllowed = false;
         for (String allowedType : allowed) {
-            if (contentType.trim().equals(allowedType.trim()) || 
-                contentType.startsWith(allowedType.trim().split("/")[0] + "/")) {
+            String trimmed = allowedType.trim();
+            // Support for wildcards like "image/*"
+            if (trimmed.endsWith("/*")) {
+                String prefix = trimmed.substring(0, trimmed.length() - 2);
+                if (contentType.startsWith(prefix + "/")) {
+                    isAllowed = true;
+                    break;
+                }
+            } else if (contentType.trim().equals(trimmed)) {
                 isAllowed = true;
                 break;
             }
         }
 
         if (!isAllowed) {
-            throw new IllegalArgumentException("File type not allowed: " + contentType);
+            throw new IllegalArgumentException("File type not allowed: " + contentType + ". Allowed types: " + allowedTypes);
         }
     }
 

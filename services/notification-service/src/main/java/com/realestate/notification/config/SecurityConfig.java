@@ -2,12 +2,20 @@ package com.realestate.notification.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+/**
+ * Configuration de sécurité pour le Notification Service
+ * 
+ * Surcharge WebMvcSecurityConfig du module common pour permettre
+ * l'accès public aux endpoints de notifications pendant le développement.
+ * Le bean overriding est activé dans application.yml.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -19,6 +27,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Primary
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))

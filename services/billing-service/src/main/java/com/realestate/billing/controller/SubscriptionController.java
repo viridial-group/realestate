@@ -30,6 +30,22 @@ public class SubscriptionController {
         this.subscriptionMapper = subscriptionMapper;
     }
 
+    @GetMapping
+    @Operation(summary = "List all subscriptions", description = "Returns a list of all subscriptions with optional status filter")
+    public ResponseEntity<List<SubscriptionDTO>> getAllSubscriptions(
+            @RequestParam(required = false) String status) {
+        List<Subscription> subscriptions;
+        if (status != null && !status.isEmpty()) {
+            subscriptions = subscriptionService.getSubscriptionsByStatus(status);
+        } else {
+            subscriptions = subscriptionService.getAllSubscriptions();
+        }
+        List<SubscriptionDTO> subscriptionDTOs = subscriptions.stream()
+                .map(subscriptionMapper::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(subscriptionDTOs);
+    }
+
     @PostMapping
     @Operation(summary = "Create subscription", description = "Creates a new subscription for an organization to a plan")
     public ResponseEntity<SubscriptionDTO> createSubscription(@RequestBody Map<String, Long> request) {

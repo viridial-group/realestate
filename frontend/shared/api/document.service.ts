@@ -58,13 +58,20 @@ export const documentService = {
    * Télécharger un document
    */
   async download(id: number): Promise<Blob> {
-    const response = await httpClient.get<Blob>(
-      API_ENDPOINTS.DOCUMENTS.DOWNLOAD(id),
+    return await httpClient.getBlob(API_ENDPOINTS.DOCUMENTS.DOWNLOAD(id))
+  },
+
+  /**
+   * Récupérer les documents d'une organisation
+   */
+  async getByOrganizationId(organizationId: number): Promise<Document[]> {
+    const response = await httpClient.get<Document[]>(
+      API_ENDPOINTS.DOCUMENTS.BASE,
       {
-        responseType: 'blob'
+        params: { organizationId }
       }
     )
-    return response.data
+    return response.data || []
   },
 
   /**

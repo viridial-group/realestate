@@ -1,16 +1,20 @@
 package com.realestate.identity.service;
 
+import com.realestate.identity.dto.OrganizationUserDTO;
 import com.realestate.identity.entity.Organization;
 import com.realestate.identity.entity.OrganizationUser;
 import com.realestate.identity.entity.Team;
+import com.realestate.identity.entity.User;
 import com.realestate.identity.repository.OrganizationRepository;
 import com.realestate.identity.repository.OrganizationUserRepository;
 import com.realestate.identity.repository.TeamRepository;
+import com.realestate.identity.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class OrganizationUserService {
@@ -18,14 +22,17 @@ public class OrganizationUserService {
     private final OrganizationUserRepository organizationUserRepository;
     private final OrganizationRepository organizationRepository;
     private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
 
     public OrganizationUserService(
             OrganizationUserRepository organizationUserRepository,
             OrganizationRepository organizationRepository,
-            TeamRepository teamRepository) {
+            TeamRepository teamRepository,
+            UserRepository userRepository) {
         this.organizationUserRepository = organizationUserRepository;
         this.organizationRepository = organizationRepository;
         this.teamRepository = teamRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -101,6 +108,44 @@ public class OrganizationUserService {
     @Transactional(readOnly = true)
     public List<OrganizationUser> getUsersByOrganizationId(Long organizationId) {
         return organizationUserRepository.findActiveByOrganizationId(organizationId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrganizationUserDTO> getUsersByOrganizationIdWithUserInfo(Long organizationId) {
+        List<OrganizationUser> organizationUsers = organizationUserRepository.findActiveByOrganizationId(organizationId);
+        
+        return organizationUsers.stream().map(orgUser -> {
+            OrganizationUserDTO dto = new OrganizationUserDTO();
+            dto.setId(orgUser.getId());
+            dto.setUserId(orgUser.getUserId());
+            dto.setActive(orgUser.getActive());
+            dto.setIsPrimary(orgUser.getIsPrimary());
+            dto.setCustomRoles(orgUser.getCustomRoles());
+            dto.setCreatedAt(orgUser.getCreatedAt());
+            dto.setUpdatedAt(orgUser.getUpdatedAt());
+            
+            // Organization info
+            if (orgUser.getOrganization() != null) {
+                dto.setOrganizationId(orgUser.getOrganization().getId());
+                dto.setOrganizationName(orgUser.getOrganization().getName());
+            }
+            
+            // Team info
+            if (orgUser.getTeam() != null) {
+                dto.setTeamId(orgUser.getTeam().getId());
+            }
+            
+            // User info
+            Optional<User> userOpt = userRepository.findById(orgUser.getUserId());
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                dto.setUserEmail(user.getEmail());
+                dto.setUserFirstName(user.getFirstName());
+                dto.setUserLastName(user.getLastName());
+            }
+            
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

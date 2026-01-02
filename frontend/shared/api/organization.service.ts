@@ -59,6 +59,7 @@ export interface OrganizationUser {
   id: number
   userId: number
   organizationId: number
+  organizationName?: string
   teamId?: number
   isPrimary: boolean
   active: boolean
@@ -69,6 +70,11 @@ export interface OrganizationUser {
     name: string
     email: string
   }
+  // Direct user fields from DTO
+  userEmail?: string
+  userFirstName?: string
+  userLastName?: string
+  userName?: string
 }
 
 /**

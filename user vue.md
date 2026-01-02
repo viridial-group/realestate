@@ -1,37 +1,68 @@
-Prochaines étapes pour le module Users
-Priorité 1 — Fonctionnalités manquantes critiques
-Page de détail utilisateur (Detail.vue)
-viewUser est un TODO (ligne 437-439)
-Créer /users/:id avec :
-Informations complètes
-Historique d'activité (userService.getActivity)
-Gestion des rôles/permissions
-Gestion des organisations (assigner/retirer, définir principale)
-Statistiques de connexion
-Correction du filtre de recherche
-Le paramètre search est déjà passé (ligne 390), mais vérifier que le backend le prend en charge
-Priorité 2 — Améliorations UX
-Actions en masse
-Sélection multiple (checkbox)
-Activer/désactiver/supprimer plusieurs utilisateurs
-Aligner avec le module organizations
-Export des données
-Export CSV/Excel
-Filtres appliqués
-Amélioration du UserDialog
-Gestion des organisations multiples
-Sélection de rôles multiples
-Validation renforcée
-Priorité 3 — Fonctionnalités avancées
-Gestion des organisations utilisateur
-Assigner à plusieurs organisations
-Définir l'organisation principale
-Utiliser les endpoints /api/identity/organization-users
-Historique d'activité
-Timeline des actions
-Logs de connexion
-Utiliser userService.getActivity
-Gestion des permissions
-Interface pour assigner/retirer des rôles
-Utiliser userService.assignRoles / removeRoles
-Souhaitez-vous que je commence par la page de détail utilisateur ? C’est la fonctionnalité la plus visible manquante.
+Prochaines étapes recommandées
+Option 1 : Compléter le module Billing (priorité haute)
+Temps estimé : 2-3 heures
+Pourquoi :
+Interface prête, mais les appels API sont en TODO
+Fonctionnalité importante pour la monétisation
+Impact business direct
+À faire :
+Créer le service API billingService dans frontend/shared/api/
+Connecter les endpoints backend (subscriptions, invoices, stats)
+Implémenter les fonctions TODO dans billing/Index.vue
+Ajouter la gestion des factures (liste, détails, téléchargement)
+Option 2 : Compléter le module Notifications (priorité moyenne)
+Temps estimé : 1-2 heures
+Pourquoi :
+Interface prête, mais les actions sont en TODO
+Améliore l'expérience utilisateur
+Relativement rapide à implémenter
+À faire :
+Créer le service API notificationService
+Implémenter markAsRead, markAllAsRead, deleteNotification
+Connecter l'API backend
+Ajouter les notifications en temps réel (optionnel)
+Option 3 : Créer le module Documents (priorité moyenne)
+Temps estimé : 3-4 heures
+Pourquoi :
+Dossier existe mais vide
+Fonctionnalité importante pour gérer les documents des propriétés
+Complète le système de gestion
+À faire :
+Créer documents/Index.vue (liste des documents)
+Créer documents/Upload.vue (upload de documents)
+Intégrer avec documentService existant
+Ajouter la prévisualisation et le téléchargement
+Option 4 : Améliorer la validation des formulaires (priorité basse)
+Temps estimé : 2-3 heures
+Pourquoi :
+VeeValidate est installé mais peu utilisé
+Améliore l'UX avec validation en temps réel
+Réduit les erreurs de saisie
+À faire :
+Créer les schémas Zod pour les formulaires
+Intégrer VeeValidate dans properties/Form.vue
+Ajouter la validation dans users/UserDialog.vue
+Améliorer les messages d'erreur
+Option 5 : Développer le module Workflows (priorité basse)
+Temps estimé : 4-6 heures
+Pourquoi :
+Module en placeholder
+Fonctionnalité avancée pour les workflows d'approbation
+Nécessite un backend complet
+À faire :
+Créer l'interface de gestion des workflows
+Créer les formulaires d'approbation
+Intégrer avec le backend Workflow Service
+Ajouter la timeline des approbations
+Recommandation
+Commencer par Option 1 (Billing) car :
+Impact business direct
+Interface déjà prête, il reste à connecter l'API
+Temps d'implémentation court (2-3 heures)
+Complète une fonctionnalité importante
+Ensuite Option 2 (Notifications) pour améliorer l'UX rapidement.
+Souhaitez-vous que je commence par l'Option 1 (Billing) ?
+
+
+clean package -DskipTests
+java -jar target/*.jar

@@ -100,5 +100,25 @@ public class InvoiceService {
     public List<Invoice> getOverdueInvoices(LocalDateTime date) {
         return invoiceRepository.findOverdueInvoices(date);
     }
+
+    /**
+     * Génère automatiquement une facture pour un abonnement
+     * Utilise le prix du plan comme montant de base
+     */
+    @Transactional
+    public Invoice generateInvoiceForSubscription(Long subscriptionId) {
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription", subscriptionId));
+
+        // Calculer le montant depuis le plan
+        BigDecimal amount = subscription.getPlan().getPrice();
+        
+        // Calculer la TVA (20% par défaut en France)
+        BigDecimal taxRate = new BigDecimal("0.20");
+        BigDecimal taxAmount = amount.multiply(taxRate);
+        
+        // Créer la facture
+        return createInvoice(subscriptionId, amount, taxAmount);
+    }
 }
 

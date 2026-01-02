@@ -45,6 +45,44 @@ export const API_ENDPOINTS = {
     BY_ID: (id: number) => `/api/documents/${id}`,
     UPLOAD: '/api/documents/upload',
     DOWNLOAD: (id: number) => `/api/documents/${id}/download`
+  },
+  // Billing
+  BILLING: {
+    BASE: '/api/billing',
+    STATS: '/api/billing/stats',
+    SUBSCRIPTIONS: {
+      BASE: '/api/billing/subscriptions',
+      BY_ID: (id: number) => `/api/billing/subscriptions/${id}`,
+      BY_ORGANIZATION: (organizationId: number) => `/api/billing/subscriptions/organization/${organizationId}`,
+      ACTIVE_BY_ORGANIZATION: (organizationId: number) => `/api/billing/subscriptions/organization/${organizationId}/active`,
+      CANCEL: (id: number) => `/api/billing/subscriptions/${id}/cancel`,
+      RENEW: (id: number) => `/api/billing/subscriptions/${id}/renew`,
+      EXPIRING: '/api/billing/subscriptions/expiring'
+    },
+    INVOICES: {
+      BASE: '/api/billing/invoices',
+      BY_ID: (id: number) => `/api/billing/invoices/${id}`,
+      BY_NUMBER: (invoiceNumber: string) => `/api/billing/invoices/number/${invoiceNumber}`,
+      BY_SUBSCRIPTION: (subscriptionId: number) => `/api/billing/invoices/subscription/${subscriptionId}`,
+      MARK_PAID: (id: number) => `/api/billing/invoices/${id}/mark-paid`,
+      UPDATE_STATUS: (id: number) => `/api/billing/invoices/${id}/status`,
+      OVERDUE: '/api/billing/invoices/overdue'
+    },
+    PLANS: {
+      BASE: '/api/billing/plans',
+      BY_ID: (id: number) => `/api/billing/plans/${id}`,
+      BY_NAME: (name: string) => `/api/billing/plans/name/${name}`,
+      DEFAULT: '/api/billing/plans/default'
+    }
+  },
+  // Notifications
+  NOTIFICATIONS: {
+    BASE: '/api/notifications',
+    BY_ID: (id: number) => `/api/notifications/${id}`,
+    SEND: '/api/notifications/send',
+    MARK_READ: (id: number) => `/api/notifications/${id}/read`,
+    MARK_ARCHIVED: (id: number) => `/api/notifications/${id}/archive`,
+    UNREAD_COUNT: '/api/notifications/unread/count'
   }
 } as const
 

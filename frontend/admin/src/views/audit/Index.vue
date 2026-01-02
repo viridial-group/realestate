@@ -73,7 +73,7 @@
                 <SelectValue placeholder="Tous" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="CREATE">Création</SelectItem>
                 <SelectItem value="UPDATE">Modification</SelectItem>
                 <SelectItem value="DELETE">Suppression</SelectItem>
@@ -89,7 +89,7 @@
                 <SelectValue placeholder="Tous" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="INFO">Info</SelectItem>
                 <SelectItem value="WARNING">Avertissement</SelectItem>
                 <SelectItem value="ERROR">Erreur</SelectItem>
@@ -104,7 +104,7 @@
                 <SelectValue placeholder="Toutes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Toutes</SelectItem>
+                <SelectItem value="all">Toutes</SelectItem>
                 <SelectItem value="today">Aujourd'hui</SelectItem>
                 <SelectItem value="week">Cette semaine</SelectItem>
                 <SelectItem value="month">Ce mois</SelectItem>
@@ -234,9 +234,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 const { toast } = useToast()
 const loading = ref(false)
 const searchQuery = ref('')
-const selectedType = ref('')
-const selectedLevel = ref('')
-const dateRange = ref('')
+const selectedType = ref('all')
+const selectedLevel = ref('all')
+const dateRange = ref('all')
 const currentPage = ref(1)
 const pageSize = 20
 
@@ -275,11 +275,11 @@ const filteredLogs = computed(() => {
     )
   }
 
-  if (selectedType.value) {
+  if (selectedType.value && selectedType.value !== 'all') {
     filtered = filtered.filter((log) => log.action === selectedType.value)
   }
 
-  if (selectedLevel.value) {
+  if (selectedLevel.value && selectedLevel.value !== 'all') {
     filtered = filtered.filter((log) => log.level === selectedLevel.value)
   }
 
@@ -342,9 +342,9 @@ const handleFilter = () => {
 
 const resetFilters = () => {
   searchQuery.value = ''
-  selectedType.value = ''
-  selectedLevel.value = ''
-  dateRange.value = ''
+  selectedType.value = 'all'
+  selectedLevel.value = 'all'
+  dateRange.value = 'all'
   currentPage.value = 1
   loadLogs()
 }

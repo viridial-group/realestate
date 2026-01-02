@@ -11,6 +11,12 @@
 SET session_replication_role = 'replica';
 
 -- Supprimer toutes les tables dans l'ordre inverse des dépendances
+DROP TABLE IF EXISTS notification_subscriptions CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+DROP TABLE IF EXISTS invoices CASCADE;
+DROP TABLE IF EXISTS subscriptions CASCADE;
+DROP TABLE IF EXISTS plans CASCADE;
 DROP TABLE IF EXISTS property_features CASCADE;
 DROP TABLE IF EXISTS property_accesses CASCADE;
 DROP TABLE IF EXISTS properties CASCADE;
@@ -55,6 +61,24 @@ SET session_replication_role = 'replica';
 -- Supprimer les données dans l'ordre inverse des dépendances (si les tables existent)
 DO $$
 BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notification_subscriptions') THEN
+        TRUNCATE TABLE notification_subscriptions CASCADE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notifications') THEN
+        TRUNCATE TABLE notifications CASCADE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'payments') THEN
+        TRUNCATE TABLE payments CASCADE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'invoices') THEN
+        TRUNCATE TABLE invoices CASCADE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'subscriptions') THEN
+        TRUNCATE TABLE subscriptions CASCADE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'plans') THEN
+        TRUNCATE TABLE plans CASCADE;
+    END IF;
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'property_features') THEN
         TRUNCATE TABLE property_features CASCADE;
     END IF;
@@ -317,6 +341,147 @@ CREATE TABLE IF NOT EXISTS property_features (
 
 CREATE INDEX IF NOT EXISTS idx_property_feature ON property_features(property_id);
 
+-- Table plans
+CREATE TABLE IF NOT EXISTS plans (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description VARCHAR(500),
+    price NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'EUR',
+    billing_period VARCHAR(50) DEFAULT 'MONTHLY',
+    max_properties INTEGER,
+    max_users INTEGER,
+    max_storage_gb INTEGER,
+    features TEXT,
+    active BOOLEAN NOT NULL DEFAULT true,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_plan_name ON plans(name);
+CREATE INDEX IF NOT EXISTS idx_plan_active ON plans(active);
+
+-- Table subscriptions
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id BIGSERIAL PRIMARY KEY,
+    plan_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL UNIQUE,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP,
+    trial_end_date TIMESTAMP,
+    auto_renew BOOLEAN NOT NULL DEFAULT true,
+    cancelled_at TIMESTAMP,
+    cancelled_by BIGINT,
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_subscription_plan FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_subscription_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_org ON subscriptions(organization_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_plan ON subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscription_active ON subscriptions(active);
+
+-- Table invoices
+CREATE TABLE IF NOT EXISTS invoices (
+    id BIGSERIAL PRIMARY KEY,
+    subscription_id BIGINT NOT NULL,
+    invoice_number VARCHAR(50) NOT NULL UNIQUE,
+    organization_id BIGINT NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    tax_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'EUR',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    due_date DATE NOT NULL,
+    paid_at TIMESTAMP,
+    billing_period_start DATE NOT NULL,
+    billing_period_end DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_invoice_subscription FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_invoice_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoice_subscription ON invoices(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_organization ON invoices(organization_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_number ON invoices(invoice_number);
+CREATE INDEX IF NOT EXISTS idx_invoice_status ON invoices(status);
+
+-- Table payments
+CREATE TABLE IF NOT EXISTS payments (
+    id BIGSERIAL PRIMARY KEY,
+    invoice_id BIGINT NOT NULL,
+    transaction_id VARCHAR(100) NOT NULL UNIQUE,
+    amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'EUR',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    payment_method VARCHAR(50),
+    payment_gateway_response TEXT,
+    paid_at TIMESTAMP,
+    error_message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_payment_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_invoice ON payments(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_payment_status ON payments(status);
+CREATE INDEX IF NOT EXISTS idx_payment_transaction_id ON payments(transaction_id);
+
+-- Table notifications
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGSERIAL PRIMARY KEY,
+    type VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    recipient_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL,
+    sender_id BIGINT,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    channel VARCHAR(100),
+    target_type VARCHAR(100),
+    target_id BIGINT,
+    action_url VARCHAR(500),
+    read_at TIMESTAMP,
+    active BOOLEAN NOT NULL DEFAULT true,
+    metadata TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notification_recipient FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notification_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notification_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_recipient ON notifications(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notification_status ON notifications(status);
+CREATE INDEX IF NOT EXISTS idx_notification_type ON notifications(type);
+CREATE INDEX IF NOT EXISTS idx_notification_org ON notifications(organization_id);
+CREATE INDEX IF NOT EXISTS idx_notification_created ON notifications(created_at);
+
+-- Table notification_subscriptions
+CREATE TABLE IF NOT EXISTS notification_subscriptions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    organization_id BIGINT NOT NULL,
+    notification_type VARCHAR(100) NOT NULL,
+    channel VARCHAR(100),
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notification_subscription_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notification_subscription_organization FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscription_user ON notification_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_org ON notification_subscriptions(organization_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_type ON notification_subscriptions(notification_type);
+CREATE INDEX IF NOT EXISTS idx_subscription_active ON notification_subscriptions(active);
+
 -- =====================================================
 -- 1. CRÉER LES PERMISSIONS
 -- =====================================================
@@ -406,6 +571,781 @@ VALUES
     ('Bordeaux Immobilier', 'Agence immobilière à Bordeaux', 'bordeaux-immobilier.fr', true, NOW(), NOW()),
     ('Nice Properties', 'Agence immobilière à Nice', 'nice-properties.fr', true, NOW(), NOW())
 ON CONFLICT (name) DO NOTHING;
+
+-- =====================================================
+-- 5.1. CRÉER LES PLANS D'ABONNEMENT (COMPÉTITIFS AVEC SELOGER)
+-- =====================================================
+
+-- Plan FREE : Gratuit pour tester (limité)
+INSERT INTO plans (name, description, price, currency, billing_period, max_properties, max_users, max_storage_gb, features, active, is_default, created_at, updated_at)
+VALUES (
+    'FREE',
+    'Plan gratuit pour tester la plateforme. Idéal pour les agents indépendants qui débutent.',
+    0.00,
+    'EUR',
+    'MONTHLY',
+    5,  -- Maximum 5 propriétés
+    1,  -- 1 utilisateur
+    1,  -- 1 GB de stockage
+    '["property_listing", "basic_search", "property_details", "photo_upload"]',
+    true,
+    true,  -- Plan par défaut
+    NOW(),
+    NOW()
+)
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description,
+    price = EXCLUDED.price,
+    max_properties = EXCLUDED.max_properties,
+    max_users = EXCLUDED.max_users,
+    max_storage_gb = EXCLUDED.max_storage_gb,
+    features = EXCLUDED.features,
+    is_default = EXCLUDED.is_default,
+    updated_at = NOW();
+
+-- Plan STARTER : 29€/mois (vs SeLoger Essentiel ~49€/mois) - 40% moins cher
+INSERT INTO plans (name, description, price, currency, billing_period, max_properties, max_users, max_storage_gb, features, active, is_default, created_at, updated_at)
+VALUES (
+    'STARTER',
+    'Plan Starter pour petites agences. Toutes les fonctionnalités essentielles à un prix compétitif.',
+    29.00,
+    'EUR',
+    'MONTHLY',
+    50,  -- Maximum 50 propriétés
+    3,   -- 3 utilisateurs
+    10,  -- 10 GB de stockage
+    '["property_listing", "advanced_search", "property_details", "photo_upload", "virtual_tours", "email_notifications", "basic_analytics", "mobile_app"]',
+    true,
+    false,
+    NOW(),
+    NOW()
+)
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description,
+    price = EXCLUDED.price,
+    max_properties = EXCLUDED.max_properties,
+    max_users = EXCLUDED.max_users,
+    max_storage_gb = EXCLUDED.max_storage_gb,
+    features = EXCLUDED.features,
+    updated_at = NOW();
+
+-- Plan PROFESSIONAL : 69€/mois (vs SeLoger Confort ~99€/mois) - 30% moins cher
+INSERT INTO plans (name, description, price, currency, billing_period, max_properties, max_users, max_storage_gb, features, active, is_default, created_at, updated_at)
+VALUES (
+    'PROFESSIONAL',
+    'Plan Professional pour agences en croissance. Fonctionnalités avancées et support prioritaire.',
+    69.00,
+    'EUR',
+    'MONTHLY',
+    200,  -- Maximum 200 propriétés
+    10,   -- 10 utilisateurs
+    50,   -- 50 GB de stockage
+    '["property_listing", "advanced_search", "property_details", "photo_upload", "virtual_tours", "email_notifications", "advanced_analytics", "mobile_app", "crm_integration", "lead_management", "document_management", "team_collaboration", "custom_branding", "priority_support"]',
+    true,
+    false,
+    NOW(),
+    NOW()
+)
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description,
+    price = EXCLUDED.price,
+    max_properties = EXCLUDED.max_properties,
+    max_users = EXCLUDED.max_users,
+    max_storage_gb = EXCLUDED.max_storage_gb,
+    features = EXCLUDED.features,
+    updated_at = NOW();
+
+-- Plan ENTERPRISE : 149€/mois (vs SeLoger Premium ~199€/mois) - 25% moins cher
+INSERT INTO plans (name, description, price, currency, billing_period, max_properties, max_users, max_storage_gb, features, active, is_default, created_at, updated_at)
+VALUES (
+    'ENTERPRISE',
+    'Plan Enterprise pour grandes agences et réseaux. Fonctionnalités illimitées et support dédié.',
+    149.00,
+    'EUR',
+    'MONTHLY',
+    NULL,  -- Illimité
+    NULL,  -- Illimité
+    500,   -- 500 GB de stockage
+    '["property_listing", "advanced_search", "property_details", "photo_upload", "virtual_tours", "email_notifications", "advanced_analytics", "mobile_app", "crm_integration", "lead_management", "document_management", "team_collaboration", "custom_branding", "priority_support", "api_access", "white_label", "multi_location", "workflow_automation", "custom_reports", "dedicated_account_manager"]',
+    true,
+    false,
+    NOW(),
+    NOW()
+)
+ON CONFLICT (name) DO UPDATE
+SET description = EXCLUDED.description,
+    price = EXCLUDED.price,
+    max_properties = EXCLUDED.max_properties,
+    max_users = EXCLUDED.max_users,
+    max_storage_gb = EXCLUDED.max_storage_gb,
+    features = EXCLUDED.features,
+    updated_at = NOW();
+
+-- =====================================================
+-- 5.2. CRÉER LES ABONNEMENTS POUR LES ORGANISATIONS
+-- =====================================================
+
+-- Immobilier Paris : Plan PROFESSIONAL (grande agence parisienne)
+INSERT INTO subscriptions (plan_id, organization_id, status, start_date, end_date, auto_renew, active, created_at, updated_at)
+SELECT 
+    p.id,
+    o.id,
+    'ACTIVE',
+    NOW() - INTERVAL '2 months',  -- Abonné depuis 2 mois
+    NOW() + INTERVAL '10 months', -- Se termine dans 10 mois (abonnement annuel)
+    true,
+    true,
+    NOW(),
+    NOW()
+FROM plans p, organizations o
+WHERE p.name = 'PROFESSIONAL' AND o.name = 'Immobilier Paris'
+ON CONFLICT (organization_id) DO UPDATE
+SET plan_id = EXCLUDED.plan_id,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- Real Estate Lyon : Plan STARTER (agence moyenne)
+INSERT INTO subscriptions (plan_id, organization_id, status, start_date, end_date, auto_renew, active, created_at, updated_at)
+SELECT 
+    p.id,
+    o.id,
+    'ACTIVE',
+    NOW() - INTERVAL '1 month',   -- Abonné depuis 1 mois
+    NOW() + INTERVAL '11 months', -- Se termine dans 11 mois
+    true,
+    true,
+    NOW(),
+    NOW()
+FROM plans p, organizations o
+WHERE p.name = 'STARTER' AND o.name = 'Real Estate Lyon'
+ON CONFLICT (organization_id) DO UPDATE
+SET plan_id = EXCLUDED.plan_id,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- Property Marseille : Plan PROFESSIONAL (agence sur la Côte d'Azur)
+INSERT INTO subscriptions (plan_id, organization_id, status, start_date, end_date, auto_renew, active, created_at, updated_at)
+SELECT 
+    p.id,
+    o.id,
+    'ACTIVE',
+    NOW() - INTERVAL '3 months',  -- Abonné depuis 3 mois
+    NOW() + INTERVAL '9 months',  -- Se termine dans 9 mois
+    true,
+    true,
+    NOW(),
+    NOW()
+FROM plans p, organizations o
+WHERE p.name = 'PROFESSIONAL' AND o.name = 'Property Marseille'
+ON CONFLICT (organization_id) DO UPDATE
+SET plan_id = EXCLUDED.plan_id,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- Bordeaux Immobilier : Plan STARTER (petite agence)
+INSERT INTO subscriptions (plan_id, organization_id, status, start_date, end_date, trial_end_date, auto_renew, active, created_at, updated_at)
+SELECT 
+    p.id,
+    o.id,
+    'ACTIVE',
+    NOW() - INTERVAL '15 days',    -- Abonné depuis 15 jours
+    NOW() + INTERVAL '11 months 15 days', -- Se termine dans 11 mois et 15 jours
+    NOW() + INTERVAL '15 days',   -- Fin de période d'essai dans 15 jours
+    true,
+    true,
+    NOW(),
+    NOW()
+FROM plans p, organizations o
+WHERE p.name = 'STARTER' AND o.name = 'Bordeaux Immobilier'
+ON CONFLICT (organization_id) DO UPDATE
+SET plan_id = EXCLUDED.plan_id,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- Nice Properties : Plan ENTERPRISE (grande agence)
+INSERT INTO subscriptions (plan_id, organization_id, status, start_date, end_date, auto_renew, active, created_at, updated_at)
+SELECT 
+    p.id,
+    o.id,
+    'ACTIVE',
+    NOW() - INTERVAL '6 months',  -- Abonné depuis 6 mois
+    NOW() + INTERVAL '6 months',  -- Se termine dans 6 mois
+    true,
+    true,
+    NOW(),
+    NOW()
+FROM plans p, organizations o
+WHERE p.name = 'ENTERPRISE' AND o.name = 'Nice Properties'
+ON CONFLICT (organization_id) DO UPDATE
+SET plan_id = EXCLUDED.plan_id,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- =====================================================
+-- 5.3. CRÉER LES FACTURES (INVOICES) POUR LES ABONNEMENTS
+-- =====================================================
+
+-- Immobilier Paris (PROFESSIONAL - 69€/mois) - Factures mensuelles
+-- Facture 1: Il y a 2 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-PARIS-2024-001',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '2 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '1 month 20 days',
+    (NOW() - INTERVAL '2 months')::DATE,
+    (NOW() - INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '2 months',
+    NOW() - INTERVAL '2 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Immobilier Paris'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 2: Il y a 1 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-PARIS-2024-002',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '1 month')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '20 days',
+    (NOW() - INTERVAL '1 month')::DATE,
+    NOW()::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '1 month',
+    NOW() - INTERVAL '1 month'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Immobilier Paris'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 3: Ce mois (en attente)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-PARIS-2024-003',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PENDING',
+    NOW()::DATE + INTERVAL '15 days',
+    NOW()::DATE,
+    (NOW() + INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW(),
+    NOW()
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Immobilier Paris'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Real Estate Lyon (STARTER - 29€/mois) - Factures mensuelles
+-- Facture 1: Il y a 1 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-LYON-2024-001',
+    s.organization_id,
+    29.00,
+    5.80,
+    34.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '1 month')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '18 days',
+    (NOW() - INTERVAL '1 month')::DATE,
+    NOW()::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '1 month',
+    NOW() - INTERVAL '1 month'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Real Estate Lyon'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 2: Ce mois (en attente)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-LYON-2024-002',
+    s.organization_id,
+    29.00,
+    5.80,
+    34.80,
+    'EUR',
+    'PENDING',
+    NOW()::DATE + INTERVAL '15 days',
+    NOW()::DATE,
+    (NOW() + INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW(),
+    NOW()
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Real Estate Lyon'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Property Marseille (PROFESSIONAL - 69€/mois) - Factures mensuelles
+-- Facture 1: Il y a 3 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-MARSEILLE-2024-001',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '3 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '2 months 20 days',
+    (NOW() - INTERVAL '3 months')::DATE,
+    (NOW() - INTERVAL '2 months')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '3 months',
+    NOW() - INTERVAL '3 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Property Marseille'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 2: Il y a 2 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-MARSEILLE-2024-002',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '2 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '1 month 20 days',
+    (NOW() - INTERVAL '2 months')::DATE,
+    (NOW() - INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '2 months',
+    NOW() - INTERVAL '2 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Property Marseille'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 3: Il y a 1 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-MARSEILLE-2024-003',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '1 month')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '20 days',
+    (NOW() - INTERVAL '1 month')::DATE,
+    NOW()::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '1 month',
+    NOW() - INTERVAL '1 month'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Property Marseille'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 4: Ce mois (en attente)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-MARSEILLE-2024-004',
+    s.organization_id,
+    69.00,
+    13.80,
+    82.80,
+    'EUR',
+    'PENDING',
+    NOW()::DATE + INTERVAL '15 days',
+    NOW()::DATE,
+    (NOW() + INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW(),
+    NOW()
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Property Marseille'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Bordeaux Immobilier (STARTER - 29€/mois) - Facture mensuelle
+-- Facture 1: Il y a 15 jours (en attente - période d'essai)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-BORDEAUX-2024-001',
+    s.organization_id,
+    29.00,
+    5.80,
+    34.80,
+    'EUR',
+    'PENDING',
+    NOW()::DATE + INTERVAL '15 days',
+    (NOW() - INTERVAL '15 days')::DATE,
+    NOW()::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '15 days',
+    NOW() - INTERVAL '15 days'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Bordeaux Immobilier'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Nice Properties (ENTERPRISE - 149€/mois) - Factures mensuelles
+-- Facture 1: Il y a 6 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-001',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '6 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '5 months 20 days',
+    (NOW() - INTERVAL '6 months')::DATE,
+    (NOW() - INTERVAL '5 months')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '6 months',
+    NOW() - INTERVAL '6 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 2: Il y a 5 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-002',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '5 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '4 months 20 days',
+    (NOW() - INTERVAL '5 months')::DATE,
+    (NOW() - INTERVAL '4 months')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '5 months',
+    NOW() - INTERVAL '5 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 3: Il y a 4 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-003',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '4 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '3 months 20 days',
+    (NOW() - INTERVAL '4 months')::DATE,
+    (NOW() - INTERVAL '3 months')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '4 months',
+    NOW() - INTERVAL '4 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 4: Il y a 3 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-004',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '3 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '2 months 20 days',
+    (NOW() - INTERVAL '3 months')::DATE,
+    (NOW() - INTERVAL '2 months')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '3 months',
+    NOW() - INTERVAL '3 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 5: Il y a 2 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-005',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '2 months')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '1 month 20 days',
+    (NOW() - INTERVAL '2 months')::DATE,
+    (NOW() - INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '2 months',
+    NOW() - INTERVAL '2 months'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 6: Il y a 1 mois (payée)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, paid_at, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-006',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PAID',
+    (NOW() - INTERVAL '1 month')::DATE + INTERVAL '15 days',
+    NOW() - INTERVAL '20 days',
+    (NOW() - INTERVAL '1 month')::DATE,
+    NOW()::DATE - INTERVAL '1 day',
+    NOW() - INTERVAL '1 month',
+    NOW() - INTERVAL '1 month'
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- Facture 7: Ce mois (en attente)
+INSERT INTO invoices (subscription_id, invoice_number, organization_id, amount, tax_amount, total_amount, currency, status, due_date, billing_period_start, billing_period_end, created_at, updated_at)
+SELECT 
+    s.id,
+    'INV-NICE-2024-007',
+    s.organization_id,
+    149.00,
+    29.80,
+    178.80,
+    'EUR',
+    'PENDING',
+    NOW()::DATE + INTERVAL '15 days',
+    NOW()::DATE,
+    (NOW() + INTERVAL '1 month')::DATE - INTERVAL '1 day',
+    NOW(),
+    NOW()
+FROM subscriptions s
+JOIN organizations o ON s.organization_id = o.id
+WHERE o.name = 'Nice Properties'
+ON CONFLICT (invoice_number) DO NOTHING;
+
+-- =====================================================
+-- 5.4. CRÉER LES PAIEMENTS (PAYMENTS) POUR LES FACTURES PAYÉES
+-- =====================================================
+
+-- Paiements pour Immobilier Paris
+-- Paiement pour INV-PARIS-2024-001
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-PARIS-001-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-PARIS-2024-001'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-PARIS-2024-002
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-PARIS-002-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-PARIS-2024-002'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiements pour Real Estate Lyon
+-- Paiement pour INV-LYON-2024-001
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-LYON-001-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'BANK_TRANSFER',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-LYON-2024-001'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiements pour Property Marseille
+-- Paiement pour INV-MARSEILLE-2024-001
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-MARSEILLE-001-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-MARSEILLE-2024-001'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-MARSEILLE-2024-002
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-MARSEILLE-002-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-MARSEILLE-2024-002'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-MARSEILLE-2024-003
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-MARSEILLE-003-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-MARSEILLE-2024-003'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiements pour Nice Properties
+-- Paiement pour INV-NICE-2024-001
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-NICE-001-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-NICE-2024-001'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-NICE-2024-002
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-NICE-002-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-NICE-2024-002'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-NICE-2024-003
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-NICE-003-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-NICE-2024-003'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-NICE-2024-004
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-NICE-004-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-NICE-2024-004'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-NICE-2024-005
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-NICE-005-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-NICE-2024-005'
+ON CONFLICT (transaction_id) DO NOTHING;
+
+-- Paiement pour INV-NICE-2024-006
+INSERT INTO payments (invoice_id, transaction_id, amount, currency, status, payment_method, paid_at, created_at)
+SELECT 
+    i.id,
+    'TXN-NICE-006-' || TO_CHAR(i.paid_at, 'YYYYMMDDHH24MISS'),
+    i.total_amount,
+    i.currency,
+    'COMPLETED',
+    'CREDIT_CARD',
+    i.paid_at,
+    i.paid_at
+FROM invoices i
+WHERE i.invoice_number = 'INV-NICE-2024-006'
+ON CONFLICT (transaction_id) DO NOTHING;
 
 -- =====================================================
 -- 6. CRÉER DES UTILISATEURS POUR CHAQUE AGENCE
@@ -1083,7 +2023,132 @@ UNION ALL SELECT (SELECT id FROM properties WHERE reference = 'PROP-BORDEAUX-002
 ON CONFLICT (property_id, key, value) DO NOTHING;
 
 -- =====================================================
--- RÉSUMÉ FINAL
+-- 12. CRÉER DES NOTIFICATIONS
+-- =====================================================
+
+-- Notifications pour Immobilier Paris
+INSERT INTO notifications (type, title, message, recipient_id, organization_id, sender_id, status, channel, target_type, target_id, action_url, read_at, active, metadata, created_at, updated_at)
+SELECT 
+    'INFO', 'Bienvenue sur la plateforme', 'Votre compte a été créé avec succès. Explorez toutes les fonctionnalités disponibles.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', NULL, NULL::BIGINT, NULL, NULL::TIMESTAMP, true, '{"welcome": true}', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days'
+FROM users u, organizations o
+WHERE u.email = 'directeur@paris-immobilier.fr' AND o.name = 'Immobilier Paris'
+UNION ALL SELECT 
+    'SUCCESS', 'Nouvelle propriété ajoutée', 'La propriété "Appartement T2 Paris 15ème" a été ajoutée avec succès.', u.id, o.id, NULL::BIGINT, 'READ', 'IN_APP', 'PROPERTY', (SELECT id FROM properties WHERE reference = 'PROP-PARIS-001'), '/properties/' || (SELECT id::text FROM properties WHERE reference = 'PROP-PARIS-001'), NOW() - INTERVAL '2 days', true, '{"propertyId": 1}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'
+FROM users u, organizations o
+WHERE u.email = 'manager@paris-immobilier.fr' AND o.name = 'Immobilier Paris'
+UNION ALL SELECT 
+    'ALERT', 'Paiement reçu', 'Un paiement de 29.00€ a été reçu pour votre abonnement STARTER.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', 'SUBSCRIPTION', (SELECT id FROM subscriptions WHERE organization_id = o.id LIMIT 1), '/billing/subscriptions', NULL::TIMESTAMP, true, '{"amount": 29.00, "currency": "EUR"}', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
+FROM users u, organizations o
+WHERE u.email = 'directeur@paris-immobilier.fr' AND o.name = 'Immobilier Paris'
+UNION ALL SELECT 
+    'INFO', 'Nouvelle tâche assignée', 'Une nouvelle tâche vous a été assignée.', u.id, o.id, (SELECT id FROM users WHERE email = 'directeur@paris-immobilier.fr')::BIGINT, 'PENDING', 'IN_APP', 'TASK', NULL::BIGINT, '/tasks', NULL::TIMESTAMP, true, '{"taskType": "FOLLOW_UP"}', NOW() - INTERVAL '3 hours', NOW() - INTERVAL '3 hours'
+FROM users u, organizations o
+WHERE u.email = 'agent1@paris-immobilier.fr' AND o.name = 'Immobilier Paris'
+UNION ALL SELECT 
+    'WARNING', 'Facture en attente', 'Votre facture est en attente de paiement.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', 'INVOICE', (SELECT id FROM invoices WHERE organization_id = o.id ORDER BY created_at DESC LIMIT 1), '/billing/invoices/' || (SELECT id::text FROM invoices WHERE organization_id = o.id ORDER BY created_at DESC LIMIT 1), NULL::TIMESTAMP, true, '{"invoiceNumber": "INV-001"}', NOW() - INTERVAL '12 hours', NOW() - INTERVAL '12 hours'
+FROM users u, organizations o
+WHERE u.email = 'directeur@paris-immobilier.fr' AND o.name = 'Immobilier Paris'
+ON CONFLICT DO NOTHING;
+
+-- Notifications pour Real Estate Lyon
+INSERT INTO notifications (type, title, message, recipient_id, organization_id, sender_id, status, channel, target_type, target_id, action_url, read_at, active, metadata, created_at, updated_at)
+SELECT 
+    'INFO', 'Bienvenue sur la plateforme', 'Votre compte a été créé avec succès. Explorez toutes les fonctionnalités disponibles.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', NULL, NULL::BIGINT, NULL, NOW() - INTERVAL '1 day', true, '{"welcome": true}', NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days'
+FROM users u, organizations o
+WHERE u.email = 'directeur@lyon-realestate.fr' AND o.name = 'Real Estate Lyon'
+UNION ALL SELECT 
+    'SUCCESS', 'Nouvelle propriété ajoutée', 'La propriété "Maison avec jardin Lyon 6ème" a été ajoutée avec succès.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', 'PROPERTY', (SELECT id FROM properties WHERE reference = 'PROP-LYON-002'), '/properties/' || (SELECT id::text FROM properties WHERE reference = 'PROP-LYON-002'), NULL::TIMESTAMP, true, '{"propertyId": 2}', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
+FROM users u, organizations o
+WHERE u.email = 'manager@lyon-realestate.fr' AND o.name = 'Real Estate Lyon'
+UNION ALL SELECT 
+    'ALERT', 'Paiement reçu', 'Un paiement de 69.00€ a été reçu pour votre abonnement PROFESSIONAL.', u.id, o.id, NULL::BIGINT, 'READ', 'IN_APP', 'SUBSCRIPTION', (SELECT id FROM subscriptions WHERE organization_id = o.id LIMIT 1), '/billing/subscriptions', NOW() - INTERVAL '6 hours', true, '{"amount": 69.00, "currency": "EUR"}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days'
+FROM users u, organizations o
+WHERE u.email = 'directeur@lyon-realestate.fr' AND o.name = 'Real Estate Lyon'
+ON CONFLICT DO NOTHING;
+
+-- Notifications pour Property Marseille
+INSERT INTO notifications (type, title, message, recipient_id, organization_id, sender_id, status, channel, target_type, target_id, action_url, read_at, active, metadata, created_at, updated_at)
+SELECT 
+    'INFO', 'Bienvenue sur la plateforme', 'Votre compte a été créé avec succès. Explorez toutes les fonctionnalités disponibles.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', NULL, NULL::BIGINT, NULL, NULL::TIMESTAMP, true, '{"welcome": true}', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days'
+FROM users u, organizations o
+WHERE u.email = 'directeur@marseille-property.fr' AND o.name = 'Property Marseille'
+UNION ALL SELECT 
+    'SUCCESS', 'Nouvelle propriété ajoutée', 'La propriété "Villa avec piscine Nice" a été ajoutée avec succès.', u.id, o.id, NULL::BIGINT, 'SENT', 'IN_APP', 'PROPERTY', (SELECT id FROM properties WHERE reference = 'PROP-NICE-002'), '/properties/' || (SELECT id::text FROM properties WHERE reference = 'PROP-NICE-002'), NULL::TIMESTAMP, true, '{"propertyId": 3}', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
+FROM users u, organizations o
+WHERE u.email = 'manager@marseille-property.fr' AND o.name = 'Property Marseille'
+UNION ALL SELECT 
+    'INFO', 'Rappel de rendez-vous', 'Vous avez un rendez-vous prévu demain à 14h00 pour la visite de la propriété.', u.id, o.id, NULL::BIGINT, 'PENDING', 'IN_APP', 'PROPERTY', (SELECT id FROM properties WHERE reference = 'PROP-NICE-001'), '/properties/' || (SELECT id::text FROM properties WHERE reference = 'PROP-NICE-001'), NULL::TIMESTAMP, true, '{"appointmentDate": "2024-01-15T14:00:00"}', NOW() - INTERVAL '18 hours', NOW() - INTERVAL '18 hours'
+FROM users u, organizations o
+WHERE u.email = 'agent1@marseille-property.fr' AND o.name = 'Property Marseille'
+ON CONFLICT DO NOTHING;
+
+-- Notifications système pour tous les utilisateurs
+INSERT INTO notifications (type, title, message, recipient_id, organization_id, sender_id, status, channel, target_type, target_id, action_url, read_at, active, metadata, created_at, updated_at)
+SELECT 
+    'SYSTEM', 'Mise à jour de la plateforme', 'Une nouvelle version de la plateforme est disponible avec de nouvelles fonctionnalités.', u.id, ou.organization_id, NULL::BIGINT, 'PENDING', 'IN_APP', NULL, NULL::BIGINT, '/settings', NULL::TIMESTAMP, true, '{"version": "1.2.0", "features": ["notifications", "documents"]}', NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- 13. CRÉER DES ABONNEMENTS AUX NOTIFICATIONS
+-- =====================================================
+
+-- Abonnements par défaut pour tous les utilisateurs (tous les types de notifications activés)
+INSERT INTO notification_subscriptions (user_id, organization_id, notification_type, channel, enabled, active, created_at, updated_at)
+SELECT 
+    u.id, ou.organization_id, 'PROPERTY_CREATED', 'IN_APP', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+UNION ALL SELECT 
+    u.id, ou.organization_id, 'PROPERTY_UPDATED', 'IN_APP', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+UNION ALL SELECT 
+    u.id, ou.organization_id, 'INVOICE_CREATED', 'IN_APP', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+UNION ALL SELECT 
+    u.id, ou.organization_id, 'PAYMENT_RECEIVED', 'IN_APP', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+UNION ALL SELECT 
+    u.id, ou.organization_id, 'TASK_ASSIGNED', 'IN_APP', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+UNION ALL SELECT 
+    u.id, ou.organization_id, 'APPROVAL_REQUEST', 'IN_APP', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+WHERE ou.active = true
+ON CONFLICT DO NOTHING;
+
+-- Abonnements email pour les directeurs (notifications importantes)
+INSERT INTO notification_subscriptions (user_id, organization_id, notification_type, channel, enabled, active, created_at, updated_at)
+SELECT 
+    u.id, ou.organization_id, 'INVOICE_CREATED', 'EMAIL', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+JOIN user_roles ur ON u.id = ur.user_id
+JOIN roles r ON ur.role_id = r.id
+WHERE ou.active = true AND r.name IN ('ADMIN', 'DIRECTOR')
+UNION ALL SELECT 
+    u.id, ou.organization_id, 'PAYMENT_RECEIVED', 'EMAIL', true, true, NOW(), NOW()
+FROM users u
+JOIN organization_users ou ON u.id = ou.user_id
+JOIN user_roles ur ON u.id = ur.user_id
+JOIN roles r ON ur.role_id = r.id
+WHERE ou.active = true AND r.name IN ('ADMIN', 'DIRECTOR')
+ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- 14. RÉSUMÉ ET STATISTIQUES
 -- =====================================================
 
 DO $$
@@ -1096,6 +2161,12 @@ DECLARE
     prop_feature_count INTEGER;
     role_count INTEGER;
     perm_count INTEGER;
+    plan_count INTEGER;
+    subscription_count INTEGER;
+    invoice_count INTEGER;
+    payment_count INTEGER;
+    notification_count INTEGER;
+    notification_subscription_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO user_count FROM users;
     SELECT COUNT(*) INTO org_count FROM organizations;
@@ -1105,6 +2176,12 @@ BEGIN
     SELECT COUNT(*) INTO prop_feature_count FROM property_features;
     SELECT COUNT(*) INTO role_count FROM roles;
     SELECT COUNT(*) INTO perm_count FROM permissions;
+    SELECT COUNT(*) INTO plan_count FROM plans;
+    SELECT COUNT(*) INTO subscription_count FROM subscriptions;
+    SELECT COUNT(*) INTO invoice_count FROM invoices;
+    SELECT COUNT(*) INTO payment_count FROM payments;
+    SELECT COUNT(*) INTO notification_count FROM notifications;
+    SELECT COUNT(*) INTO notification_subscription_count FROM notification_subscriptions;
     
     RAISE NOTICE '';
     RAISE NOTICE '═══════════════════════════════════════════════════════════';
@@ -1120,6 +2197,18 @@ BEGIN
     RAISE NOTICE '   • Associations utilisateurs-organisations: %', org_user_count;
     RAISE NOTICE '   • Propriétés: %', prop_count;
     RAISE NOTICE '   • Caractéristiques de propriétés: %', prop_feature_count;
+    RAISE NOTICE '   • Plans d''abonnement: %', plan_count;
+    RAISE NOTICE '   • Abonnements actifs: %', subscription_count;
+    RAISE NOTICE '   • Factures: %', invoice_count;
+    RAISE NOTICE '   • Paiements: %', payment_count;
+    RAISE NOTICE '   • Notifications: %', notification_count;
+    RAISE NOTICE '   • Abonnements aux notifications: %', notification_subscription_count;
+    RAISE NOTICE '';
+    RAISE NOTICE '💰 PLANS DISPONIBLES:';
+    RAISE NOTICE '   • FREE: 0€/mois (5 propriétés, 1 utilisateur)';
+    RAISE NOTICE '   • STARTER: 29€/mois (50 propriétés, 3 utilisateurs) - 40%% moins cher que SeLoger';
+    RAISE NOTICE '   • PROFESSIONAL: 69€/mois (200 propriétés, 10 utilisateurs) - 30%% moins cher';
+    RAISE NOTICE '   • ENTERPRISE: 149€/mois (illimité) - 25%% moins cher';
     RAISE NOTICE '';
     RAISE NOTICE '🔑 COMPTE ADMIN SAAS:';
     RAISE NOTICE '   Email: admin@viridial.com';

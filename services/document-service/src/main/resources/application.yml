@@ -43,8 +43,8 @@ spring:
 
 # Storage Configuration
 storage:
-  base-path: ${STORAGE_BASE_PATH:/var/realestate/storage}
-  allowed-types: image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+  base-path: ${STORAGE_BASE_PATH:./storage}
+  allowed-types: image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*
 
 management:
   endpoints:

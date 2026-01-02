@@ -124,5 +124,18 @@ public class SubscriptionService {
     public List<Subscription> getExpiringSubscriptions(LocalDateTime date) {
         return subscriptionRepository.findExpiringSubscriptions(date);
     }
+
+    @Transactional(readOnly = true)
+    public List<Subscription> getAllSubscriptions() {
+        return subscriptionRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Subscription> getSubscriptionsByStatus(String status) {
+        if (status != null && !status.isEmpty()) {
+            return subscriptionRepository.findByStatus(status);
+        }
+        return subscriptionRepository.findAll();
+    }
 }
 

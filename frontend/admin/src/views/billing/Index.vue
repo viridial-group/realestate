@@ -15,7 +15,7 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Abonnements Actifs Card -->
-      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-r-4" style="border-right-color: #33d484;" @click="filterByStatus('ACTIVE')">
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #33d484;" @click="filterByStatus('ACTIVE')">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Abonnements Actifs</CardDescription>
           <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(51, 212, 132, 0.1);">
@@ -29,7 +29,7 @@
       </Card>
       
       <!-- En Attente Card -->
-      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-r-4" style="border-right-color: #fdb022;" @click="filterByStatus('PENDING')">
+      <Card class="cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden border-l-4" style="border-left-color: #fdb022;" @click="filterByStatus('PENDING')">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>En Attente</CardDescription>
           <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(253, 176, 34, 0.1);">
@@ -43,7 +43,7 @@
       </Card>
       
       <!-- Revenus ce Mois Card -->
-      <Card class="relative overflow-hidden border-r-4" style="border-right-color: #04c9ff;">
+      <Card class="relative overflow-hidden border-l-4" style="border-left-color: #04c9ff;">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Revenus ce Mois</CardDescription>
           <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: rgba(4, 201, 255, 0.1);">
@@ -57,7 +57,7 @@
       </Card>
       
       <!-- Revenus Total Card -->
-      <Card class="relative overflow-hidden border-r-4 border-r-[hsl(var(--chart-1))]">
+      <Card class="relative overflow-hidden border-l-4 border-l-[hsl(var(--chart-1))]">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardDescription>Revenus Total</CardDescription>
           <div class="h-10 w-10 rounded-lg bg-[hsl(var(--chart-1))]/10 flex items-center justify-center">
@@ -86,7 +86,7 @@
                 <SelectValue placeholder="Tous" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="ACTIVE">Actif</SelectItem>
                 <SelectItem value="PENDING">En attente</SelectItem>
                 <SelectItem value="CANCELLED">Annulé</SelectItem>
@@ -101,7 +101,7 @@
                 <SelectValue placeholder="Toutes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Toutes</SelectItem>
+                <SelectItem value="all">Toutes</SelectItem>
                 <SelectItem value="today">Aujourd'hui</SelectItem>
                 <SelectItem value="week">Cette semaine</SelectItem>
                 <SelectItem value="month">Ce mois</SelectItem>
@@ -228,7 +228,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from '@/components/ui/toast'
+import { billingService, organizationService, useAuthStore, type Subscription, type BillingStats } from '@viridial/shared'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -245,31 +247,22 @@ import { RefreshCw, X, MoreVertical, Eye, FileText, XCircle, CheckCircle, Clock,
 import { Checkbox } from '@/components/ui/checkbox'
 
 const { toast } = useToast()
+const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(false)
 const searchQuery = ref('')
-const selectedStatus = ref('')
-const dateRange = ref('')
-
-interface Subscription {
-  id: number
-  organizationId: number
-  organizationName: string
-  organizationEmail: string
-  plan: string
-  amount: number
-  status: 'ACTIVE' | 'PENDING' | 'CANCELLED' | 'EXPIRED'
-  startDate: string
-  endDate: string
-}
+const selectedStatus = ref('all')
+const dateRange = ref('all')
 
 const subscriptions = ref<Subscription[]>([])
-const stats = ref({
+const stats = ref<BillingStats>({
   activeSubscriptions: 0,
   pendingPayments: 0,
   monthlyRevenue: 0,
   totalRevenue: 0
 })
 const selectedIds = ref<number[]>([])
+const organizationsMap = ref<Record<number, { name: string; email: string }>>({})
 
 const filteredSubscriptions = computed(() => {
   let filtered = [...subscriptions.value]
@@ -283,7 +276,7 @@ const filteredSubscriptions = computed(() => {
     )
   }
 
-  if (selectedStatus.value) {
+  if (selectedStatus.value && selectedStatus.value !== 'all') {
     filtered = filtered.filter((s) => s.status === selectedStatus.value)
   }
 
@@ -337,8 +330,8 @@ const handleFilter = () => {
 
 const resetFilters = () => {
   searchQuery.value = ''
-  selectedStatus.value = ''
-  dateRange.value = ''
+  selectedStatus.value = 'all'
+  dateRange.value = 'all'
   loadSubscriptions()
 }
 
@@ -352,32 +345,42 @@ const refreshData = () => {
   loadStats()
 }
 
-const viewSubscription = (id: number) => {
-  // TODO: Navigate to subscription details
-  toast({
-    title: 'Détails de l\'abonnement',
-    description: `Affichage de l'abonnement #${id}`
-  })
+const viewSubscription = async (id: number) => {
+  try {
+    router.push(`/billing/subscriptions/${id}`)
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Impossible de naviguer vers les détails de l\'abonnement',
+      variant: 'destructive'
+    })
+  }
 }
 
-const viewInvoices = (id: number) => {
-  // TODO: Navigate to invoices
-  toast({
-    title: 'Factures',
-    description: `Affichage des factures pour l'abonnement #${id}`
-  })
+const viewInvoices = async (id: number) => {
+  try {
+    router.push(`/billing/subscriptions/${id}/invoices`)
+  } catch (error: any) {
+    toast({
+      title: 'Erreur',
+      description: error.message || 'Impossible de naviguer vers les factures',
+      variant: 'destructive'
+    })
+  }
 }
 
 const cancelSubscription = async (id: number) => {
   if (!confirm('Êtes-vous sûr de vouloir annuler cet abonnement ?')) return
   loading.value = true
   try {
-    // TODO: Implement cancel subscription
+    const cancelledBy = authStore.user?.id || 0
+    await billingService.cancelSubscription(id, cancelledBy)
     toast({
       title: 'Abonnement annulé',
       description: 'L\'abonnement a été annulé avec succès'
     })
     await loadSubscriptions()
+    await loadStats()
   } catch (error: any) {
     toast({
       title: 'Erreur',
@@ -393,13 +396,16 @@ const bulkCancel = async () => {
   if (!confirm(`Êtes-vous sûr de vouloir annuler ${selectedIds.value.length} abonnement(s) ?`)) return
   loading.value = true
   try {
-    // TODO: Implement bulk cancel
+    const cancelledBy = authStore.user?.id || 0
+    const promises = selectedIds.value.map(id => billingService.cancelSubscription(id, cancelledBy))
+    await Promise.all(promises)
     toast({
       title: 'Abonnements annulés',
       description: `${selectedIds.value.length} abonnement(s) annulé(s)`
     })
     selectedIds.value = []
     await loadSubscriptions()
+    await loadStats()
   } catch (error: any) {
     toast({
       title: 'Erreur',
@@ -443,11 +449,42 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('fr-FR')
 }
 
+const loadOrganizations = async () => {
+  try {
+    const result = await organizationService.getAll()
+    const map: Record<number, { name: string; email: string }> = {}
+    if (result.organizations && Array.isArray(result.organizations)) {
+      result.organizations.forEach(org => {
+        map[org.id] = {
+          name: org.name,
+          email: org.email || org.domain || ''
+        }
+      })
+    }
+    organizationsMap.value = map
+  } catch (error) {
+    console.error('Error loading organizations:', error)
+  }
+}
+
 const loadSubscriptions = async () => {
   loading.value = true
   try {
-    // TODO: Load from API
-    subscriptions.value = []
+    const params: any = {}
+    if (selectedStatus.value && selectedStatus.value !== 'all') {
+      params.status = selectedStatus.value
+    }
+    
+    const subs = await billingService.getAllSubscriptions(params)
+    
+    // Enrichir avec les noms d'organisations
+    subscriptions.value = subs.map(sub => ({
+      ...sub,
+      organizationName: sub.organizationName || organizationsMap.value[sub.organizationId]?.name || `Organisation #${sub.organizationId}`,
+      organizationEmail: sub.organizationEmail || organizationsMap.value[sub.organizationId]?.email || '',
+      plan: sub.planName || 'Plan inconnu',
+      amount: sub.amount || 0
+    }))
   } catch (error: any) {
     toast({
       title: 'Erreur',
@@ -461,21 +498,57 @@ const loadSubscriptions = async () => {
 
 const loadStats = async () => {
   try {
-    // TODO: Load from API
-    stats.value = {
-      activeSubscriptions: 0,
-      pendingPayments: 0,
-      monthlyRevenue: 0,
-      totalRevenue: 0
-    }
+    // Utiliser le service pour récupérer les stats
+    const billingStats = await billingService.getStats()
+    stats.value = billingStats
   } catch (error) {
     console.error('Error loading stats:', error)
+    // En cas d'erreur, calculer les stats depuis les abonnements comme fallback
+    try {
+      const subs = await billingService.getAllSubscriptions()
+      const activeSubscriptions = subs.filter(s => s.status === 'ACTIVE').length
+      const pendingPayments = subs.filter(s => s.status === 'PENDING').length
+      
+      // Calculer les revenus
+      const now = new Date()
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+      
+      const monthlyRevenue = subs
+        .filter(s => {
+          if (s.status !== 'ACTIVE') return false
+          const startDate = new Date(s.startDate)
+          return startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear
+        })
+        .reduce((sum, s) => sum + (s.amount || 0), 0)
+      
+      const totalRevenue = subs
+        .filter(s => s.status === 'ACTIVE')
+        .reduce((sum, s) => sum + (s.amount || 0), 0)
+      
+      stats.value = {
+        activeSubscriptions,
+        pendingPayments,
+        monthlyRevenue,
+        totalRevenue
+      }
+    } catch (fallbackError) {
+      console.error('Error in fallback stats calculation:', fallbackError)
+      // En cas d'erreur, garder les valeurs par défaut
+      stats.value = {
+        activeSubscriptions: 0,
+        pendingPayments: 0,
+        monthlyRevenue: 0,
+        totalRevenue: 0
+      }
+    }
   }
 }
 
-onMounted(() => {
-  loadSubscriptions()
-  loadStats()
+onMounted(async () => {
+  await loadOrganizations()
+  await loadSubscriptions()
+  await loadStats()
 })
 </script>
 

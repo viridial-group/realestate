@@ -235,8 +235,12 @@ const handleFiles = async (files: File[]) => {
   } else {
     // Si pas de propertyId, on garde juste les previews
     // Les images seront uploadées lors de la sauvegarde de la propriété
-    newImages.forEach(img => {
-      img.uploading = false
+    // Mettre à jour les objets dans uploadedImages.value directement
+    newImages.forEach(newImg => {
+      const index = uploadedImages.value.findIndex(img => img === newImg)
+      if (index !== -1) {
+        uploadedImages.value[index].uploading = false
+      }
     })
   }
 }
@@ -248,7 +252,14 @@ const uploadImages = async (images: ImageItem[]) => {
   const organizationId = authStore.user.organizationId || 1
 
   for (const image of images) {
-    if (!image.file) continue
+    if (!image.file) {
+      // Si pas de fichier, désactiver le loading pour cette image
+      const imageIndex = uploadedImages.value.findIndex(img => img === image)
+      if (imageIndex !== -1) {
+        uploadedImages.value[imageIndex].uploading = false
+      }
+      continue
+    }
 
     try {
       const document = await documentService.upload({
@@ -278,9 +289,14 @@ const uploadImages = async (images: ImageItem[]) => {
         description: `Impossible d'uploader ${image.name}: ${error.message || 'Erreur inconnue'}`,
         variant: 'destructive'
       })
-      // Retirer l'image en erreur
+      // Retirer l'image en erreur et s'assurer que uploading est false
       const imageIndex = uploadedImages.value.findIndex(img => img === image)
       if (imageIndex !== -1) {
+        // Libérer l'URL de la preview si c'est un blob
+        const imgToRemove = uploadedImages.value[imageIndex]
+        if (imgToRemove.preview && imgToRemove.preview.startsWith('blob:')) {
+          URL.revokeObjectURL(imgToRemove.preview)
+        }
         uploadedImages.value.splice(imageIndex, 1)
       }
     }
@@ -330,7 +346,14 @@ defineExpose({
       const organizationId = authStore.user.organizationId || 1
 
       for (const image of pendingImages) {
-        if (!image.file) continue
+        if (!image.file) {
+          // Si pas de fichier, désactiver le loading pour cette image
+          const imageIndex = uploadedImages.value.findIndex(img => img === image)
+          if (imageIndex !== -1) {
+            uploadedImages.value[imageIndex].uploading = false
+          }
+          continue
+        }
 
         try {
           const document = await documentService.upload({
@@ -360,6 +383,17 @@ defineExpose({
             description: `Impossible d'uploader ${image.name}: ${error.message || 'Erreur inconnue'}`,
             variant: 'destructive'
           })
+          // Retirer l'image en erreur et s'assurer que uploading est false
+          const imageIndex = uploadedImages.value.findIndex(img => img === image)
+          if (imageIndex !== -1) {
+            // Libérer l'URL de la preview si c'est un blob
+            const imgToRemove = uploadedImages.value[imageIndex]
+            if (imgToRemove.preview && imgToRemove.preview.startsWith('blob:')) {
+              URL.revokeObjectURL(imgToRemove.preview)
+            }
+            uploadedImages.value[imageIndex].uploading = false
+            uploadedImages.value.splice(imageIndex, 1)
+          }
         }
       }
 

@@ -84,16 +84,68 @@
                 <Bell class="h-5 w-5" />
                 <span
                   v-if="notificationCount > 0"
-                  class="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive"
-                />
+                  class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
+                >
+                  {{ notificationCount > 99 ? '99+' : notificationCount }}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" class="w-80">
-              <DropdownMenuLabel>{{ t('notifications.title') }}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div class="p-4 text-center text-sm text-muted-foreground">
-                {{ t('notifications.title') }}
+              <div class="flex items-center justify-between px-2 py-1.5">
+                <DropdownMenuLabel class="p-0">{{ t('notifications.title') }}</DropdownMenuLabel>
+                <Button
+                  v-if="notificationCount > 0"
+                  variant="ghost"
+                  size="sm"
+                  class="h-7 text-xs"
+                  @click.stop="markAllAsRead"
+                >
+                  Tout marquer comme lu
+                </Button>
               </div>
+              <DropdownMenuSeparator />
+              <ScrollArea class="h-[300px]">
+                <div v-if="loadingNotifications" class="p-4 text-center text-sm text-muted-foreground">
+                  Chargement...
+                </div>
+                <div v-else-if="notifications.length === 0" class="p-4 text-center text-sm text-muted-foreground">
+                  Aucune notification
+                </div>
+                <div v-else class="divide-y">
+                  <div
+                    v-for="notification in notifications"
+                    :key="notification.id"
+                    :class="[
+                      'cursor-pointer px-3 py-2 hover:bg-accent transition-colors',
+                      !isNotificationRead(notification) ? 'bg-primary/5' : ''
+                    ]"
+                    @click="handleNotificationClick(notification)"
+                  >
+                    <div class="flex items-start gap-2">
+                      <div
+                        :class="[
+                          'flex-shrink-0 mt-0.5 w-2 h-2 rounded-full',
+                          !isNotificationRead(notification) ? 'bg-primary' : 'bg-transparent'
+                        ]"
+                      />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate">{{ notification.title }}</p>
+                        <p v-if="notification.message" class="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                          {{ notification.message }}
+                        </p>
+                        <p class="text-xs text-muted-foreground mt-1">
+                          {{ formatNotificationTime(notification.createdAt) }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem @click="router.push('/notifications')" class="cursor-pointer">
+                <Bell class="mr-2 h-4 w-4" />
+                Voir toutes les notifications
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -145,10 +197,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore, useUserStore } from '@viridial/shared'
+import { useAuthStore, useUserStore, notificationService, type Notification } from '@viridial/shared'
 
 const { t } = useI18n()
 import { Button } from '@/components/ui/button'
@@ -187,6 +239,9 @@ const userStore = useUserStore()
 
 const isSidebarOpen = ref(false)
 const notificationCount = ref(0)
+const notifications = ref<Notification[]>([])
+const loadingNotifications = ref(false)
+let notificationRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 const currentUser = computed(() => authStore.user || userStore.currentUser)
 
@@ -287,6 +342,11 @@ const isActive = (path: string) => {
 
 const handleLogout = async () => {
   try {
+    // Arrêter le rafraîchissement des notifications
+    if (notificationRefreshInterval) {
+      clearInterval(notificationRefreshInterval)
+      notificationRefreshInterval = null
+    }
     await authStore.logout()
     router.push('/login')
   } catch (error) {
@@ -294,10 +354,130 @@ const handleLogout = async () => {
   }
 }
 
+const loadNotifications = async () => {
+  if (!authStore.user?.id || !authStore.isAuthenticated) {
+    notifications.value = []
+    notificationCount.value = 0
+    return
+  }
+
+  loadingNotifications.value = true
+  try {
+    // Charger uniquement les notifications non lues pour le header
+    const unreadNotifications = await notificationService.getNotifications({
+      recipientId: authStore.user.id,
+      unread: true
+    })
+    
+    // Limiter à 5 notifications pour le dropdown
+    notifications.value = unreadNotifications.slice(0, 5)
+    notificationCount.value = unreadNotifications.length
+  } catch (error: any) {
+    console.error('Error loading notifications:', error)
+    notifications.value = []
+    notificationCount.value = 0
+  } finally {
+    loadingNotifications.value = false
+  }
+}
+
+const markAllAsRead = async () => {
+  if (!authStore.user?.id) return
+  
+  try {
+    await notificationService.markAllAsRead(authStore.user.id)
+    await loadNotifications()
+  } catch (error: any) {
+    console.error('Error marking all as read:', error)
+  }
+}
+
+const handleNotificationClick = async (notification: Notification) => {
+  // Marquer comme lu si ce n'est pas déjà fait
+  if (!isNotificationRead(notification)) {
+    try {
+      await notificationService.markAsRead(notification.id)
+      // Mettre à jour localement
+      const index = notifications.value.findIndex(n => n.id === notification.id)
+      if (index !== -1) {
+        notifications.value[index] = {
+          ...notifications.value[index],
+          read: true,
+          readAt: new Date().toISOString(),
+          status: 'READ'
+        }
+        notificationCount.value = Math.max(0, notificationCount.value - 1)
+      }
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error)
+    }
+  }
+  
+  // Naviguer vers la page de notifications
+  router.push('/notifications')
+}
+
+const isNotificationRead = (notification: Notification): boolean => {
+  return notification.read || !!notification.readAt || notification.status === 'READ'
+}
+
+const formatNotificationTime = (date: string) => {
+  if (!date) return '-'
+  const d = new Date(date)
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (minutes < 1) return 'À l\'instant'
+  if (minutes < 60) return `Il y a ${minutes} min`
+  if (hours < 24) return `Il y a ${hours}h`
+  if (days < 7) return `Il y a ${days}j`
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+}
+
+// Surveiller l'authentification pour charger les notifications
+watch(() => authStore.isAuthenticated, (isAuthenticated) => {
+  if (isAuthenticated && authStore.user?.id) {
+    loadNotifications()
+    // Rafraîchir toutes les 30 secondes
+    if (notificationRefreshInterval) {
+      clearInterval(notificationRefreshInterval)
+    }
+    notificationRefreshInterval = setInterval(() => {
+      loadNotifications()
+    }, 30000)
+  } else {
+    notifications.value = []
+    notificationCount.value = 0
+    if (notificationRefreshInterval) {
+      clearInterval(notificationRefreshInterval)
+      notificationRefreshInterval = null
+    }
+  }
+}, { immediate: true })
+
 onMounted(() => {
   // Charger le profil utilisateur si nécessaire
   if (authStore.isAuthenticated && !authStore.user) {
     userStore.fetchProfile()
+  }
+  
+  // Charger les notifications si l'utilisateur est authentifié
+  if (authStore.isAuthenticated && authStore.user?.id) {
+    loadNotifications()
+    // Rafraîchir toutes les 30 secondes
+    notificationRefreshInterval = setInterval(() => {
+      loadNotifications()
+    }, 30000)
+  }
+})
+
+onUnmounted(() => {
+  if (notificationRefreshInterval) {
+    clearInterval(notificationRefreshInterval)
+    notificationRefreshInterval = null
   }
 })
 </script>

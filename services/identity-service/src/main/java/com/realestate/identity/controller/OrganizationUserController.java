@@ -1,5 +1,6 @@
 package com.realestate.identity.controller;
 
+import com.realestate.identity.dto.OrganizationUserDTO;
 import com.realestate.identity.entity.OrganizationUser;
 import com.realestate.identity.service.OrganizationUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,9 +67,9 @@ public class OrganizationUserController {
     }
 
     @GetMapping
-    @Operation(summary = "Get users by organization", description = "Returns all users for an organization")
-    public ResponseEntity<List<OrganizationUser>> getUsersByOrganization(@PathVariable Long organizationId) {
-        List<OrganizationUser> users = organizationUserService.getUsersByOrganizationId(organizationId);
+    @Operation(summary = "Get users by organization", description = "Returns all users for an organization with user information")
+    public ResponseEntity<List<OrganizationUserDTO>> getUsersByOrganization(@PathVariable Long organizationId) {
+        List<OrganizationUserDTO> users = organizationUserService.getUsersByOrganizationIdWithUserInfo(organizationId);
         return ResponseEntity.ok(users);
     }
 
