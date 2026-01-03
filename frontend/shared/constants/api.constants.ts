@@ -25,9 +25,19 @@ export const API_ENDPOINTS = {
     BASE: '/api/identity/users',
     BY_ID: (id: number) => `/api/identity/users/${id}`,
     PROFILE: '/api/identity/users/me', // Endpoint backend: /me
+    UPDATE_PROFILE: '/api/identity/users/me',
+    UPDATE_PREFERENCES: '/api/identity/users/me/preferences',
     STATS: '/api/identity/users/stats',
     SEARCH: '/api/identity/users/search',
     ACTIVITY: (id: number) => `/api/identity/users/${id}/activity`
+  },
+  // Roles & Permissions
+  ROLES: {
+    BASE: '/api/identity/roles',
+    BY_ID: (id: number) => `/api/identity/roles/${id}`,
+    STATS: '/api/identity/roles/stats',
+    PERMISSIONS: '/api/identity/permissions',
+    ASSIGN_TO_USER: '/api/identity/users/assign-roles'
   },
   // Organizations
   ORGANIZATIONS: {

@@ -1,5 +1,6 @@
 package com.realestate.identity.mapper;
 
+import com.realestate.identity.dto.PermissionDTO;
 import com.realestate.identity.dto.RoleDTO;
 import com.realestate.identity.entity.Permission;
 import com.realestate.identity.entity.Role;
@@ -9,6 +10,12 @@ import java.util.stream.Collectors;
 
 @Component
 public class RoleMapper {
+
+    private final PermissionMapper permissionMapper;
+
+    public RoleMapper(PermissionMapper permissionMapper) {
+        this.permissionMapper = permissionMapper;
+    }
 
     public RoleDTO toDTO(Role role) {
         if (role == null) {
@@ -24,7 +31,21 @@ public class RoleMapper {
             dto.setPermissionNames(role.getPermissions().stream()
                     .map(Permission::getName)
                     .collect(Collectors.toSet()));
+            
+            // Mapper les permissions complètes
+            dto.setPermissions(role.getPermissions().stream()
+                    .map(permissionMapper::toDTO)
+                    .collect(Collectors.toSet()));
         }
+        
+        // Compter les utilisateurs
+        if (role.getUsers() != null) {
+            dto.setUserCount((long) role.getUsers().size());
+        }
+        
+        // Déterminer si c'est un rôle système
+        String name = role.getName();
+        dto.setIsSystem("ADMIN".equals(name) || "USER".equals(name) || "MANAGER".equals(name));
         
         return dto;
     }

@@ -72,6 +72,22 @@ public class User {
 
     private LocalDateTime lastLoginAt;
 
+    // Profil utilisateur
+    @Size(max = 500)
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Size(max = 10)
+    @Column(name = "language", length = 10)
+    private String language = "fr"; // Par défaut français
+
+    @Size(max = 50)
+    @Column(name = "timezone", length = 50)
+    private String timezone = "Europe/Paris"; // Par défaut Europe/Paris
+
+    @Column(name = "notification_preferences", length = 2000)
+    private String notificationPreferences; // JSON pour stocker les préférences de notifications
+
     // Constructors
     public User() {
     }
@@ -194,6 +210,38 @@ public class User {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public String getNotificationPreferences() {
+        return notificationPreferences;
+    }
+
+    public void setNotificationPreferences(String notificationPreferences) {
+        this.notificationPreferences = notificationPreferences;
     }
 }
 

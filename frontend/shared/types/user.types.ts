@@ -10,6 +10,7 @@ export interface User {
   lastName?: string
   phone?: string
   avatar?: string
+  avatarUrl?: string
   status: UserStatus
   roles: UserRole[]
   organizationId?: number
@@ -18,6 +19,9 @@ export interface User {
   updatedAt: string
   lastLoginAt?: string
   emailVerified: boolean
+  language?: string
+  timezone?: string
+  notificationPreferences?: string | Record<string, boolean>
   metadata?: Record<string, any>
 }
 
@@ -63,10 +67,11 @@ export interface UserProfile extends User {
 }
 
 export interface UserPreferences {
-  language: string
-  timezone: string
-  theme: 'light' | 'dark' | 'auto'
-  emailNotifications: boolean
+  language?: string
+  timezone?: string
+  theme?: 'light' | 'dark' | 'auto'
+  emailNotifications?: boolean
+  notificationPreferences?: Record<string, boolean>
 }
 
 export interface NotificationSettings {

@@ -51,6 +51,13 @@ public class UserMapper {
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         dto.setLastLoginAt(user.getLastLoginAt());
+        
+        // Profil utilisateur
+        dto.setAvatarUrl(user.getAvatarUrl());
+        dto.setLanguage(user.getLanguage());
+        dto.setTimezone(user.getTimezone());
+        dto.setNotificationPreferences(user.getNotificationPreferences());
+        
         return dto;
     }
 

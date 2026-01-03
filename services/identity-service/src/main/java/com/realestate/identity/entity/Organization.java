@@ -32,6 +32,37 @@ public class Organization {
     @Size(max = 100)
     private String domain; // Domaine principal de l'organisation
 
+    @Size(max = 500)
+    private String logoUrl; // URL du logo de l'organisation
+
+    // Adresse
+    @Size(max = 255)
+    private String address;
+
+    @Size(max = 100)
+    private String city;
+
+    @Size(max = 20)
+    private String postalCode;
+
+    @Size(max = 100)
+    private String country;
+
+    // Contact
+    @Size(max = 20)
+    private String phone;
+
+    @Size(max = 255)
+    private String email;
+
+    // Domaines personnalisés (JSON array)
+    @Column(columnDefinition = "jsonb")
+    private String customDomains; // JSON array de domaines personnalisés
+
+    // Quotas (JSON object)
+    @Column(columnDefinition = "jsonb")
+    private String quotas; // JSON: {"max_properties": 100, "max_users": 10, "max_storage_gb": 50}
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -164,5 +195,77 @@ public class Organization {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public void setPostalCode(String postalCode) {
+        this.postalCode = postalCode;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getCustomDomains() {
+        return customDomains;
+    }
+
+    public void setCustomDomains(String customDomains) {
+        this.customDomains = customDomains;
+    }
+
+    public String getQuotas() {
+        return quotas;
+    }
+
+    public void setQuotas(String quotas) {
+        this.quotas = quotas;
     }
 }

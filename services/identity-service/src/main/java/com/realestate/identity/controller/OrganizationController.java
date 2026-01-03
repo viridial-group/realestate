@@ -1,6 +1,7 @@
 package com.realestate.identity.controller;
 
 import com.realestate.identity.dto.OrganizationDTO;
+import com.realestate.identity.dto.OrganizationSettingsDTO;
 import com.realestate.identity.entity.Organization;
 import com.realestate.identity.mapper.OrganizationMapper;
 import com.realestate.identity.service.OrganizationService;
@@ -105,5 +106,21 @@ public class OrganizationController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/{id}/settings")
+    @Operation(summary = "Get organization settings", description = "Returns organization settings (logo, address, contact, quotas, domains)")
+    public ResponseEntity<OrganizationSettingsDTO> getOrganizationSettings(@PathVariable Long id) {
+        OrganizationSettingsDTO settings = organizationService.getOrganizationSettings(id);
+        return ResponseEntity.ok(settings);
+    }
+
+    @PutMapping("/{id}/settings")
+    @Operation(summary = "Update organization settings", description = "Updates organization settings (logo, address, contact, quotas, domains)")
+    public ResponseEntity<OrganizationDTO> updateOrganizationSettings(
+            @PathVariable Long id,
+            @Valid @RequestBody OrganizationSettingsDTO settingsDTO) {
+        Organization updated = organizationService.updateOrganizationSettings(id, settingsDTO);
+        return ResponseEntity.ok(organizationMapper.toDTO(updated));
     }
 }

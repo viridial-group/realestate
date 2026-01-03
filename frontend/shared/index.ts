@@ -16,6 +16,7 @@ export { notificationService } from './api/notification.service'
 export { auditService } from './api/audit.service'
 export type { AuditLog, AuditLogSearchParams, AuditLogPage } from './api/audit.service'
 export { workflowService } from './api/workflow.service'
+export { roleService } from './api/role.service'
 export { TaskStatusEnum } from './types/workflow.types'
 export type {
   Workflow,
@@ -35,6 +36,7 @@ export type {
   OrganizationCreate,
   OrganizationUpdate,
   OrganizationSearchParams,
+  OrganizationSettings,
   Team,
   TeamCreate,
   TeamUpdate,
@@ -60,6 +62,7 @@ export type * from './types/stats.types'
 export type * from './types/billing.types'
 export type * from './types/notification.types'
 export type * from './types/workflow.types'
+export type * from './types/role.types'
 
 // Enums from property.types (exported as values, not types)
 export { PropertyType, PropertyStatus } from './types/property.types'

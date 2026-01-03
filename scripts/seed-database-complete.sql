@@ -171,6 +171,16 @@ CREATE TABLE IF NOT EXISTS organizations (
     domain VARCHAR(100),
     parent_id BIGINT,
     active BOOLEAN NOT NULL DEFAULT true,
+    -- Paramètres d'organisation
+    logo_url VARCHAR(500),
+    address VARCHAR(255),
+    city VARCHAR(100),
+    postal_code VARCHAR(20),
+    country VARCHAR(100),
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    custom_domains JSONB,
+    quotas JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_organization_parent FOREIGN KEY (parent_id) REFERENCES organizations(id) ON DELETE SET NULL
@@ -191,6 +201,10 @@ CREATE TABLE IF NOT EXISTS users (
     account_non_locked BOOLEAN NOT NULL DEFAULT true,
     credentials_non_expired BOOLEAN NOT NULL DEFAULT true,
     last_login_at TIMESTAMP,
+    avatar_url VARCHAR(500),
+    language VARCHAR(10) DEFAULT 'fr',
+    timezone VARCHAR(50) DEFAULT 'Europe/Paris',
+    notification_preferences VARCHAR(2000),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -551,13 +565,17 @@ ON CONFLICT DO NOTHING;
 -- Hash BCrypt pour "admin123": $2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
 -- Pour générer un nouveau hash: https://bcrypt-generator.com/ ou utiliser BCryptPasswordEncoder
 
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
-VALUES ('admin@viridial.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'SaaS', true, true, true, true, NOW(), NOW())
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
+VALUES ('admin@viridial.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'SaaS', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO UPDATE 
 SET password = EXCLUDED.password,
     first_name = EXCLUDED.first_name,
     last_name = EXCLUDED.last_name,
     enabled = EXCLUDED.enabled,
+    avatar_url = EXCLUDED.avatar_url,
+    language = EXCLUDED.language,
+    timezone = EXCLUDED.timezone,
+    notification_preferences = EXCLUDED.notification_preferences,
     updated_at = NOW();
 
 -- Assigner le rôle ADMIN à l'admin principal
@@ -1360,56 +1378,56 @@ ON CONFLICT (transaction_id) DO NOTHING;
 -- =====================================================
 
 -- Agence 1: Immobilier Paris
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
 VALUES 
-    ('directeur@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Jean', 'Dupont', true, true, true, true, NOW(), NOW()),
-    ('manager@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Marie', 'Martin', true, true, true, true, NOW(), NOW()),
-    ('agent1@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Pierre', 'Bernard', true, true, true, true, NOW(), NOW()),
-    ('agent2@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Sophie', 'Dubois', true, true, true, true, NOW(), NOW()),
-    ('agent3@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Lucas', 'Moreau', true, true, true, true, NOW(), NOW())
+    ('directeur@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Jean', 'Dupont', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": true}', NOW(), NOW()),
+    ('manager@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Marie', 'Martin', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent1@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Pierre', 'Bernard', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent2@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Sophie', 'Dubois', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": false, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent3@paris-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Lucas', 'Moreau', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- Agence 2: Real Estate Lyon
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
 VALUES 
-    ('directeur@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Claire', 'Laurent', true, true, true, true, NOW(), NOW()),
-    ('manager@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Thomas', 'Simon', true, true, true, true, NOW(), NOW()),
-    ('agent1@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Emma', 'Michel', true, true, true, true, NOW(), NOW()),
-    ('agent2@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Hugo', 'Garcia', true, true, true, true, NOW(), NOW())
+    ('directeur@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Claire', 'Laurent', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": true}', NOW(), NOW()),
+    ('manager@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Thomas', 'Simon', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent1@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Emma', 'Michel', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent2@lyon-realestate.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Hugo', 'Garcia', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": false, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- Agence 3: Property Marseille
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
 VALUES 
-    ('directeur@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Nathalie', 'David', true, true, true, true, NOW(), NOW()),
-    ('manager@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Antoine', 'Bertrand', true, true, true, true, NOW(), NOW()),
-    ('agent1@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Julie', 'Roux', true, true, true, true, NOW(), NOW()),
-    ('agent2@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Maxime', 'Vincent', true, true, true, true, NOW(), NOW()),
-    ('agent3@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Camille', 'Fournier', true, true, true, true, NOW(), NOW())
+    ('directeur@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Nathalie', 'David', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": true}', NOW(), NOW()),
+    ('manager@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Antoine', 'Bertrand', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent1@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Julie', 'Roux', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent2@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Maxime', 'Vincent', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": false, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent3@marseille-property.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Camille', 'Fournier', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- Agence 4: Bordeaux Immobilier
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
 VALUES 
-    ('directeur@bordeaux-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Isabelle', 'Girard', true, true, true, true, NOW(), NOW()),
-    ('manager@bordeaux-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Julien', 'Bonnet', true, true, true, true, NOW(), NOW()),
-    ('agent1@bordeaux-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Laura', 'Dupuis', true, true, true, true, NOW(), NOW())
+    ('directeur@bordeaux-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Isabelle', 'Girard', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": true}', NOW(), NOW()),
+    ('manager@bordeaux-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Julien', 'Bonnet', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent1@bordeaux-immobilier.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Laura', 'Dupuis', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- Agence 5: Nice Properties
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
 VALUES 
-    ('directeur@nice-properties.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Philippe', 'Lambert', true, true, true, true, NOW(), NOW()),
-    ('agent1@nice-properties.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Amélie', 'Fontaine', true, true, true, true, NOW(), NOW()),
-    ('agent2@nice-properties.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Nicolas', 'Rousseau', true, true, true, true, NOW(), NOW())
+    ('directeur@nice-properties.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Philippe', 'Lambert', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": true}', NOW(), NOW()),
+    ('agent1@nice-properties.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Amélie', 'Fontaine', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('agent2@nice-properties.fr', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Nicolas', 'Rousseau', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": false, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- Freelances (sans organisation)
-INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, created_at, updated_at)
+INSERT INTO users (email, password, first_name, last_name, enabled, account_non_expired, account_non_locked, credentials_non_expired, avatar_url, language, timezone, notification_preferences, created_at, updated_at)
 VALUES 
-    ('freelance1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Sarah', 'Lefebvre', true, true, true, true, NOW(), NOW()),
-    ('freelance2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Olivier', 'Blanc', true, true, true, true, NOW(), NOW()),
-    ('freelance3@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Céline', 'Garnier', true, true, true, true, NOW(), NOW())
+    ('freelance1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Sarah', 'Lefebvre', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('freelance2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Olivier', 'Blanc', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": false, "sms": false, "marketing": false}', NOW(), NOW()),
+    ('freelance3@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Céline', 'Garnier', true, true, true, true, NULL, 'fr', 'Europe/Paris', '{"email": true, "push": true, "sms": false, "marketing": false}', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- =====================================================

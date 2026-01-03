@@ -23,6 +23,17 @@ export const organizationRoutes: RouteRecordRaw[] = [
       title: 'Détails de l\'organisation'
     },
     beforeEnter: adminGuard
+  },
+  {
+    path: 'organizations/:id/settings',
+    name: 'organization-settings',
+    component: () => import('@/views/organizations/Settings.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Paramètres de l\'organisation'
+    },
+    beforeEnter: adminGuard
   }
 ]
 

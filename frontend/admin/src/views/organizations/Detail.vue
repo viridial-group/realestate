@@ -12,6 +12,10 @@
         </div>
       </div>
       <div class="flex gap-2">
+        <Button variant="outline" @click="$router.push(`/organizations/${organization.id}/settings`)">
+          <Settings class="mr-2 h-4 w-4" />
+          Paramètres
+        </Button>
         <Button variant="outline" @click="editOrganization">
           <Edit class="mr-2 h-4 w-4" />
           Modifier
@@ -464,7 +468,8 @@ import {
   Loader2,
   Building2,
   UserPlus,
-  Users
+  Users,
+  Settings
 } from 'lucide-vue-next'
 
 const route = useRoute()

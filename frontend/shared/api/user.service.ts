@@ -21,9 +21,13 @@ interface BackendUserDTO {
   lastLoginAt?: string | null
   phone?: string
   avatar?: string
+  avatarUrl?: string
   organizationId?: number
   organizationName?: string
   emailVerified?: boolean
+  language?: string
+  timezone?: string
+  notificationPreferences?: string | Record<string, boolean>
   metadata?: Record<string, any>
 }
 
@@ -47,6 +51,20 @@ function mapBackendUserToUser(backendUser: BackendUserDTO): User {
   // Mapper roleNames vers roles
   const roles = backendUser.roleNames || []
 
+  // Parser les préférences de notifications si c'est une string JSON
+  let notificationPreferences: Record<string, boolean> | undefined
+  if (backendUser.notificationPreferences) {
+    if (typeof backendUser.notificationPreferences === 'string') {
+      try {
+        notificationPreferences = JSON.parse(backendUser.notificationPreferences)
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    } else {
+      notificationPreferences = backendUser.notificationPreferences
+    }
+  }
+
   return {
     id: backendUser.id,
     email: backendUser.email,
@@ -54,7 +72,8 @@ function mapBackendUserToUser(backendUser: BackendUserDTO): User {
     firstName: backendUser.firstName,
     lastName: backendUser.lastName,
     phone: backendUser.phone,
-    avatar: backendUser.avatar,
+    avatar: backendUser.avatar || backendUser.avatarUrl,
+    avatarUrl: backendUser.avatarUrl || backendUser.avatar,
     status,
     roles: roles as any[], // Les rôles sont des strings, mais le type attend UserRole[]
     organizationId: backendUser.organizationId,
@@ -63,6 +82,9 @@ function mapBackendUserToUser(backendUser: BackendUserDTO): User {
     updatedAt: backendUser.updatedAt || new Date().toISOString(),
     lastLoginAt: backendUser.lastLoginAt || undefined,
     emailVerified: backendUser.emailVerified || false,
+    language: backendUser.language,
+    timezone: backendUser.timezone,
+    notificationPreferences,
     metadata: backendUser.metadata
   }
 }
@@ -131,8 +153,16 @@ export const userService = {
   /**
    * Mettre à jour le profil de l'utilisateur connecté
    */
-  async updateProfile(data: UserUpdate): Promise<UserProfile> {
-    const response = await httpClient.put<BackendUserDTO>(API_ENDPOINTS.USERS.PROFILE, data)
+  async updateProfile(data: { firstName?: string; lastName?: string; email?: string; avatarUrl?: string; language?: string; timezone?: string }): Promise<UserProfile> {
+    const response = await httpClient.put<BackendUserDTO>(API_ENDPOINTS.USERS.UPDATE_PROFILE, data)
+    return mapBackendUserToUser(response.data) as UserProfile
+  },
+
+  /**
+   * Mettre à jour les préférences de l'utilisateur connecté
+   */
+  async updatePreferences(data: { language?: string; timezone?: string; notificationPreferences?: Record<string, boolean> }): Promise<UserProfile> {
+    const response = await httpClient.put<BackendUserDTO>(API_ENDPOINTS.USERS.UPDATE_PREFERENCES, data)
     return mapBackendUserToUser(response.data) as UserProfile
   },
 

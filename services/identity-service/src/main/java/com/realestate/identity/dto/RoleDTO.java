@@ -16,6 +16,9 @@ public class RoleDTO {
     private String description;
 
     private Set<String> permissionNames; // Noms des permissions (pas les entités complètes)
+    private Set<PermissionDTO> permissions; // Permissions complètes
+    private Long userCount; // Nombre d'utilisateurs avec ce rôle
+    private Boolean isSystem; // Indique si c'est un rôle système
 
     // Constructors
     public RoleDTO() {
@@ -58,6 +61,30 @@ public class RoleDTO {
 
     public void setPermissionNames(Set<String> permissionNames) {
         this.permissionNames = permissionNames;
+    }
+
+    public Set<PermissionDTO> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Set<PermissionDTO> permissions) {
+        this.permissions = permissions;
+    }
+
+    public Long getUserCount() {
+        return userCount;
+    }
+
+    public void setUserCount(Long userCount) {
+        this.userCount = userCount;
+    }
+
+    public Boolean getIsSystem() {
+        return isSystem;
+    }
+
+    public void setIsSystem(Boolean isSystem) {
+        this.isSystem = isSystem;
     }
 }
 

@@ -29,6 +29,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final StorageRepository storageRepository;
     private final DocumentEventProducer eventProducer;
+    private final ImageOptimizationService imageOptimizationService;
 
     @Value("${storage.base-path:./storage}")
     private String baseStoragePath;
@@ -39,10 +40,12 @@ public class DocumentService {
     public DocumentService(
             DocumentRepository documentRepository,
             StorageRepository storageRepository,
-            DocumentEventProducer eventProducer) {
+            DocumentEventProducer eventProducer,
+            ImageOptimizationService imageOptimizationService) {
         this.documentRepository = documentRepository;
         this.storageRepository = storageRepository;
         this.eventProducer = eventProducer;
+        this.imageOptimizationService = imageOptimizationService;
     }
 
     @Transactional
@@ -118,25 +121,65 @@ public class DocumentService {
         // Chemin complet du fichier
         Path filePath = orgPath.resolve(uniqueFilename);
 
-        // Sauvegarder le fichier
-        try {
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-            logger.debug("File saved successfully: {}", filePath);
-        } catch (IOException e) {
-            logger.error("Failed to save file: {}", filePath, e);
-            throw new IOException("Failed to save file: " + e.getMessage(), e);
+        // Optimiser l'image si nécessaire
+        String finalMimeType = file.getContentType();
+        long finalFileSize = file.getSize();
+        
+        if (imageOptimizationService.shouldOptimize(file.getContentType(), file.getSize())) {
+            try {
+                logger.info("Optimizing image: {} ({} bytes)", originalFilename, file.getSize());
+                byte[] optimizedBytes = imageOptimizationService.optimizeImage(file.getInputStream(), file.getContentType());
+                finalFileSize = optimizedBytes.length;
+                
+                // Mettre à jour le type MIME si l'image a été convertie en JPEG
+                // (Thumbnailator convertit souvent en JPEG pour une meilleure compression)
+                if (file.getContentType() != null && file.getContentType().startsWith("image/") && 
+                    !file.getContentType().equals("image/jpeg") && !file.getContentType().equals("image/jpg")) {
+                    // Si l'image n'est pas déjà JPEG, on peut la convertir pour une meilleure compression
+                    // Mais on garde le format original pour préserver la transparence si c'est un PNG
+                    if (!file.getContentType().equals("image/png") && !file.getContentType().equals("image/gif")) {
+                        // Pour les autres formats, on peut convertir en JPEG
+                        fileExtension = ".jpg";
+                        uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+                        filePath = orgPath.resolve(uniqueFilename);
+                        finalMimeType = "image/jpeg";
+                    }
+                }
+                
+                // Sauvegarder le fichier optimisé
+                Files.write(filePath, optimizedBytes);
+                logger.info("Image optimized and saved: {} bytes -> {} bytes", file.getSize(), finalFileSize);
+            } catch (Exception e) {
+                logger.error("Error optimizing image, saving original: {}", e.getMessage(), e);
+                // En cas d'erreur, sauvegarder le fichier original
+                try {
+                    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException ioException) {
+                    logger.error("Failed to save original file after optimization error: {}", ioException.getMessage(), ioException);
+                    throw new IOException("Failed to save file: " + ioException.getMessage(), ioException);
+                }
+            }
+        } else {
+            // Sauvegarder le fichier original sans optimisation
+            try {
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                logger.debug("File saved successfully: {}", filePath);
+            } catch (IOException e) {
+                logger.error("Failed to save file: {}", filePath, e);
+                throw new IOException("Failed to save file: " + e.getMessage(), e);
+            }
         }
 
         // Déterminer le type de document
-        String documentType = determineDocumentType(file.getContentType());
+        String documentType = determineDocumentType(finalMimeType);
 
         // Créer l'entité Document
         Document document = new Document();
         document.setName(originalFilename);
         document.setDescription(description);
         document.setType(documentType);
-        document.setMimeType(file.getContentType());
-        document.setFileSize(file.getSize());
+        document.setMimeType(finalMimeType);
+        document.setFileSize(finalFileSize);
         // Stocker le chemin relatif au répertoire de base
         String relativePath = basePath.relativize(filePath).toString().replace("\\", "/");
         document.setFilePath(relativePath);

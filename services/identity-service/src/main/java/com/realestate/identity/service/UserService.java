@@ -110,5 +110,51 @@ public class UserService {
         }
         userRepository.deleteById(id);
     }
+
+    /**
+     * Mettre à jour le profil de l'utilisateur connecté
+     */
+    @Transactional
+    public User updateCurrentUserProfile(String email, String firstName, String lastName, String avatarUrl, String language, String timezone) {
+        User user = getCurrentUser(email);
+        
+        if (firstName != null) {
+            user.setFirstName(firstName);
+        }
+        if (lastName != null) {
+            user.setLastName(lastName);
+        }
+        if (avatarUrl != null) {
+            user.setAvatarUrl(avatarUrl);
+        }
+        if (language != null) {
+            user.setLanguage(language);
+        }
+        if (timezone != null) {
+            user.setTimezone(timezone);
+        }
+        
+        return userRepository.save(user);
+    }
+
+    /**
+     * Mettre à jour les préférences de l'utilisateur connecté
+     */
+    @Transactional
+    public User updateUserPreferences(String email, String language, String timezone, String notificationPreferences) {
+        User user = getCurrentUser(email);
+        
+        if (language != null) {
+            user.setLanguage(language);
+        }
+        if (timezone != null) {
+            user.setTimezone(timezone);
+        }
+        if (notificationPreferences != null) {
+            user.setNotificationPreferences(notificationPreferences);
+        }
+        
+        return userRepository.save(user);
+    }
 }
 

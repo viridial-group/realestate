@@ -1,6 +1,9 @@
 package com.realestate.identity.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.realestate.identity.dto.UpdateProfileDTO;
 import com.realestate.identity.dto.UserDTO;
+import com.realestate.identity.dto.UserPreferencesDTO;
 import com.realestate.identity.entity.User;
 import com.realestate.identity.mapper.UserMapper;
 import com.realestate.identity.service.JwtService;
@@ -9,6 +12,7 @@ import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,11 +28,13 @@ public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
     private final UserMapper userMapper;
+    private final ObjectMapper objectMapper;
 
-    public UserController(UserService userService, JwtService jwtService, UserMapper userMapper) {
+    public UserController(UserService userService, JwtService jwtService, UserMapper userMapper, ObjectMapper objectMapper) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.userMapper = userMapper;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/me")
@@ -92,6 +98,58 @@ public class UserController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/me")
+    @Operation(summary = "Update current user profile", description = "Updates the authenticated user's profile information (name, email, avatar, language, timezone)")
+    public ResponseEntity<UserDTO> updateCurrentUserProfile(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody UpdateProfileDTO updateProfileDTO) {
+        try {
+            String token = authorization.substring(7); // Remove "Bearer " prefix
+            String email = jwtService.extractUsername(token);
+            
+            User updatedUser = userService.updateCurrentUserProfile(
+                    email,
+                    updateProfileDTO.getFirstName(),
+                    updateProfileDTO.getLastName(),
+                    updateProfileDTO.getAvatarUrl(),
+                    updateProfileDTO.getLanguage(),
+                    updateProfileDTO.getTimezone()
+            );
+            
+            return ResponseEntity.ok(userMapper.toDTO(updatedUser));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    @PutMapping("/me/preferences")
+    @Operation(summary = "Update user preferences", description = "Updates the authenticated user's preferences (language, timezone, notifications)")
+    public ResponseEntity<UserDTO> updateUserPreferences(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody UserPreferencesDTO preferencesDTO) {
+        try {
+            String token = authorization.substring(7); // Remove "Bearer " prefix
+            String email = jwtService.extractUsername(token);
+            
+            // Convertir les préférences de notifications en JSON
+            String notificationPreferencesJson = null;
+            if (preferencesDTO.getNotificationPreferences() != null) {
+                notificationPreferencesJson = objectMapper.writeValueAsString(preferencesDTO.getNotificationPreferences());
+            }
+            
+            User updatedUser = userService.updateUserPreferences(
+                    email,
+                    preferencesDTO.getLanguage(),
+                    preferencesDTO.getTimezone(),
+                    notificationPreferencesJson
+            );
+            
+            return ResponseEntity.ok(userMapper.toDTO(updatedUser));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
         }
     }
 

@@ -1,33 +1,31 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { authGuard } from './guards/auth.guard'
+import { AgentLayout, AuthLayout } from './layouts'
+
+// Import modular routes
+import { dashboardRoutes } from './routes/dashboard.routes'
+import { propertyRoutes } from './routes/properties.routes'
+import { clientRoutes } from './routes/clients.routes'
+import { visitRoutes } from './routes/visits.routes'
+import { authRoutes } from './routes/auth.routes'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('@/views/Dashboard.vue'),
-    meta: { requiresAuth: true }
+    component: AgentLayout,
+    beforeEnter: authGuard,
+    children: [
+      ...dashboardRoutes,
+      ...propertyRoutes,
+      ...clientRoutes,
+      ...visitRoutes
+    ]
   },
   {
-    path: '/login',
-    name: 'login',
-    component: () => import('@/views/Login.vue')
-  },
-  {
-    path: '/signup',
-    name: 'signup',
-    component: () => import('@/views/Signup.vue')
-  },
-  {
-    path: '/forgot-password',
-    name: 'forgot-password',
-    component: () => import('@/views/ForgotPassword.vue')
-  },
-  {
-    path: '/properties',
-    name: 'properties',
-    component: () => import('@/views/Properties.vue'),
-    meta: { requiresAuth: true }
+    path: '/',
+    component: AuthLayout,
+    children: authRoutes
   }
 ]
 

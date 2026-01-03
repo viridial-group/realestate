@@ -407,35 +407,6 @@
             </CardContent>
           </Card>
 
-          <!-- Localisation -->
-          <Card>
-            <CardHeader>
-              <CardTitle>Localisation</CardTitle>
-            </CardHeader>
-            <CardContent class="space-y-4">
-              <div class="space-y-2">
-                <div class="flex items-start gap-2">
-                  <MapPin class="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p class="font-semibold">{{ property.address }}</p>
-                    <p class="text-sm text-muted-foreground">{{ property.city }}</p>
-                    <p class="text-sm text-muted-foreground">{{ property.country }}</p>
-                  </div>
-                </div>
-              </div>
-              <!-- Carte -->
-              <div v-if="hasLocation" class="mt-4">
-                <PropertyMap
-                  :properties="[property]"
-                  :selected-property-id="property.id"
-                />
-              </div>
-              <div v-else class="mt-4 p-4 bg-muted/50 rounded-lg text-center text-sm text-muted-foreground">
-                <MapPin class="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Coordonnées GPS non disponibles pour cette propriété</p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <!-- Colonne latérale -->
@@ -477,6 +448,28 @@
           </Card>
         </div>
       </div>
+
+      <!-- Localisation - Pleine largeur -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Localisation</CardTitle>
+        </CardHeader>
+        <CardContent class="p-0">
+          <!-- Carte -->
+          <div v-if="hasLocation" class="w-full">
+            <PropertyMap
+              :properties="[property]"
+              :selected-property-id="property.id"
+              :hide-action-button="true"
+              :hide-sidebar="true"
+            />
+          </div>
+          <div v-else class="p-12 bg-muted/50 rounded-lg text-center text-sm text-muted-foreground">
+            <MapPin class="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p class="text-base">Coordonnées GPS non disponibles pour cette propriété</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Modal d'image (Lightbox) -->

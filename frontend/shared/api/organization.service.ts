@@ -8,8 +8,30 @@ export interface Organization {
   domain?: string
   active: boolean
   parentId?: number
+  // Paramètres d'organisation
+  logoUrl?: string
+  address?: string
+  city?: string
+  postalCode?: string
+  country?: string
+  phone?: string
+  email?: string
+  customDomains?: string // JSON array
+  quotas?: string // JSON object
   createdAt: string
   updatedAt?: string
+}
+
+export interface OrganizationSettings {
+  logoUrl?: string
+  address?: string
+  city?: string
+  postalCode?: string
+  country?: string
+  phone?: string
+  email?: string
+  customDomains?: string
+  quotas?: string
 }
 
 export interface OrganizationCreate {
@@ -259,6 +281,27 @@ export const organizationService = {
    */
   async deleteTeam(organizationId: number, teamId: number): Promise<void> {
     await httpClient.delete(`/api/identity/organizations/${organizationId}/teams/${teamId}`)
+  },
+
+  /**
+   * Récupérer les paramètres d'une organisation
+   */
+  async getSettings(organizationId: number): Promise<OrganizationSettings> {
+    const response = await httpClient.get<OrganizationSettings>(
+      `/api/identity/organizations/${organizationId}/settings`
+    )
+    return response.data
+  },
+
+  /**
+   * Mettre à jour les paramètres d'une organisation
+   */
+  async updateSettings(organizationId: number, data: OrganizationSettings): Promise<Organization> {
+    const response = await httpClient.put<Organization>(
+      `/api/identity/organizations/${organizationId}/settings`,
+      data
+    )
+    return response.data
   }
 }
 

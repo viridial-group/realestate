@@ -31,6 +31,12 @@ public class UserDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
+    
+    // Profil utilisateur
+    private String avatarUrl;
+    private String language;
+    private String timezone;
+    private String notificationPreferences; // JSON string
 
     // Constructors
     public UserDTO() {
@@ -154,6 +160,38 @@ public class UserDTO {
 
     public void setOrganizationName(String organizationName) {
         this.organizationName = organizationName;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public String getNotificationPreferences() {
+        return notificationPreferences;
+    }
+
+    public void setNotificationPreferences(String notificationPreferences) {
+        this.notificationPreferences = notificationPreferences;
     }
 }
 

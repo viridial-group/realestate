@@ -23,6 +23,15 @@ export const userRoutes: RouteRecordRaw[] = [
       title: 'Détails de l\'utilisateur'
     },
     beforeEnter: adminGuard
+  },
+  {
+    path: 'profile',
+    name: 'profile',
+    component: () => import('@/views/users/Profile.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: 'Mon Profil'
+    }
   }
 ]
 

@@ -3,13 +3,13 @@
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card transition-transform',
+        'fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card transition-transform flex flex-col',
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         'lg:translate-x-0'
       ]"
     >
       <!-- Logo -->
-      <div class="flex h-16 items-center border-b px-6">
+      <div class="flex h-16 items-center border-b px-6 flex-shrink-0">
         <div class="flex items-center space-x-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <span class="text-sm font-bold text-primary-foreground">RE</span>
@@ -19,27 +19,56 @@
       </div>
 
       <!-- Navigation -->
-      <ScrollArea class="h-[calc(100vh-4rem)]">
-        <nav class="space-y-1 p-4">
-          <RouterLink
-            v-for="item in navigationItems"
-            :key="item.name"
-            :to="item.path"
-            :class="[
-              'flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              isActive(item.path)
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-            ]"
-          >
-            <component :is="item.icon" class="h-5 w-5" />
-            <span>{{ item.label }}</span>
-            <Badge v-if="item.badge" variant="secondary" class="ml-auto">
-              {{ item.badge }}
-            </Badge>
-          </RouterLink>
+      <ScrollArea class="flex-1 overflow-hidden">
+        <nav class="space-y-6 p-4">
+          <div v-for="group in navigationGroups" :key="group.id">
+            <!-- Group Header -->
+            <div v-if="group.items.length > 0" class="space-y-1">
+              <h3 
+                :class="[
+                  'px-3 text-xs font-bold uppercase tracking-wider mb-2 transition-colors',
+                  isGroupActive(group)
+                    ? 'text-primary'
+                    : 'text-muted-foreground'
+                ]"
+              >
+                {{ group.label }}
+              </h3>
+              <!-- Group Items -->
+              <RouterLink
+                v-for="item in group.items"
+                :key="item.name"
+                :to="item.path"
+                :class="[
+                  'flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive(item.path)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                ]"
+              >
+                <component :is="item.icon" class="h-5 w-5" />
+                <span>{{ item.label }}</span>
+                <Badge v-if="item.badge" variant="secondary" class="ml-auto">
+                  {{ item.badge }}
+                </Badge>
+              </RouterLink>
+            </div>
+          </div>
         </nav>
       </ScrollArea>
+
+      <!-- Footer -->
+      <div class="border-t bg-card px-4 py-3 flex-shrink-0">
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Version 1.0.0</span>
+            <span>{{ new Date().getFullYear() }}</span>
+          </div>
+          <div class="text-xs text-muted-foreground text-center">
+            © Real Estate Platform
+          </div>
+        </div>
+      </div>
     </aside>
 
     <!-- Overlay pour mobile -->
@@ -154,7 +183,7 @@
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="flex items-center space-x-2">
                 <Avatar>
-                  <AvatarImage :src="currentUser?.avatar" v-if="currentUser?.avatar" />
+                  <AvatarImage v-if="userAvatar" :src="userAvatar" />
                   <AvatarFallback>
                     {{ (currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase() }}
                   </AvatarFallback>
@@ -167,19 +196,14 @@
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" class="w-56">
-              <DropdownMenuLabel>{{ t('common.view') }}</DropdownMenuLabel>
+              <DropdownMenuLabel>{{ currentUser?.name || 'Utilisateur' }}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <!-- Routes à implémenter plus tard -->
-              <!-- <DropdownMenuItem @click="$router.push('/profile')">
+              <DropdownMenuItem @click="router.push('/profile')" class="cursor-pointer">
                 <User class="mr-2 h-4 w-4" />
-                {{ t('common.view') }}
-              </DropdownMenuItem> -->
-              <!-- <DropdownMenuItem @click="$router.push('/settings')">
-                <Settings class="mr-2 h-4 w-4" />
-                {{ t('common.view') }}
-              </DropdownMenuItem> -->
+                {{ t('profile.title', 'Mon Profil') }}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem @click="handleLogout" class="text-destructive">
+              <DropdownMenuItem @click="handleLogout" class="text-destructive cursor-pointer">
                 <LogOut class="mr-2 h-4 w-4" />
                 {{ t('auth.logout') }}
               </DropdownMenuItem>
@@ -189,7 +213,7 @@
       </header>
 
       <!-- Page Content -->
-      <main class="p-4 lg:p-6">
+      <main class="p-4 lg:p-6" style="background-color: #f8f9fd;">
         <RouterView />
       </main>
     </div>
@@ -230,7 +254,10 @@ import {
   FileSearch,
   Workflow,
   BookOpen,
-  Package
+  Package,
+  Shield,
+  FileText,
+  User
 } from 'lucide-vue-next'
 import LanguageSelector from '@/components/shared/LanguageSelector.vue'
 
@@ -247,6 +274,11 @@ let notificationRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 const currentUser = computed(() => authStore.user || userStore.currentUser)
 
+const userAvatar = computed(() => {
+  const user = currentUser.value as any
+  return user?.avatarUrl || user?.avatar || null
+})
+
 const currentUserRoles = computed(() => {
   const user = currentUser.value
   return user?.roles || []
@@ -257,21 +289,31 @@ const isAdmin = computed(() => {
   return roles.some((role: string) => role === 'ADMIN' || role === 'SUPER_ADMIN')
 })
 
-const navigationItems = computed(() => {
-  const items: Array<{
-    name: string
-    label: string
-    path: string
-    icon: any
-    badge?: string | null
-    requiresAdmin?: boolean
-  }> = [
+interface NavigationItem {
+  name: string
+  label: string
+  path: string
+  icon: any
+  badge?: string | null
+  requiresAdmin?: boolean
+}
+
+interface NavigationGroup {
+  id: string
+  label: string
+  items: NavigationItem[]
+}
+
+const navigationGroups = computed(() => {
+  const allItems: NavigationItem[] = [
+    // Tableau de bord
     {
       name: 'dashboard',
       label: t('dashboard.title'),
       path: '/',
       icon: LayoutDashboard
     },
+    // Immobilier
     {
       name: 'properties',
       label: t('properties.title'),
@@ -279,10 +321,24 @@ const navigationItems = computed(() => {
       icon: Home
     },
     {
+      name: 'documents',
+      label: 'Documents',
+      path: '/documents',
+      icon: FileText
+    },
+    // Utilisateurs & Accès
+    {
       name: 'users',
       label: t('users.title'),
       path: '/users',
       icon: Users,
+      requiresAdmin: true
+    },
+    {
+      name: 'roles',
+      label: 'Rôles et Permissions',
+      path: '/roles',
+      icon: Shield,
       requiresAdmin: true
     },
     {
@@ -292,12 +348,14 @@ const navigationItems = computed(() => {
       icon: Building2,
       requiresAdmin: true
     },
+    // Workflows
     {
       name: 'workflows',
       label: t('workflows.title', 'Workflows'),
       path: '/workflows',
       icon: Workflow
     },
+    // Facturation
     {
       name: 'billing',
       label: t('billing.title', 'Facturation'),
@@ -312,6 +370,7 @@ const navigationItems = computed(() => {
       icon: Package,
       requiresAdmin: true
     },
+    // Système
     {
       name: 'audit',
       label: t('audit.title', 'Audit et Logs'),
@@ -326,6 +385,7 @@ const navigationItems = computed(() => {
       icon: Bell,
       requiresAdmin: true
     },
+    // Documentation
     {
       name: 'documentation',
       label: t('documentation.title', 'Documentation'),
@@ -335,17 +395,65 @@ const navigationItems = computed(() => {
   ]
 
   // Filter items based on user permissions
-  return items.filter(item => {
+  const filteredItems = allItems.filter(item => {
     if (item.requiresAdmin && !isAdmin.value) {
       return false
     }
     return true
   })
+
+  // Group items by module
+  const groups: NavigationGroup[] = [
+    {
+      id: 'dashboard',
+      label: 'Tableau de bord',
+      items: filteredItems.filter(item => item.name === 'dashboard')
+    },
+    {
+      id: 'real-estate',
+      label: 'Immobilier',
+      items: filteredItems.filter(item => ['properties', 'documents'].includes(item.name))
+    },
+    {
+      id: 'users-access',
+      label: 'Utilisateurs & Accès',
+      items: filteredItems.filter(item => ['users', 'roles', 'organizations'].includes(item.name))
+    },
+    {
+      id: 'workflows',
+      label: 'Workflows',
+      items: filteredItems.filter(item => item.name === 'workflows')
+    },
+    {
+      id: 'billing',
+      label: 'Facturation',
+      items: filteredItems.filter(item => ['billing', 'plans'].includes(item.name))
+    },
+    {
+      id: 'system',
+      label: 'Système',
+      items: filteredItems.filter(item => ['audit', 'notifications'].includes(item.name))
+    },
+    {
+      id: 'documentation',
+      label: 'Documentation',
+      items: filteredItems.filter(item => item.name === 'documentation')
+    }
+  ]
+
+  // Return only groups that have items
+  return groups.filter(group => group.items.length > 0)
 })
 
 const currentPageTitle = computed(() => {
-  const item = navigationItems.value.find(item => item.path === route.path)
-  return item?.label || t('dashboard.title')
+  // Find item in all groups
+  for (const group of navigationGroups.value) {
+    const item = group.items.find((item: NavigationItem) => item.path === route.path)
+    if (item) {
+      return item.label
+    }
+  }
+  return t('dashboard.title')
 })
 
 const isActive = (path: string) => {
@@ -353,6 +461,10 @@ const isActive = (path: string) => {
     return route.path === '/'
   }
   return route.path.startsWith(path)
+}
+
+const isGroupActive = (group: NavigationGroup): boolean => {
+  return group.items.some(item => isActive(item.path))
 }
 
 const handleLogout = async () => {

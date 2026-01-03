@@ -53,5 +53,18 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
             @Param("organizationId") Long organizationId,
             @Param("status") String status
     );
+
+    /**
+     * Récupère les villes distinctes avec des propriétés publiées/disponibles
+     * Optimisé pour l'autocomplete
+     */
+    @Query("SELECT DISTINCT p.city FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.city IS NOT NULL AND p.city != '' ORDER BY p.city")
+    List<String> findDistinctCitiesForPublishedProperties();
+
+    /**
+     * Récupère les villes distinctes avec filtre de recherche
+     */
+    @Query("SELECT DISTINCT p.city FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.city IS NOT NULL AND p.city != '' AND LOWER(p.city) LIKE LOWER(CONCAT('%', :search, '%')) ORDER BY p.city")
+    List<String> findDistinctCitiesForPublishedPropertiesContaining(@Param("search") String search);
 }
 

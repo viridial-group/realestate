@@ -15,6 +15,7 @@ import { workflowRoutes } from './routes/workflows.routes'
 import { documentRoutes } from './routes/documents.routes'
 import { documentationRoutes } from './routes/documentation.routes'
 import { plansRoutes } from './routes/plans.routes'
+import { roleRoutes } from './routes/roles.routes'
 import { authRoutes } from './routes/auth.routes'
 
 const routes: RouteRecordRaw[] = [
@@ -33,7 +34,8 @@ const routes: RouteRecordRaw[] = [
       ...workflowRoutes,
       ...documentRoutes,
       ...documentationRoutes,
-      ...plansRoutes
+      ...plansRoutes,
+      ...roleRoutes
     ]
   },
   {

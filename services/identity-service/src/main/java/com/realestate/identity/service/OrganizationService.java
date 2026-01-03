@@ -101,4 +101,59 @@ public class OrganizationService {
                 })
                 .orElseGet(() -> organizationRepository.save(organization));
     }
+
+    @Transactional
+    public Organization updateOrganizationSettings(Long id, com.realestate.identity.dto.OrganizationSettingsDTO settingsDTO) {
+        Organization organization = organizationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Organization not found with id: " + id));
+
+        if (settingsDTO.getLogoUrl() != null) {
+            organization.setLogoUrl(settingsDTO.getLogoUrl());
+        }
+        if (settingsDTO.getAddress() != null) {
+            organization.setAddress(settingsDTO.getAddress());
+        }
+        if (settingsDTO.getCity() != null) {
+            organization.setCity(settingsDTO.getCity());
+        }
+        if (settingsDTO.getPostalCode() != null) {
+            organization.setPostalCode(settingsDTO.getPostalCode());
+        }
+        if (settingsDTO.getCountry() != null) {
+            organization.setCountry(settingsDTO.getCountry());
+        }
+        if (settingsDTO.getPhone() != null) {
+            organization.setPhone(settingsDTO.getPhone());
+        }
+        if (settingsDTO.getEmail() != null) {
+            organization.setEmail(settingsDTO.getEmail());
+        }
+        if (settingsDTO.getCustomDomains() != null) {
+            organization.setCustomDomains(settingsDTO.getCustomDomains());
+        }
+        if (settingsDTO.getQuotas() != null) {
+            organization.setQuotas(settingsDTO.getQuotas());
+        }
+
+        return organizationRepository.save(organization);
+    }
+
+    @Transactional(readOnly = true)
+    public com.realestate.identity.dto.OrganizationSettingsDTO getOrganizationSettings(Long id) {
+        Organization organization = organizationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Organization not found with id: " + id));
+
+        com.realestate.identity.dto.OrganizationSettingsDTO settingsDTO = new com.realestate.identity.dto.OrganizationSettingsDTO();
+        settingsDTO.setLogoUrl(organization.getLogoUrl());
+        settingsDTO.setAddress(organization.getAddress());
+        settingsDTO.setCity(organization.getCity());
+        settingsDTO.setPostalCode(organization.getPostalCode());
+        settingsDTO.setCountry(organization.getCountry());
+        settingsDTO.setPhone(organization.getPhone());
+        settingsDTO.setEmail(organization.getEmail());
+        settingsDTO.setCustomDomains(organization.getCustomDomains());
+        settingsDTO.setQuotas(organization.getQuotas());
+
+        return settingsDTO;
+    }
 }

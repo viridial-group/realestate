@@ -20,6 +20,18 @@ public class OrganizationDTO {
 
     private Boolean active = true;
     private Long parentId; // ID du parent (évite lazy loading)
+    
+    // Paramètres d'organisation
+    private String logoUrl;
+    private String address;
+    private String city;
+    private String postalCode;
+    private String country;
+    private String phone;
+    private String email;
+    private String customDomains; // JSON array
+    private String quotas; // JSON object
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -96,6 +108,78 @@ public class OrganizationDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getPostalCode() {
+        return postalCode;
+    }
+
+    public void setPostalCode(String postalCode) {
+        this.postalCode = postalCode;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getCustomDomains() {
+        return customDomains;
+    }
+
+    public void setCustomDomains(String customDomains) {
+        this.customDomains = customDomains;
+    }
+
+    public String getQuotas() {
+        return quotas;
+    }
+
+    public void setQuotas(String quotas) {
+        this.quotas = quotas;
     }
 }
 

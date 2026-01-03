@@ -1,13 +1,8 @@
 import { createApp } from 'vue'
-import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import './style.css'
+import './style.css' // Tailwind + shadcn-vue variables
+import './assets/main.css' // Styles personnalisés
+import '@fortawesome/fontawesome-free/css/all.css' // FontAwesome icons
 
-const app = createApp(App)
-
-app.use(createPinia())
-app.use(router)
-
-app.mount('#app')
-
+createApp(App).use(router).mount('#app')
