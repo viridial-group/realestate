@@ -1,54 +1,67 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="text-sm font-semibold text-gray-700">Filtres rapides</h3>
+  <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-gray-900">Filtres rapides</h3>
       <button
         v-if="hasActiveFilters"
         @click="clearAll"
         class="text-xs text-blue-600 hover:text-blue-700 font-medium"
       >
-        Tout effacer
+        Réinitialiser
       </button>
     </div>
-    
+
     <div class="flex flex-wrap gap-2">
-      <!-- Filtres par prix -->
+      <!-- Prix -->
       <button
-        v-for="filter in priceFilters"
-        :key="filter.key"
-        @click="toggleFilter('price', filter)"
-        class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-        :class="isActive('price', filter.key)
+        v-for="priceFilter in priceFilters"
+        :key="priceFilter.label"
+        @click="togglePriceFilter(priceFilter)"
+        class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+        :class="isPriceFilterActive(priceFilter)
           ? 'bg-blue-600 text-white'
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
       >
-        {{ filter.label }}
+        {{ priceFilter.label }}
       </button>
-      
-      <!-- Filtres par type -->
+
+      <!-- Surface -->
       <button
-        v-for="filter in typeFilters"
-        :key="filter.key"
-        @click="toggleFilter('type', filter)"
-        class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-        :class="isActive('type', filter.key)
+        v-for="surfaceFilter in surfaceFilters"
+        :key="surfaceFilter.label"
+        @click="toggleSurfaceFilter(surfaceFilter)"
+        class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+        :class="isSurfaceFilterActive(surfaceFilter)
           ? 'bg-blue-600 text-white'
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
       >
-        {{ filter.label }}
+        {{ surfaceFilter.label }}
       </button>
-      
-      <!-- Filtres par surface -->
+
+      <!-- Chambres -->
       <button
-        v-for="filter in surfaceFilters"
-        :key="filter.key"
-        @click="toggleFilter('surface', filter)"
-        class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-        :class="isActive('surface', filter.key)
+        v-for="bedroomFilter in bedroomFilters"
+        :key="bedroomFilter.label"
+        @click="toggleBedroomFilter(bedroomFilter)"
+        class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+        :class="isBedroomFilterActive(bedroomFilter)
           ? 'bg-blue-600 text-white'
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
       >
-        {{ filter.label }}
+        {{ bedroomFilter.label }}
+      </button>
+
+      <!-- Type -->
+      <button
+        v-for="typeFilter in typeFilters"
+        :key="typeFilter.label"
+        @click="toggleTypeFilter(typeFilter)"
+        class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+        :class="isTypeFilterActive(typeFilter)
+          ? 'bg-blue-600 text-white'
+          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+      >
+        {{ typeFilter.label }}
       </button>
     </div>
   </div>
@@ -57,74 +70,149 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+interface Filter {
+  label: string
+  min?: number
+  max?: number
+  value?: string | number
+}
+
 const props = defineProps<{
-  activeFilters?: {
-    maxPrice?: number | null
-    type?: string
-    minSurface?: number | null
-  }
+  minPrice?: number | null
+  maxPrice?: number | null
+  minSurface?: number | null
+  maxSurface?: number | null
+  bedrooms?: number | null
+  type?: string
 }>()
 
 const emit = defineEmits<{
-  'filter-change': [filter: { type: string; key: string; value: any }]
-  'clear-all': []
+  'update:minPrice': [value: number | null]
+  'update:maxPrice': [value: number | null]
+  'update:minSurface': [value: number | null]
+  'update:maxSurface': [value: number | null]
+  'update:bedrooms': [value: number | null]
+  'update:type': [value: string]
+  'clear': []
 }>()
 
-const priceFilters = [
-  { key: '0-500', label: 'Moins de 500€', maxPrice: 500 },
-  { key: '500-1000', label: '500€ - 1000€', minPrice: 500, maxPrice: 1000 },
-  { key: '1000-2000', label: '1000€ - 2000€', minPrice: 1000, maxPrice: 2000 },
-  { key: '2000-3000', label: '2000€ - 3000€', minPrice: 2000, maxPrice: 3000 },
-  { key: '3000+', label: 'Plus de 3000€', minPrice: 3000 },
+const priceFilters: Filter[] = [
+  { label: 'Moins de 500€', max: 500 },
+  { label: '500€ - 1000€', min: 500, max: 1000 },
+  { label: '1000€ - 2000€', min: 1000, max: 2000 },
+  { label: '2000€ - 3000€', min: 2000, max: 3000 },
+  { label: 'Plus de 3000€', min: 3000 },
 ]
 
-const typeFilters = [
-  { key: 'Appartement', label: 'Appartement' },
-  { key: 'Villa', label: 'Villa' },
-  { key: 'Studio', label: 'Studio' },
-  { key: 'Maison', label: 'Maison' },
+const surfaceFilters: Filter[] = [
+  { label: 'Moins de 50m²', max: 50 },
+  { label: '50m² - 100m²', min: 50, max: 100 },
+  { label: '100m² - 150m²', min: 100, max: 150 },
+  { label: 'Plus de 150m²', min: 150 },
 ]
 
-const surfaceFilters = [
-  { key: '0-50', label: 'Moins de 50m²', maxSurface: 50 },
-  { key: '50-100', label: '50m² - 100m²', minSurface: 50, maxSurface: 100 },
-  { key: '100-150', label: '100m² - 150m²', minSurface: 100, maxSurface: 150 },
-  { key: '150+', label: 'Plus de 150m²', minSurface: 150 },
+const bedroomFilters: Filter[] = [
+  { label: 'Studio', value: 0 },
+  { label: '1 chambre', value: 1 },
+  { label: '2 chambres', value: 2 },
+  { label: '3+ chambres', value: 3 },
+]
+
+const typeFilters: Filter[] = [
+  { label: 'Appartement', value: 'APARTMENT' },
+  { label: 'Maison', value: 'HOUSE' },
+  { label: 'Villa', value: 'VILLA' },
+  { label: 'Studio', value: 'STUDIO' },
 ]
 
 const hasActiveFilters = computed(() => {
-  return !!(props.activeFilters?.maxPrice || props.activeFilters?.type || props.activeFilters?.minSurface)
+  return !!(
+    props.minPrice ||
+    props.maxPrice ||
+    props.minSurface ||
+    props.maxSurface ||
+    props.bedrooms ||
+    props.type
+  )
 })
 
-function isActive(filterType: string, key: string): boolean {
-  if (!props.activeFilters) return false
-  
-  switch (filterType) {
-    case 'price':
-      const priceFilter = priceFilters.find(f => f.key === key)
-      if (!priceFilter) return false
-      if (priceFilter.maxPrice && props.activeFilters.maxPrice === priceFilter.maxPrice) return true
-      if (priceFilter.minPrice && props.activeFilters.maxPrice && props.activeFilters.maxPrice >= priceFilter.minPrice) return true
-      return false
-    case 'type':
-      return props.activeFilters.type === key
-    case 'surface':
-      const surfaceFilter = surfaceFilters.find(f => f.key === key)
-      if (!surfaceFilter) return false
-      if (surfaceFilter.maxSurface && props.activeFilters.minSurface === surfaceFilter.maxSurface) return true
-      if (surfaceFilter.minSurface && props.activeFilters.minSurface && props.activeFilters.minSurface >= surfaceFilter.minSurface) return true
-      return false
-    default:
-      return false
+function isPriceFilterActive(filter: Filter): boolean {
+  if (filter.min !== undefined && filter.max !== undefined) {
+    return props.minPrice === filter.min && props.maxPrice === filter.max
+  }
+  if (filter.max !== undefined) {
+    return props.maxPrice === filter.max && !props.minPrice
+  }
+  if (filter.min !== undefined) {
+    return props.minPrice === filter.min && !props.maxPrice
+  }
+  return false
+}
+
+function isSurfaceFilterActive(filter: Filter): boolean {
+  if (filter.min !== undefined && filter.max !== undefined) {
+    return props.minSurface === filter.min && props.maxSurface === filter.max
+  }
+  if (filter.max !== undefined) {
+    return props.maxSurface === filter.max && !props.minSurface
+  }
+  if (filter.min !== undefined) {
+    return props.minSurface === filter.min && !props.maxSurface
+  }
+  return false
+}
+
+function isBedroomFilterActive(filter: Filter): boolean {
+  return props.bedrooms === filter.value
+}
+
+function isTypeFilterActive(filter: Filter): boolean {
+  return props.type === filter.value
+}
+
+function togglePriceFilter(filter: Filter) {
+  if (isPriceFilterActive(filter)) {
+    emit('update:minPrice', null)
+    emit('update:maxPrice', null)
+  } else {
+    emit('update:minPrice', filter.min ?? null)
+    emit('update:maxPrice', filter.max ?? null)
   }
 }
 
-function toggleFilter(filterType: string, filter: any) {
-  emit('filter-change', { type: filterType, key: filter.key, value: filter })
+function toggleSurfaceFilter(filter: Filter) {
+  if (isSurfaceFilterActive(filter)) {
+    emit('update:minSurface', null)
+    emit('update:maxSurface', null)
+  } else {
+    emit('update:minSurface', filter.min ?? null)
+    emit('update:maxSurface', filter.max ?? null)
+  }
+}
+
+function toggleBedroomFilter(filter: Filter) {
+  if (isBedroomFilterActive(filter)) {
+    emit('update:bedrooms', null)
+  } else {
+    emit('update:bedrooms', filter.value as number)
+  }
+}
+
+function toggleTypeFilter(filter: Filter) {
+  if (isTypeFilterActive(filter)) {
+    emit('update:type', 'Tous')
+  } else {
+    emit('update:type', filter.value as string)
+  }
 }
 
 function clearAll() {
-  emit('clear-all')
+  emit('update:minPrice', null)
+  emit('update:maxPrice', null)
+  emit('update:minSurface', null)
+  emit('update:maxSurface', null)
+  emit('update:bedrooms', null)
+  emit('update:type', 'Tous')
+  emit('clear')
 }
 </script>
-

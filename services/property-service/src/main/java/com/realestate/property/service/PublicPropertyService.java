@@ -311,11 +311,21 @@ public class PublicPropertyService {
     /**
      * Récupère des suggestions complètes de recherche basées sur la requête
      * Inclut villes, types, adresses, titres et recherches populaires
+     * Amélioré avec support de limit, includePopular, includeTrending
      */
-    @Cacheable(value = "searchSuggestions", key = "#search != null ? #search : 'empty'")
+    @Cacheable(value = "searchSuggestions", 
+               key = "#search != null ? #search : 'empty' + '-' + (#limit != null ? #limit : 10) + '-' + (#includePopular != null ? #includePopular : true) + '-' + (#includeTrending != null ? #includeTrending : true)")
     @Transactional(readOnly = true)
-    public SearchSuggestionsDTO getSearchSuggestions(String search) {
+    public SearchSuggestionsDTO getSearchSuggestions(
+            String search, 
+            Integer limit, 
+            Boolean includePopular, 
+            Boolean includeTrending) {
         String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim().toLowerCase() : null;
+        int limitValue = (limit != null && limit > 0 && limit <= 50) ? limit : 10;
+        boolean includePopularValue = includePopular != null ? includePopular : true;
+        // includeTrending réservé pour usage futur (tendances de recherche)
+        // boolean includeTrendingValue = includeTrending != null ? includeTrending : true;
         
         List<String> cities = List.of();
         List<String> types = List.of();
@@ -337,7 +347,7 @@ public class PublicPropertyService {
             cities = new java.util.ArrayList<>();
             for (String word : significantWords) {
                 List<String> foundCities = propertyRepository.findDistinctCitiesForPublishedPropertiesContaining(word)
-                        .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                        .stream().limit(limitValue).collect(java.util.stream.Collectors.toList());
                 for (String city : foundCities) {
                     if (!cities.contains(city)) {
                         cities.add(city);
@@ -346,7 +356,7 @@ public class PublicPropertyService {
             }
             // Chercher aussi avec la requête complète (pour gérer "a paris", "à paris", etc.)
             List<String> foundCitiesFromFullQuery = propertyRepository.findDistinctCitiesForPublishedPropertiesContaining(searchTerm)
-                    .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                    .stream().limit(limitValue).collect(java.util.stream.Collectors.toList());
             for (String city : foundCitiesFromFullQuery) {
                 if (!cities.contains(city)) {
                     cities.add(city);
@@ -373,7 +383,7 @@ public class PublicPropertyService {
             types = new java.util.ArrayList<>();
             for (String word : significantWords) {
                 List<String> foundTypes = propertyRepository.findDistinctTypesForPublishedPropertiesContaining(word)
-                        .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                        .stream().limit(limitValue).collect(java.util.stream.Collectors.toList());
                 for (String type : foundTypes) {
                     if (!types.contains(type)) {
                         types.add(type);
@@ -383,22 +393,47 @@ public class PublicPropertyService {
             // Si aucun type trouvé, essayer avec la requête complète
             if (types.isEmpty()) {
                 types = propertyRepository.findDistinctTypesForPublishedPropertiesContaining(searchTerm)
-                        .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                        .stream().limit(limitValue).collect(java.util.stream.Collectors.toList());
             }
 
             // Récupérer les adresses correspondantes
             addresses = propertyRepository.findDistinctAddressesForPublishedPropertiesContaining(searchTerm)
-                    .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                    .stream().limit(limitValue).collect(java.util.stream.Collectors.toList());
 
             // Récupérer les titres correspondants
             titles = propertyRepository.findDistinctTitlesForPublishedPropertiesContaining(searchTerm)
-                    .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                    .stream().limit(limitValue).collect(java.util.stream.Collectors.toList());
 
-            // Générer des recherches populaires basées sur les combinaisons
-            popularSearches = generatePopularSearches(searchTerm, cities, types);
+            // Générer des recherches populaires basées sur les combinaisons (si activé)
+            if (includePopularValue) {
+                popularSearches = generatePopularSearches(searchTerm, cities, types);
+                // Limiter le nombre de recherches populaires
+                if (popularSearches.size() > limitValue) {
+                    popularSearches = popularSearches.subList(0, limitValue);
+                }
+            }
         } else {
-            // Si pas de recherche, retourner les recherches populaires par défaut
-            popularSearches = getDefaultPopularSearches();
+            // Si pas de recherche, retourner les recherches populaires par défaut (si activé)
+            if (includePopularValue) {
+                popularSearches = getDefaultPopularSearches();
+                if (popularSearches.size() > limitValue) {
+                    popularSearches = popularSearches.subList(0, limitValue);
+                }
+            }
+        }
+
+        // Limiter toutes les listes au maximum
+        if (cities.size() > limitValue) {
+            cities = cities.subList(0, limitValue);
+        }
+        if (types.size() > limitValue) {
+            types = types.subList(0, limitValue);
+        }
+        if (addresses.size() > limitValue) {
+            addresses = addresses.subList(0, limitValue);
+        }
+        if (titles.size() > limitValue) {
+            titles = titles.subList(0, limitValue);
         }
 
         return new SearchSuggestionsDTO(cities, types, addresses, titles, popularSearches);

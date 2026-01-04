@@ -1,17 +1,17 @@
 <template>
   <div
-    class="bg-white border border-gray-200 rounded-lg hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden flex flex-col h-full"
-    :class="{ 'ring-2 ring-blue-200 ring-offset-1 border-blue-300': highlighted }"
+    class="bg-white border border-gray-200 rounded-lg hover:shadow-xl hover:border-blue-300 transition-all duration-300 ease-out overflow-hidden flex flex-col h-full transform hover:-translate-y-1"
+    :class="{ 'ring-2 ring-blue-200 ring-offset-1 border-blue-300 shadow-md': highlighted }"
   >
     <!-- IMAGE -->
-    <div class="w-full h-48 flex-shrink-0 relative">
+    <div class="w-full h-48 flex-shrink-0 relative overflow-hidden group">
       <ImageOptimized
         :src="imageUrl"
         :alt="generateImageAlt(item)"
         :sizes="'(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'"
         loading="lazy"
         decoding="async"
-        img-class="w-full h-full object-cover"
+        img-class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
         @error="(e) => handleImageError(e)"
       />
       <!-- Badge type de transaction style Google -->
@@ -124,7 +124,7 @@
         <div class="flex gap-2">
           <button
             @click="handleDetails"
-            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1"
+            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1 transform active:scale-95"
             :aria-label="`Voir les détails de ${item.title}`"
           >
             Voir détails

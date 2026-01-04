@@ -1,0 +1,43 @@
+{
+  "name": "realestate-scraping",
+  "version": "1.0.0",
+  "description": "Système de scraping pour collecter les informations des agences immobilières",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "scrape": "npm run build && npm start",
+    "scrape:dev": "ts-node src/index.ts",
+    "analyze-page": "ts-node src/scripts/analyze-page.ts"
+  },
+  "keywords": [
+    "scraping",
+    "real-estate",
+    "agencies"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^21.5.2",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "phone": "^3.1.33",
+    "validator": "^13.11.0",
+    "geocoder": "^0.2.3",
+    "user-agents": "^1.0.1294",
+    "p-limit": "^5.0.0",
+    "p-retry": "^6.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
+    "@types/validator": "^13.11.7",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
+  }
+}
+

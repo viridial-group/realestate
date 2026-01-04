@@ -6,15 +6,31 @@ const STORAGE_KEY = 'realestate_search_history'
 /**
  * Composable pour gérer l'historique de recherche
  */
+export interface SearchHistoryEntry {
+  query: string
+  timestamp: number
+  resultCount?: number
+}
+
 export function useSearchHistory() {
-  const history = ref<string[]>([])
+  const history = ref<(string | SearchHistoryEntry)[]>([])
 
   // Charger l'historique depuis localStorage au montage
   function loadHistory() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
-        history.value = JSON.parse(stored)
+        const parsed = JSON.parse(stored)
+        // Migration: convertir les anciennes entrées string en objets
+        history.value = parsed.map((item: string | SearchHistoryEntry) => {
+          if (typeof item === 'string') {
+            return {
+              query: item,
+              timestamp: Date.now(),
+            }
+          }
+          return item
+        })
       }
     } catch (error) {
       console.error('Error loading search history:', error)
@@ -31,17 +47,27 @@ export function useSearchHistory() {
     }
   }
 
-  // Ajouter une recherche à l'historique
-  function addToHistory(search: string) {
+  // Ajouter une recherche à l'historique avec métadonnées
+  function addToHistory(search: string, metadata?: { timestamp?: number; resultCount?: number }) {
     if (!search || !search.trim()) return
 
     const trimmed = search.trim()
     
     // Retirer si déjà présent
-    history.value = history.value.filter(item => item.toLowerCase() !== trimmed.toLowerCase())
+    history.value = history.value.filter(item => {
+      const itemStr = typeof item === 'string' ? item : item.query
+      return itemStr.toLowerCase() !== trimmed.toLowerCase()
+    })
+    
+    // Créer l'entrée avec métadonnées
+    const entry = {
+      query: trimmed,
+      timestamp: metadata?.timestamp || Date.now(),
+      resultCount: metadata?.resultCount,
+    }
     
     // Ajouter au début
-    history.value.unshift(trimmed)
+    history.value.unshift(entry)
     
     // Limiter à MAX_HISTORY_ITEMS
     if (history.value.length > MAX_HISTORY_ITEMS) {
@@ -53,8 +79,36 @@ export function useSearchHistory() {
 
   // Supprimer un élément de l'historique
   function removeFromHistory(search: string) {
-    history.value = history.value.filter(item => item !== search)
+    history.value = history.value.filter(item => {
+      const itemStr = typeof item === 'string' ? item : item.query
+      return itemStr !== search
+    })
     saveHistory()
+  }
+
+  // Obtenir les recherches récentes (7 derniers jours)
+  function getRecentSearches(days: number = 7): SearchHistoryEntry[] {
+    const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000)
+    return history.value
+      .filter(item => {
+        const entry = typeof item === 'string' ? { query: item, timestamp: Date.now() } : item
+        return entry.timestamp >= cutoff
+      })
+      .map(item => typeof item === 'string' ? { query: item, timestamp: Date.now() } : item)
+      .slice(0, 5)
+  }
+
+  // Obtenir les recherches les plus fréquentes
+  function getFrequentSearches(limit: number = 5): string[] {
+    const counts = new Map<string, number>()
+    history.value.forEach(item => {
+      const query = typeof item === 'string' ? item : item.query
+      counts.set(query, (counts.get(query) || 0) + 1)
+    })
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([query]) => query)
   }
 
   // Vider l'historique
@@ -72,6 +126,8 @@ export function useSearchHistory() {
     removeFromHistory,
     clearHistory,
     loadHistory,
+    getRecentSearches,
+    getFrequentSearches,
   }
 }
 

@@ -1,24 +1,24 @@
 <template>
   <nav 
-    class="flex items-center gap-2 text-sm text-gray-600 mb-4"
+    class="flex items-center gap-2 text-sm text-gray-600 mb-6"
     aria-label="Breadcrumb"
   >
     <ol class="flex items-center gap-2" itemscope itemtype="https://schema.org/BreadcrumbList">
       <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
         <router-link
           to="/"
-          class="hover:text-gray-900 transition-colors"
+          class="hover:text-gray-900 transition-colors flex items-center gap-1"
           itemprop="item"
         >
+          <Home class="h-3 w-3" />
           <span itemprop="name">Accueil</span>
         </router-link>
         <meta itemprop="position" content="1" />
       </li>
-      <span v-if="items.length > 0" class="text-gray-400">›</span>
-      <template v-for="(item, index) in items">
+      <ChevronRight v-if="items.length > 0" class="h-3 w-3 text-gray-400" />
+      <template v-for="(item, index) in items" :key="`item-${index}`">
         <li 
           v-if="item.to && index < items.length - 1"
-          :key="`link-${index}`"
           itemprop="itemListElement" 
           itemscope 
           itemtype="https://schema.org/ListItem"
@@ -34,7 +34,6 @@
         </li>
         <li 
           v-else
-          :key="`text-${index}`"
           itemprop="itemListElement" 
           itemscope 
           itemtype="https://schema.org/ListItem"
@@ -43,7 +42,7 @@
           <span itemprop="name">{{ item.label }}</span>
           <meta itemprop="position" :content="String(index + 2)" />
         </li>
-        <span v-if="index < items.length - 1" :key="`separator-${index}`" class="text-gray-400">›</span>
+        <ChevronRight v-if="index < items.length - 1" class="h-3 w-3 text-gray-400" />
       </template>
     </ol>
   </nav>
@@ -52,6 +51,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { Home, ChevronRight } from 'lucide-vue-next'
 
 const props = defineProps<{
   items: Array<{

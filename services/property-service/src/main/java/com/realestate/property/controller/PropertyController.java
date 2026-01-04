@@ -9,12 +9,16 @@ import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,17 +30,28 @@ import java.util.stream.Collectors;
 @Tag(name = "Properties", description = "Real estate property management API")
 public class PropertyController {
 
+    private static final Logger logger = LoggerFactory.getLogger(PropertyController.class);
+
     private final PropertyService propertyService;
     private final PropertyMapper propertyMapper;
     private final ContactMessageService contactMessageService;
+    private final com.realestate.property.service.StatsService statsService;
+    private final com.realestate.property.service.PropertyEventService propertyEventService;
+    private final String identityServiceUrl;
 
     public PropertyController(
             PropertyService propertyService, 
             PropertyMapper propertyMapper,
-            ContactMessageService contactMessageService) {
+            ContactMessageService contactMessageService,
+            com.realestate.property.service.StatsService statsService,
+            com.realestate.property.service.PropertyEventService propertyEventService,
+            @Value("${services.identity.url:http://localhost:8081}") String identityServiceUrl) {
         this.propertyService = propertyService;
         this.propertyMapper = propertyMapper;
         this.contactMessageService = contactMessageService;
+        this.statsService = statsService;
+        this.propertyEventService = propertyEventService;
+        this.identityServiceUrl = identityServiceUrl;
     }
 
     @PostMapping
@@ -50,6 +65,66 @@ public class PropertyController {
                 : null;
         Property created = propertyService.createProperty(property, token);
         return ResponseEntity.status(HttpStatus.CREATED).body(propertyMapper.toDTO(created));
+    }
+
+    @GetMapping("/my")
+    @Operation(summary = "Get my properties", description = "Returns properties owned by the authenticated user")
+    public ResponseEntity<Map<String, Object>> getMyProperties(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+        try {
+            // Extraire le token
+            String token = authorization != null && authorization.startsWith("Bearer ") 
+                    ? authorization.substring(7) 
+                    : null;
+            
+            if (token == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Appeler /api/identity/users/me pour obtenir l'utilisateur actuel via WebClient
+            WebClient webClient = WebClient.builder()
+                    .baseUrl(identityServiceUrl)
+                    .build();
+            
+            com.realestate.common.client.dto.UserInfoDTO currentUser = webClient
+                    .get()
+                    .uri("/api/identity/users/me")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(com.realestate.common.client.dto.UserInfoDTO.class)
+                    .block();
+            
+            if (currentUser == null || currentUser.getId() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            Long userId = currentUser.getId();
+            
+            // Récupérer les propriétés avec pagination en filtrant par createdBy
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Property> propertyPage = propertyService.getPropertiesByCreatedBy(userId, status, pageable);
+            
+            // Convertir en DTO
+            Page<PropertyDTO> dtoPage = propertyPage.map(propertyMapper::toDTO);
+            
+            // Construire la réponse au format attendu par le frontend
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("content", dtoPage.getContent());
+            response.put("currentPage", dtoPage.getNumber());
+            response.put("totalPages", dtoPage.getTotalPages());
+            response.put("totalElements", dtoPage.getTotalElements());
+            response.put("size", dtoPage.getSize());
+            response.put("first", dtoPage.isFirst());
+            response.put("last", dtoPage.isLast());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching my properties", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/{id}")
@@ -206,5 +281,40 @@ public class PropertyController {
         }
         Map<Long, Long> counts = contactMessageService.countUnreadMessagesByPropertyIds(propertyIds);
         return ResponseEntity.ok(counts);
+    }
+
+    @GetMapping("/{id}/stats")
+    @Operation(
+        summary = "Get property statistics",
+        description = "Returns current statistics for a property (views, contacts, favorites, shares)"
+    )
+    public ResponseEntity<Map<String, Long>> getPropertyStats(@PathVariable Long id) {
+        try {
+            Map<String, Long> stats = propertyEventService.getPropertyCurrentStats(id);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            // Si le service n'est pas disponible, retourner des stats par défaut
+            Map<String, Long> stats = Map.of(
+                "views", 0L,
+                "contacts", 0L,
+                "favorites", 0L,
+                "shares", 0L
+            );
+            return ResponseEntity.ok(stats);
+        }
+    }
+
+    @GetMapping("/{id}/stats/history")
+    @Operation(
+        summary = "Get property statistics history",
+        description = "Returns statistics history for a specific property over a specified number of days. " +
+                      "Cached for 5 minutes. Default: 7 days, max: 90 days."
+    )
+    public ResponseEntity<List<com.realestate.property.dto.StatsHistoryPointDTO>> getPropertyStatsHistory(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "7") Integer days) {
+        List<com.realestate.property.dto.StatsHistoryPointDTO> history = 
+            statsService.getPropertyStatsHistory(id, days);
+        return ResponseEntity.ok(history);
     }
 }

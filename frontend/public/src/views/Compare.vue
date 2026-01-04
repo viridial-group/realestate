@@ -22,6 +22,22 @@
       </router-link>
     </div>
 
+    <!-- Statistiques rapides -->
+    <div v-if="comparisonCount >= 2" class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white rounded-lg shadow-sm p-4">
+        <p class="text-sm text-gray-600 mb-1">Prix moyen</p>
+        <p class="text-2xl font-bold text-gray-900">{{ formatPrice(averagePrice) }}</p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm p-4">
+        <p class="text-sm text-gray-600 mb-1">Surface moyenne</p>
+        <p class="text-2xl font-bold text-gray-900">{{ averageSurface }} m²</p>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm p-4">
+        <p class="text-sm text-gray-600 mb-1">Prix/m² moyen</p>
+        <p class="text-2xl font-bold text-gray-900">{{ formatPrice(averagePricePerM2) }}/m²</p>
+      </div>
+    </div>
+
     <!-- Tableau de comparaison -->
     <div v-else class="space-y-6">
       <!-- Actions -->
@@ -288,6 +304,31 @@ const hasYearBuilt = computed(() => {
 const hasCondition = computed(() => {
   return properties.value.some(p => (p as any).condition)
 })
+
+const averagePrice = computed(() => {
+  if (properties.value.length === 0) return 0
+  const sum = properties.value.reduce((acc, p) => acc + (p.price || 0), 0)
+  return Math.round(sum / properties.value.length)
+})
+
+const averageSurface = computed(() => {
+  if (properties.value.length === 0) return 0
+  const sum = properties.value.reduce((acc, p) => acc + (p.surface || 0), 0)
+  return Math.round(sum / properties.value.length)
+})
+
+const averagePricePerM2 = computed(() => {
+  if (averageSurface.value === 0) return 0
+  return Math.round(averagePrice.value / averageSurface.value)
+})
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(price)
+}
 
 onMounted(async () => {
   await loadProperties()

@@ -138,6 +138,8 @@ public class DataInitializer {
                     "Organization Administrator - Full access to manage organization and all sub-organizations");
             Role userRole = createRoleIfNotExists(roleRepository, "USER", "Standard user with basic access");
             Role managerRole = createRoleIfNotExists(roleRepository, "MANAGER", "Manager with elevated access");
+            Role individualRole = createRoleIfNotExists(roleRepository, "INDIVIDUAL", 
+                    "Individual user (particulier) - Can manage their own properties and receive messages");
 
             // Assign permissions to roles
             // SUPER_ADMIN: All permissions - Full access to everything
@@ -213,7 +215,19 @@ public class DataInitializer {
                     resourceRead
             ));
 
-            roleRepository.saveAll(Set.of(superAdminRole, adminRole, organizationAdminRole, managerRole, userRole));
+            // INDIVIDUAL (Particulier): Permissions pour gérer ses propres propriétés et messages
+            // Peut créer, modifier et supprimer ses propres propriétés
+            // Peut lire et répondre aux messages reçus pour ses propriétés
+            // Peut gérer son propre profil
+            individualRole.getPermissions().addAll(Set.of(
+                    userRead, userWrite,  // Lire et modifier son propre profil
+                    propertyRead, propertyWrite, propertyDelete,  // Gérer ses propres propriétés
+                    contactRead, contactWrite,  // Lire et répondre aux messages
+                    notificationRead,  // Lire ses notifications
+                    documentRead, documentWrite  // Gérer les documents de ses propriétés
+            ));
+
+            roleRepository.saveAll(Set.of(superAdminRole, adminRole, organizationAdminRole, managerRole, userRole, individualRole));
 
             // Create default super admin user if not exists
             if (!userRepository.findByEmail("superadmin@viridial.com").isPresent()) {

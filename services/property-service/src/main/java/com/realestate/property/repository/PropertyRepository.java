@@ -113,5 +113,24 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
      */
     @Query("SELECT COUNT(p) FROM Property p WHERE p.organizationId = :organizationId AND p.active = true")
     Long countByOrganizationId(@Param("organizationId") Long organizationId);
+
+    /**
+     * Récupère les propriétés par createdBy avec pagination
+     */
+    @Query("SELECT p FROM Property p WHERE p.createdBy = :createdBy AND p.active = true")
+    org.springframework.data.domain.Page<Property> findByCreatedBy(
+            @Param("createdBy") Long createdBy,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    /**
+     * Récupère les propriétés par createdBy et status avec pagination
+     */
+    @Query("SELECT p FROM Property p WHERE p.createdBy = :createdBy AND p.status = :status AND p.active = true")
+    org.springframework.data.domain.Page<Property> findByCreatedByAndStatus(
+            @Param("createdBy") Long createdBy,
+            @Param("status") String status,
+            org.springframework.data.domain.Pageable pageable
+    );
 }
 

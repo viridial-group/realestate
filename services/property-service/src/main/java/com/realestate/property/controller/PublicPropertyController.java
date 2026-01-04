@@ -23,9 +23,13 @@ import java.util.List;
 public class PublicPropertyController {
 
     private final PublicPropertyService publicPropertyService;
+    private final com.realestate.property.service.PropertyEventService propertyEventService;
 
-    public PublicPropertyController(PublicPropertyService publicPropertyService) {
+    public PublicPropertyController(
+            PublicPropertyService publicPropertyService,
+            com.realestate.property.service.PropertyEventService propertyEventService) {
         this.publicPropertyService = publicPropertyService;
+        this.propertyEventService = propertyEventService;
     }
 
     @GetMapping
@@ -82,13 +86,18 @@ public class PublicPropertyController {
 
     @GetMapping("/suggestions")
     @Operation(
-        summary = "Get search suggestions",
+        summary = "Get search suggestions (enhanced)",
         description = "Returns comprehensive search suggestions including cities, types, addresses, titles, and popular searches. " +
+                     "Enhanced with limit, includePopular, and includeTrending parameters. " +
                      "Useful for autocomplete during typing."
     )
     public ResponseEntity<SearchSuggestionsDTO> getSearchSuggestions(
-            @RequestParam(required = false) String search) {
-        SearchSuggestionsDTO suggestions = publicPropertyService.getSearchSuggestions(search);
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Boolean includePopular,
+            @RequestParam(required = false) Boolean includeTrending) {
+        SearchSuggestionsDTO suggestions = publicPropertyService.getSearchSuggestions(
+            search, limit, includePopular, includeTrending);
         return ResponseEntity.ok(suggestions);
     }
 
@@ -97,10 +106,19 @@ public class PublicPropertyController {
         summary = "Get published property by ID (cached)",
         description = "Returns property information for a specific property ID. " +
                      "Only returns if property is published/available. " +
-                     "Results are cached in Redis for performance."
+                     "Results are cached in Redis for performance. " +
+                     "Automatically tracks a VIEW event."
     )
     public ResponseEntity<PropertyDTO> getPublishedPropertyById(@PathVariable Long id) {
         PropertyDTO property = publicPropertyService.getPublishedPropertyById(id);
+        
+        // Tracker une vue (de manière asynchrone pour ne pas ralentir la réponse)
+        try {
+            propertyEventService.trackView(id, null, "{\"source\":\"public_api\"}");
+        } catch (Exception e) {
+            // Ignorer les erreurs de tracking pour ne pas bloquer la réponse
+        }
+        
         return ResponseEntity.ok(property);
     }
 

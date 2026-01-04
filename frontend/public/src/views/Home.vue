@@ -16,10 +16,12 @@
     import ErrorMessage from '@/components/ErrorMessage.vue'
     import EmptyState from '@/components/EmptyState.vue'
     import AdvertisementSlot from '@/components/AdvertisementSlot.vue'
-    import SearchAutocomplete from '@/components/SearchAutocomplete.vue'
-    import SidebarFilters from '@/components/SidebarFilters.vue'
-    import { interests } from '@/data/interests'
-    import { useSEO, generateSiteStructuredData } from '@/composables/useSEO'
+import SearchAutocomplete from '@/components/SearchAutocomplete.vue'
+import SidebarFilters from '@/components/SidebarFilters.vue'
+import QuickFilters from '@/components/QuickFilters.vue'
+import HomeSections from '@/components/HomeSections.vue'
+import { interests } from '@/data/interests'
+import { useSEO, generateSiteStructuredData } from '@/composables/useSEO'
     
     // Composable pour les propriétés
     const { formattedProperties, loading, error, pagination, loadProperties } = usePublicProperties()
@@ -49,6 +51,7 @@
     const userLocation = ref<{ lat: number; lng: number } | null>(null)
     const viewMode = ref<'list' | 'grid'>('list')
     const resultsSectionRef = ref<HTMLElement | null>(null)
+    const showMobileFilters = ref(false)
     
     // Suggestions de recherche similaires
     const searchSuggestions = computed(() => {
@@ -635,33 +638,6 @@
       userLocation.value = location
     }
     
-    // Gestion des filtres rapides
-    function handleQuickFilterChange(filter: { type: string; key: string; value: any }) {
-      if (filter.type === 'price') {
-        if (filter.value.maxPrice) {
-          maxPrice.value = filter.value.maxPrice
-        }
-        if (filter.value.minPrice) {
-          // Pour les filtres rapides, on peut aussi définir un minPrice si nécessaire
-        }
-      } else if (filter.type === 'type') {
-        type.value = filter.value.key
-      } else if (filter.type === 'surface') {
-        if (filter.value.maxSurface) {
-          minSurface.value = filter.value.maxSurface
-        }
-        if (filter.value.minSurface) {
-          minSurface.value = filter.value.minSurface
-        }
-      }
-    }
-    
-    function handleClearQuickFilters() {
-      maxPrice.value = null
-      minSurface.value = null
-      type.value = 'Tous'
-    }
-    
     // Breadcrumbs
     const breadcrumbs = computed(() => {
       const items = [{ label: 'Recherche' }]
@@ -697,17 +673,30 @@
     <template>
       <div class="w-full">
         <!-- Header fixe avec recherche uniquement -->
-        <div class="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-md mb-6 py-4">
+        <div class="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-md mb-6 py-4" role="search" aria-label="Recherche de propriétés">
           <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center gap-4">
-              <div class="flex-1">
+            <div class="flex items-center gap-2 sm:gap-4">
+              <!-- Bouton filtres mobile -->
+              <button
+                class="lg:hidden p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 active:scale-95"
+                aria-label="Ouvrir les filtres"
+                aria-expanded="false"
+                @click="showMobileFilters = !showMobileFilters"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
+              <div class="flex-1 min-w-0">
                 <SearchAutocomplete
                   :model-value="query || ''"
                   @update:model-value="query = $event"
                   placeholder="Rechercher une ville, un quartier, un type…"
+                  aria-label="Champ de recherche"
                 />
               </div>
               <ShareSearchButton
+                class="hidden sm:flex"
                 :search-params="{
                   query,
                   type,
@@ -719,6 +708,63 @@
                   sortBy,
                   dateFilter
                 }"
+              />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Filtres mobiles (drawer) -->
+        <div
+          v-if="showMobileFilters"
+          class="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50"
+          @click="showMobileFilters = false"
+          aria-label="Fermer les filtres"
+        >
+          <div
+            class="absolute right-0 top-0 h-full w-4/5 max-w-sm bg-white dark:bg-gray-900 shadow-xl overflow-y-auto transform transition-transform duration-300 ease-out"
+            @click.stop
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filtres de recherche"
+          >
+            <div class="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 p-4 flex items-center justify-between z-10">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Filtres</h2>
+              <button
+                @click="showMobileFilters = false"
+                class="p-2 text-gray-500 hover:text-gray-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Fermer les filtres"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="p-4">
+              <SidebarFilters
+                :transaction-type="transactionType"
+                :type="type"
+                :status="status"
+                :sort-by="sortBy"
+                :max-price="maxPrice"
+                :min-surface="minSurface"
+                :bedrooms="bedrooms"
+                :bathrooms="bathrooms"
+                :date-filter="dateFilter"
+                :country="country"
+                :city="city"
+                :show-date-filter="true"
+                @update:transactionType="transactionType = $event"
+                @update:type="type = $event"
+                @update:status="status = $event"
+                @update:sortBy="sortBy = $event"
+                @update:maxPrice="maxPrice = $event"
+                @update:minSurface="minSurface = $event"
+                @update:bedrooms="bedrooms = $event"
+                @update:bathrooms="bathrooms = $event"
+                @update:dateFilter="dateFilter = $event"
+                @update:country="country = $event"
+                @update:city="city = $event"
+                @clear-filters="clearFilters"
               />
             </div>
           </div>
@@ -756,6 +802,23 @@
               <span class="text-sm text-gray-700 dark:text-gray-300">Mise à jour...</span>
             </div>
           </div>
+          <!-- Filtres rapides -->
+          <QuickFilters
+            :min-price="minPrice"
+            :max-price="maxPrice"
+            :min-surface="minSurface"
+            :max-surface="maxSurface"
+            :bedrooms="bedrooms"
+            :type="type"
+            @update:minPrice="minPrice = $event"
+            @update:maxPrice="maxPrice = $event"
+            @update:minSurface="minSurface = $event"
+            @update:maxSurface="maxSurface = $event"
+            @update:bedrooms="bedrooms = $event"
+            @update:type="type = $event"
+            @clear="clearFilters"
+          />
+
           <!-- Statistiques de recherche -->
           <div data-results-start>
             <SearchStats
@@ -790,8 +853,8 @@
         
           <!-- Résultats -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mt-8 w-full max-w-screen-2xl mx-auto">
-            <!-- Filtres à gauche (fixe) -->
-            <aside class="lg:col-span-3 space-y-6">
+            <!-- Filtres à gauche (fixe) - Masqué sur mobile, affiché via bouton -->
+            <aside class="hidden lg:block lg:col-span-3 space-y-6" aria-label="Filtres de recherche">
               <SidebarFilters
                 :transaction-type="transactionType"
                 :type="type"
@@ -821,7 +884,7 @@
             </aside>
 
             <!-- Contenu principal au centre -->
-            <section ref="resultsSectionRef" class="lg:col-span-6" style="min-height: 400px;">
+            <section ref="resultsSectionRef" class="lg:col-span-6 lg:col-start-4" style="min-height: 400px;" role="main" aria-label="Résultats de recherche">
               <!-- En-tête avec toggle vue et compteur -->
               <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-4">
@@ -847,7 +910,7 @@
               </div>
               
               <!-- Vue grille -->
-              <div v-show="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div v-show="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <PropertyCard
                   v-for="item in filteredListings"
                   :key="item.id"
@@ -883,9 +946,9 @@
               </div>
             </section>
 
-            <!-- Panel d'intérêts et annonces à droite (fixe) -->
-            <aside class="lg:col-span-3">
-              <div class="sticky top-24 space-y-6">
+            <!-- Panel d'intérêts et annonces à droite (fixe) - Masqué sur mobile -->
+            <aside class="hidden lg:block lg:col-span-3 lg:col-start-10">
+              <div class="sticky top-24 space-y-6" aria-label="Points d'intérêt et annonces">
                 <InterestsPanel 
                   :user-location="userLocation"
                   :max-distance="10"
@@ -931,6 +994,11 @@
             v-if="!loading && filteredListings.length > 0"
             :suggestions="searchSuggestions"
             @suggestion-click="handleSuggestionClick"
+          />
+
+          <!-- Sections dynamiques (affichées seulement si pas de recherche active) -->
+          <HomeSections
+            v-if="!loading && !hasActiveFilters && (!query || query.trim().length === 0) && filteredListings.length === 0"
           />
         </template>
       </div>

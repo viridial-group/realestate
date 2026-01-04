@@ -52,25 +52,23 @@ export function useSearchSuggestions() {
   ]
 
   /**
-   * Charge les suggestions depuis l'API
+   * Charge les suggestions depuis l'API avec améliorations
    */
-  async function loadSuggestions(query?: string) {
+  async function loadSuggestions(query?: string, options?: { limit?: number; includePopular?: boolean; includeTrending?: boolean }) {
     if (isLoading.value) return
 
     isLoading.value = true
     try {
-      const data = await publicPropertyService.getSearchSuggestions(query)
+      const data = await publicPropertyService.getSearchSuggestions(query, {
+        limit: options?.limit || 10,
+        includePopular: options?.includePopular !== false, // Par défaut true
+        includeTrending: options?.includeTrending !== false, // Par défaut true
+      })
       suggestions.value = data
     } catch (error) {
       console.error('Error loading suggestions:', error)
-      // Utiliser les suggestions de fallback en cas d'erreur
-      suggestions.value = {
-        cities: fallbackCitySuggestions,
-        types: fallbackTypeSuggestions,
-        addresses: [],
-        titles: [],
-        popularSearches: fallbackPopularSearches
-      }
+      // Utiliser les suggestions de fallback améliorées
+      suggestions.value = publicPropertyService.getFallbackSuggestions(query)
     } finally {
       isLoading.value = false
     }

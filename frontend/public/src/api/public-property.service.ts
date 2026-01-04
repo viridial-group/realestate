@@ -162,17 +162,68 @@ export const publicPropertyService = {
   },
 
   /**
-   * Récupère des suggestions complètes de recherche
+   * Récupère des suggestions complètes de recherche avec améliorations
    */
-  async getSearchSuggestions(search?: string): Promise<SearchSuggestions> {
+  async getSearchSuggestions(
+    search?: string,
+    options?: { limit?: number; includePopular?: boolean; includeTrending?: boolean }
+  ): Promise<SearchSuggestions> {
     try {
+      const params: any = {}
+      if (search) params.search = search
+      if (options?.limit) params.limit = options.limit
+      if (options?.includePopular !== undefined) params.includePopular = options.includePopular
+      if (options?.includeTrending !== undefined) params.includeTrending = options.includeTrending
+
       const response = await apiClient.get<SearchSuggestions>('/public/properties/suggestions', {
-        params: search ? { search } : {}
+        params
       })
       return response.data || { cities: [], types: [], addresses: [], titles: [], popularSearches: [] }
     } catch (error) {
       console.error('Error fetching search suggestions:', error)
-      return { cities: [], types: [], addresses: [], titles: [], popularSearches: [] }
+      // Retourner des suggestions de fallback améliorées
+      return this.getFallbackSuggestions(search)
+    }
+  },
+
+  /**
+   * Suggestions de fallback améliorées
+   */
+  getFallbackSuggestions(search?: string): SearchSuggestions {
+    const fallbackCities = [
+      'Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Nice', 'Toulouse',
+      'Nantes', 'Strasbourg', 'Montpellier', 'Lille', 'Rennes', 'Reims'
+    ]
+    
+    const fallbackTypes = [
+      'Appartement', 'Villa', 'Studio', 'Maison', 'Terrain', 'Bureau',
+      'Loft', 'Duplex', 'Penthouse', 'Chalet'
+    ]
+
+    const fallbackPopular = [
+      'Appartement Paris', 'Villa Côte d\'Azur', 'Studio étudiant',
+      'Maison avec jardin', 'Appartement T3', 'Villa piscine',
+      'Studio meublé', 'Maison familiale', 'Appartement centre-ville'
+    ]
+
+    // Filtrer par recherche si fournie
+    if (search && search.trim().length > 0) {
+      const searchLower = search.toLowerCase()
+      return {
+        cities: fallbackCities.filter(c => c.toLowerCase().includes(searchLower)).slice(0, 5),
+        types: fallbackTypes.filter(t => t.toLowerCase().includes(searchLower)).slice(0, 5),
+        addresses: [],
+        titles: [],
+        popularSearches: fallbackPopular.filter(p => p.toLowerCase().includes(searchLower)).slice(0, 5)
+      }
+    }
+
+    return {
+      cities: fallbackCities.slice(0, 10),
+      types: fallbackTypes.slice(0, 10),
+      addresses: [],
+      titles: [],
+      popularSearches: fallbackPopular.slice(0, 10)
     }
   },
 }

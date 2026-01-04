@@ -237,6 +237,15 @@ public class PropertyService {
         return propertyRepository.findActiveBySurfaceRange(minSurface, maxSurface);
     }
 
+    @Transactional(readOnly = true)
+    public Page<Property> getPropertiesByCreatedBy(Long createdBy, String status, Pageable pageable) {
+        if (status != null && !status.trim().isEmpty()) {
+            return propertyRepository.findByCreatedByAndStatus(createdBy, status, pageable);
+        } else {
+            return propertyRepository.findByCreatedBy(createdBy, pageable);
+        }
+    }
+
     /**
      * Récupérer les propriétés avec filtres multiples en utilisant JPA Specifications
      */

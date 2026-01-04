@@ -15,7 +15,8 @@
         class="w-full border border-gray-300 rounded-full pl-12 pr-5 py-3 text-base
                bg-white text-gray-900
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-               shadow-sm hover:shadow-md transition-shadow"
+               shadow-sm hover:shadow-md transition-all duration-200
+               focus:scale-[1.01] focus:shadow-lg"
         :placeholder="placeholder || 'Rechercher une propriété, une ville, une adresse...'"
       />
     </div>
@@ -23,7 +24,7 @@
     <!-- Suggestions style Google -->
     <div
       v-if="showSuggestions && (allSuggestions.length > 0 || history.length > 0 || isLoadingSuggestions)"
-      class="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto"
+      class="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200"
     >
       <!-- Loading state -->
       <div v-if="isLoadingSuggestions" class="p-4 text-center text-gray-500 text-sm">
@@ -38,11 +39,14 @@
           v-for="(item, idx) in history"
           :key="idx"
           @click="selectSuggestion(item)"
-          class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center justify-between group cursor-pointer rounded-md"
+          class="w-full text-left px-4 py-2.5 hover:bg-gray-100 active:bg-gray-200 flex items-center justify-between group cursor-pointer rounded-md transition-colors duration-150"
         >
           <div class="flex items-center gap-3">
             <Clock class="h-4 w-4 text-gray-400" />
-            <span class="text-sm text-gray-700">{{ item }}</span>
+            <span class="text-sm text-gray-700">{{ typeof item === 'string' ? item : item.query }}</span>
+            <span v-if="typeof item !== 'string' && item.resultCount" class="text-xs text-gray-400">
+              ({{ item.resultCount }} résultats)
+            </span>
           </div>
           <button
             @click.stop="removeFromHistory(item)"
@@ -259,7 +263,7 @@ function selectCurrent() {
 
 function selectSuggestion(suggestion: string) {
   emit('update:modelValue', suggestion)
-  addToHistory(suggestion)
+  // L'historique sera ajouté après la recherche avec le nombre de résultats
   showSuggestions.value = false
   selectedIndex.value = -1
   

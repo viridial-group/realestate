@@ -32,6 +32,7 @@ DROP TABLE IF EXISTS dvf_import_history CASCADE;
 DROP TABLE IF EXISTS dvf_transactions CASCADE;
 DROP TABLE IF EXISTS contact_messages CASCADE;
 DROP TABLE IF EXISTS blog_posts CASCADE;
+DROP TABLE IF EXISTS property_events CASCADE;
 DROP TABLE IF EXISTS property_features CASCADE;
 DROP TABLE IF EXISTS property_accesses CASCADE;
 DROP TABLE IF EXISTS properties CASCADE;
@@ -487,6 +488,37 @@ CREATE TABLE IF NOT EXISTS property_features (
 );
 
 CREATE INDEX IF NOT EXISTS idx_property_feature ON property_features(property_id);
+
+-- Table property_events
+CREATE TABLE IF NOT EXISTS property_events (
+    id BIGSERIAL PRIMARY KEY,
+    property_id BIGINT NOT NULL,
+    event_type VARCHAR(50) NOT NULL CHECK (event_type IN ('VIEW', 'CONTACT', 'FAVORITE', 'SHARE')),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id BIGINT,
+    metadata JSONB,
+    CONSTRAINT fk_property_events_property 
+        FOREIGN KEY (property_id) 
+        REFERENCES properties(id) 
+        ON DELETE CASCADE 
+        ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_property_events_property_id ON property_events(property_id);
+CREATE INDEX IF NOT EXISTS idx_property_events_created_at ON property_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_property_events_type ON property_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_property_events_property_date ON property_events(property_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_property_events_user_id ON property_events(user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_property_events_date_type ON property_events(DATE(created_at), event_type);
+CREATE INDEX IF NOT EXISTS idx_property_events_metadata ON property_events USING GIN (metadata) WHERE metadata IS NOT NULL;
+
+COMMENT ON TABLE property_events IS 'Table pour stocker les événements liés aux propriétés (vues, contacts, favoris, partages). Permet de générer des statistiques historiques et des analytics.';
+COMMENT ON COLUMN property_events.id IS 'Identifiant unique de l''événement (auto-incrémenté)';
+COMMENT ON COLUMN property_events.property_id IS 'Identifiant de la propriété concernée (FK vers properties.id)';
+COMMENT ON COLUMN property_events.event_type IS 'Type d''événement: VIEW (vue), CONTACT (contact), FAVORITE (favori), SHARE (partage)';
+COMMENT ON COLUMN property_events.created_at IS 'Date et heure de création de l''événement (timestamp)';
+COMMENT ON COLUMN property_events.user_id IS 'Identifiant de l''utilisateur qui a déclenché l''événement (optionnel, NULL pour les vues anonymes)';
+COMMENT ON COLUMN property_events.metadata IS 'Métadonnées supplémentaires au format JSONB (ex: {"source": "frontend", "device": "mobile", "platform": "facebook"})';
 
 -- Table blog_posts
 CREATE TABLE IF NOT EXISTS blog_posts (
@@ -1206,7 +1238,8 @@ VALUES
     ('ADMIN', 'Administrator with full access (SaaS level - for platform administrators)', NOW(), NOW()),
     ('ORGANIZATION_ADMIN', 'Organization Administrator - Full access to manage organization and all sub-organizations', NOW(), NOW()),
     ('MANAGER', 'Manager with elevated access', NOW(), NOW()),
-    ('USER', 'Standard user with basic access', NOW(), NOW())
+    ('USER', 'Standard user with basic access', NOW(), NOW()),
+    ('INDIVIDUAL', 'Individual user (particulier) - Can manage their own properties and receive messages', NOW(), NOW())
 ON CONFLICT (name) DO NOTHING;
 
 -- =====================================================
@@ -1280,6 +1313,23 @@ WHERE r.name = 'USER'
     'NOTIFICATION_READ',
     'CONTACT_READ',
     'RESOURCE_READ'
+  )
+ON CONFLICT DO NOTHING;
+
+-- INDIVIDUAL (Particulier): Permissions pour gérer ses propres propriétés et messages
+-- Peut créer, modifier et supprimer ses propres propriétés
+-- Peut lire et répondre aux messages reçus pour ses propriétés
+-- Peut gérer son propre profil
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'INDIVIDUAL' 
+  AND p.name IN (
+    'USER_READ', 'USER_WRITE',  -- Lire et modifier son propre profil
+    'PROPERTY_READ', 'PROPERTY_WRITE', 'PROPERTY_DELETE',  -- Gérer ses propres propriétés
+    'CONTACT_READ', 'CONTACT_WRITE',  -- Lire et répondre aux messages
+    'NOTIFICATION_READ',  -- Lire ses notifications
+    'DOCUMENT_READ', 'DOCUMENT_WRITE'  -- Gérer les documents de ses propriétés
   )
 ON CONFLICT DO NOTHING;
 
@@ -5632,6 +5682,111 @@ WHERE ou.active = true AND r.name IN ('ADMIN', 'DIRECTOR')
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
+-- 14.5. CRÉER DES ÉVÉNEMENTS DE PROPRIÉTÉS (TEST)
+-- =====================================================
+
+-- Générer des événements de test pour les propriétés publiées
+-- Simule des vues, contacts, favoris et partages sur les 7 derniers jours
+DO $$
+DECLARE
+    prop_rec RECORD;
+    event_date DATE;
+    i INTEGER;
+    j INTEGER;
+    user_id_val BIGINT;
+    metadata_json JSONB;
+    event_types TEXT[] := ARRAY['VIEW', 'CONTACT', 'FAVORITE', 'SHARE'];
+BEGIN
+    -- Parcourir les propriétés publiées
+    FOR prop_rec IN 
+        SELECT id FROM properties WHERE status IN ('PUBLISHED', 'AVAILABLE') AND active = true LIMIT 20
+    LOOP
+        -- Générer des événements pour les 7 derniers jours
+        FOR i IN 0..6 LOOP
+            event_date := CURRENT_DATE - i;
+            
+            -- Générer des vues (plus fréquentes - 5 à 15 par jour)
+            FOR j IN 1..(5 + (RANDOM() * 10)::INTEGER) LOOP
+                user_id_val := CASE WHEN RANDOM() > 0.3 THEN (RANDOM() * 20 + 1)::BIGINT ELSE NULL END;
+                metadata_json := jsonb_build_object(
+                    'source', CASE WHEN RANDOM() > 0.5 THEN 'frontend' ELSE 'public_api' END,
+                    'device', CASE (RANDOM() * 3)::INTEGER 
+                        WHEN 0 THEN 'desktop' 
+                        WHEN 1 THEN 'mobile' 
+                        ELSE 'tablet' 
+                    END
+                );
+                
+                INSERT INTO property_events (property_id, event_type, created_at, user_id, metadata)
+                VALUES (
+                    prop_rec.id,
+                    'VIEW',
+                    event_date + (RANDOM() * INTERVAL '1 day'),
+                    user_id_val,
+                    metadata_json
+                ) ON CONFLICT DO NOTHING;
+            END LOOP;
+            
+            -- Générer quelques contacts (moins fréquents - 10% de chance par jour)
+            IF RANDOM() > 0.9 THEN
+                user_id_val := (RANDOM() * 20 + 1)::BIGINT;
+                metadata_json := jsonb_build_object(
+                    'method', CASE WHEN RANDOM() > 0.5 THEN 'email' ELSE 'phone' END
+                );
+                
+                INSERT INTO property_events (property_id, event_type, created_at, user_id, metadata)
+                VALUES (
+                    prop_rec.id,
+                    'CONTACT',
+                    event_date + (RANDOM() * INTERVAL '1 day'),
+                    user_id_val,
+                    metadata_json
+                ) ON CONFLICT DO NOTHING;
+            END IF;
+            
+            -- Générer quelques favoris (20% de chance par jour)
+            IF RANDOM() > 0.8 THEN
+                user_id_val := (RANDOM() * 20 + 1)::BIGINT;
+                metadata_json := jsonb_build_object('source', 'favorites_panel');
+                
+                INSERT INTO property_events (property_id, event_type, created_at, user_id, metadata)
+                VALUES (
+                    prop_rec.id,
+                    'FAVORITE',
+                    event_date + (RANDOM() * INTERVAL '1 day'),
+                    user_id_val,
+                    metadata_json
+                ) ON CONFLICT DO NOTHING;
+            END IF;
+            
+            -- Générer quelques partages (5% de chance par jour)
+            IF RANDOM() > 0.95 THEN
+                user_id_val := (RANDOM() * 20 + 1)::BIGINT;
+                metadata_json := jsonb_build_object(
+                    'platform', CASE (RANDOM() * 4)::INTEGER 
+                        WHEN 0 THEN 'facebook' 
+                        WHEN 1 THEN 'twitter' 
+                        WHEN 2 THEN 'linkedin' 
+                        ELSE 'whatsapp' 
+                    END
+                );
+                
+                INSERT INTO property_events (property_id, event_type, created_at, user_id, metadata)
+                VALUES (
+                    prop_rec.id,
+                    'SHARE',
+                    event_date + (RANDOM() * INTERVAL '1 day'),
+                    user_id_val,
+                    metadata_json
+                ) ON CONFLICT DO NOTHING;
+            END IF;
+        END LOOP;
+    END LOOP;
+    
+    RAISE NOTICE 'Événements de propriétés générés avec succès';
+END $$;
+
+-- =====================================================
 -- 15. RÉSUMÉ ET STATISTIQUES
 -- =====================================================
 
@@ -5643,6 +5798,7 @@ DECLARE
     org_user_count INTEGER;
     prop_count INTEGER;
     prop_feature_count INTEGER;
+    property_event_count INTEGER;
     role_count INTEGER;
     perm_count INTEGER;
     plan_count INTEGER;
@@ -5680,6 +5836,7 @@ BEGIN
     SELECT COUNT(*) INTO org_user_count FROM organization_users;
     SELECT COUNT(*) INTO prop_count FROM properties;
     SELECT COUNT(*) INTO prop_feature_count FROM property_features;
+    SELECT COUNT(*) INTO property_event_count FROM property_events;
     SELECT COUNT(*) INTO role_count FROM roles;
     SELECT COUNT(*) INTO perm_count FROM permissions;
     SELECT COUNT(*) INTO plan_count FROM plans;
@@ -5729,6 +5886,7 @@ BEGIN
     RAISE NOTICE '   • Associations utilisateurs-organisations: %', org_user_count;
     RAISE NOTICE '   • Propriétés: %', prop_count;
     RAISE NOTICE '   • Caractéristiques de propriétés: %', prop_feature_count;
+    RAISE NOTICE '   • Événements de propriétés: %', property_event_count;
     RAISE NOTICE '   • Plans d''abonnement: %', plan_count;
     RAISE NOTICE '   • Abonnements actifs: %', subscription_count;
     RAISE NOTICE '   • Factures: %', invoice_count;

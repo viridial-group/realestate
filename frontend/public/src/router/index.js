@@ -54,6 +54,11 @@ const routes = [
     component: () => import('../views/FAQ.vue')
   },
   {
+    path: '/help',
+    name: 'Help',
+    component: () => import('../views/Help.vue')
+  },
+  {
     path: '/guide-achat',
     name: 'GuideAchat',
     component: () => import('../views/GuideAchat.vue')
@@ -112,12 +117,101 @@ const routes = [
     path: '/subscribe',
     name: 'Subscribe',
     component: () => import('../views/Subscribe.vue')
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/Login.vue')
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/my-properties',
+    name: 'MyProperties',
+    component: () => import('../views/MyProperties.vue'),
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/my-properties/new',
+    name: 'PropertyFormNew',
+    component: () => import('../views/PropertyForm.vue'),
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/my-properties/:id/edit',
+    name: 'PropertyFormEdit',
+    component: () => import('../views/PropertyForm.vue'),
+    props: true,
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/my-properties/:id',
+    name: 'MyPropertyDetail',
+    component: () => import('../views/MyPropertyDetail.vue'),
+    props: true,
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue')
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../views/ResetPassword.vue')
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/Dashboard.vue'),
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/my-messages',
+    name: 'MyMessages',
+    component: () => import('../views/MyMessages.vue'),
+    meta: { requiresAuth: true, layout: 'user' }
+  },
+  {
+    path: '/profile/settings',
+    name: 'ProfileSettings',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true, layout: 'user' }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// Guard de route pour l'authentification
+router.beforeEach(async (to, from, next) => {
+  if (to.meta.requiresAuth) {
+    // Importer le store d'authentification
+    const { useAuthStore } = await import('@viridial/shared')
+    const authStore = useAuthStore()
+    
+    // Vérifier l'authentification
+    await authStore.checkAuth()
+    
+    if (!authStore.isAuthenticated) {
+      // Rediriger vers la page de connexion avec la route de retour
+      next({
+        name: 'Login',
+        query: { redirect: to.fullPath }
+      })
+    } else {
+      next()
+    }
+  } else {
+    next()
+  }
 })
 
 export default router

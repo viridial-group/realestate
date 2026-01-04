@@ -79,11 +79,32 @@ public class CacheConfig {
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
                         citiesJsonSerializer))
                 .disableCachingNullValues();
+
+        // Configuration pour le cache des statistiques historiques (TTL : 5 minutes)
+        RedisCacheConfiguration statsHistoryConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(5))
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                        new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                        jsonSerializer))
+                .disableCachingNullValues();
+
+        // Configuration pour le cache des suggestions de recherche (TTL : 10 minutes)
+        RedisCacheConfiguration searchSuggestionsConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10))
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                        new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                        jsonSerializer))
+                .disableCachingNullValues();
         
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
         cacheConfigurations.put("publicProperty", propertyConfig);
         cacheConfigurations.put("publicProperties", defaultConfig); // Réactivé avec PagedPropertyResponse
         cacheConfigurations.put("availableCities", citiesConfig); // Cache pour les villes
+        cacheConfigurations.put("propertyStatsHistory", statsHistoryConfig); // Cache pour l'historique des stats
+        cacheConfigurations.put("globalStatsHistory", statsHistoryConfig); // Cache pour l'historique global
+        cacheConfigurations.put("searchSuggestions", searchSuggestionsConfig); // Cache pour les suggestions
         
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)
