@@ -63,6 +63,46 @@ public class PropertyController {
         String token = authorization != null && authorization.startsWith("Bearer ") 
                 ? authorization.substring(7) 
                 : null;
+        
+        // Récupérer l'utilisateur connecté pour remplir createdBy et organizationId
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+        
+        try {
+            WebClient webClient = WebClient.builder()
+                    .baseUrl(identityServiceUrl)
+                    .build();
+            
+            com.realestate.common.client.dto.UserInfoDTO currentUser = webClient
+                    .get()
+                    .uri("/api/identity/users/me")
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(com.realestate.common.client.dto.UserInfoDTO.class)
+                    .block();
+            
+            if (currentUser == null || currentUser.getId() == null) {
+                logger.warn("Failed to identify current user from token");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .build();
+            }
+            
+            // Remplir createdBy depuis l'utilisateur connecté
+            property.setCreatedBy(currentUser.getId());
+            
+            // Remplir organizationId si l'utilisateur a une organisation
+            // (peut être null pour les utilisateurs particuliers)
+            if (currentUser.getOrganizationId() != null) {
+                property.setOrganizationId(currentUser.getOrganizationId());
+            }
+        } catch (Exception e) {
+            logger.error("Failed to fetch current user information: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+        
         Property created = propertyService.createProperty(property, token);
         return ResponseEntity.status(HttpStatus.CREATED).body(propertyMapper.toDTO(created));
     }

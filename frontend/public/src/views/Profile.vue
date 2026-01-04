@@ -9,131 +9,38 @@
       </div>
 
       <div class="space-y-6">
-        <!-- Informations personnelles -->
+        <!-- Informations personnelles (vue d'ensemble) -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h2>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Informations personnelles</h2>
+            <router-link
+              to="/profile/settings"
+              class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Modifier →
+            </router-link>
+          </div>
           
           <div v-if="loading" class="text-center py-8">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           </div>
 
-          <form v-else @submit.prevent="handleUpdateProfile" class="space-y-4">
+          <div v-else class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Prénom <span class="text-red-500">*</span>
-                </label>
-                <input
-                  v-model="profileForm.firstName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <p class="text-sm text-gray-500 mb-1">Prénom</p>
+                <p class="text-base font-medium text-gray-900">{{ profileForm.firstName || 'Non renseigné' }}</p>
               </div>
-
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Nom <span class="text-red-500">*</span>
-                </label>
-                <input
-                  v-model="profileForm.lastName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <p class="text-sm text-gray-500 mb-1">Nom</p>
+                <p class="text-base font-medium text-gray-900">{{ profileForm.lastName || 'Non renseigné' }}</p>
               </div>
             </div>
-
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Email <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="profileForm.email"
-                type="email"
-                required
-                disabled
-                class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
-              />
-              <p class="mt-1 text-xs text-gray-500">L'email ne peut pas être modifié</p>
+              <p class="text-sm text-gray-500 mb-1">Email</p>
+              <p class="text-base font-medium text-gray-900">{{ profileForm.email }}</p>
             </div>
-
-            <div class="flex items-center justify-end gap-4 pt-4">
-              <button
-                type="button"
-                @click="loadProfile"
-                class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                :disabled="submitting"
-                class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {{ submitting ? 'Enregistrement...' : 'Enregistrer' }}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Changer le mot de passe -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Changer le mot de passe</h2>
-          
-          <form @submit.prevent="handleChangePassword" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Mot de passe actuel <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="passwordForm.currentPassword"
-                type="password"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Nouveau mot de passe <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="passwordForm.newPassword"
-                type="password"
-                required
-                minlength="8"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p class="mt-1 text-xs text-gray-500">Minimum 8 caractères</p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Confirmer le nouveau mot de passe <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="passwordForm.confirmPassword"
-                type="password"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div v-if="passwordError" class="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p class="text-sm text-red-800">{{ passwordError }}</p>
-            </div>
-
-            <div class="flex items-center justify-end">
-              <button
-                type="submit"
-                :disabled="submittingPassword"
-                class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {{ submittingPassword ? 'Changement...' : 'Changer le mot de passe' }}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
 
         <!-- Statistiques -->
@@ -189,63 +96,6 @@
           </div>
         </div>
 
-        <!-- Préférences -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Préférences</h2>
-          
-          <div class="space-y-4">
-            <!-- Notifications -->
-            <div class="flex items-center justify-between py-3 border-b border-gray-200">
-              <div>
-                <p class="font-medium text-gray-900">Notifications par email</p>
-                <p class="text-sm text-gray-500">Recevoir des emails pour les nouveaux messages</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  v-model="preferences.emailNotifications"
-                  type="checkbox"
-                  @change="savePreferences"
-                  class="sr-only peer"
-                />
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            <!-- Mode sombre -->
-            <div class="flex items-center justify-between py-3 border-b border-gray-200">
-              <div>
-                <p class="font-medium text-gray-900">Mode sombre</p>
-                <p class="text-sm text-gray-500">Activer le thème sombre</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  v-model="preferences.darkMode"
-                  type="checkbox"
-                  @change="savePreferences"
-                  class="sr-only peer"
-                />
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            <!-- Confidentialité -->
-            <div class="flex items-center justify-between py-3">
-              <div>
-                <p class="font-medium text-gray-900">Profil public</p>
-                <p class="text-sm text-gray-500">Permettre aux autres de voir votre profil</p>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  v-model="preferences.publicProfile"
-                  type="checkbox"
-                  @change="savePreferences"
-                  class="sr-only peer"
-                />
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-          </div>
-        </div>
 
         <!-- Sécurité -->
         <div class="bg-white rounded-lg shadow-sm p-6">
@@ -276,16 +126,11 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore, userService } from '@viridial/shared'
 import { useToast } from '@/composables/useToast'
 import { userPropertyService } from '@/api/user-property.service'
-import { useDarkMode } from '@/composables/useDarkMode'
 
 const authStore = useAuthStore()
 const { showToast } = useToast()
-const { isDark, toggleDarkMode } = useDarkMode()
 
 const loading = ref(false)
-const submitting = ref(false)
-const submittingPassword = ref(false)
-const passwordError = ref<string | null>(null)
 const loadingStats = ref(false)
 
 const profileForm = ref({
@@ -294,18 +139,6 @@ const profileForm = ref({
   email: '',
   createdAt: '',
   lastLogin: '',
-})
-
-const preferences = ref({
-  emailNotifications: true,
-  darkMode: false,
-  publicProfile: false,
-})
-
-const passwordForm = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: '',
 })
 
 const stats = ref({
@@ -322,7 +155,6 @@ const stats = ref({
 onMounted(async () => {
   await loadProfile()
   await loadStats()
-  loadPreferences()
 })
 
 async function loadProfile() {
@@ -343,35 +175,6 @@ async function loadProfile() {
   }
 }
 
-function loadPreferences() {
-  try {
-    const stored = localStorage.getItem('user_preferences')
-    if (stored) {
-      preferences.value = { ...preferences.value, ...JSON.parse(stored) }
-    }
-    
-    // Charger le mode sombre depuis le composable
-    preferences.value.darkMode = isDark.value
-  } catch (err) {
-    console.error('Error loading preferences:', err)
-  }
-}
-
-function savePreferences() {
-  try {
-    localStorage.setItem('user_preferences', JSON.stringify(preferences.value))
-    
-    // Appliquer le mode sombre si changé
-    if (preferences.value.darkMode !== isDark.value) {
-      toggleDarkMode()
-    }
-    
-    showToast('Préférences sauvegardées', 'success')
-  } catch (err) {
-    console.error('Error saving preferences:', err)
-    showToast('Erreur lors de la sauvegarde', 'error')
-  }
-}
 
 async function loadStats() {
   loadingStats.value = true
@@ -426,57 +229,6 @@ async function loadStats() {
   }
 }
 
-async function handleUpdateProfile() {
-  submitting.value = true
-  try {
-    await userService.updateProfile({
-      firstName: profileForm.value.firstName,
-      lastName: profileForm.value.lastName,
-    })
-    showToast('Profil mis à jour avec succès', 'success')
-    await authStore.checkAuth() // Rafraîchir les infos utilisateur
-  } catch (err: any) {
-    showToast(
-      err.response?.data?.message || err.message || 'Erreur lors de la mise à jour',
-      'error'
-    )
-  } finally {
-    submitting.value = false
-  }
-}
-
-async function handleChangePassword() {
-  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    passwordError.value = 'Les mots de passe ne correspondent pas'
-    return
-  }
-
-  if (passwordForm.value.newPassword.length < 8) {
-    passwordError.value = 'Le mot de passe doit contenir au moins 8 caractères'
-    return
-  }
-
-  submittingPassword.value = true
-  passwordError.value = null
-
-  try {
-    await userService.changePassword({
-      currentPassword: passwordForm.value.currentPassword,
-      newPassword: passwordForm.value.newPassword,
-    })
-    
-    showToast('Mot de passe changé avec succès', 'success')
-    passwordForm.value = {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    }
-  } catch (err: any) {
-    passwordError.value = err.response?.data?.message || err.message || 'Erreur lors du changement de mot de passe'
-  } finally {
-    submittingPassword.value = false
-  }
-}
 
 function formatDate(dateString?: string): string {
   if (!dateString) return 'N/A'

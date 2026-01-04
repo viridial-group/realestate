@@ -42,301 +42,651 @@
       <!-- Formulaire -->
       <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Informations de base -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Informations de base</h2>
-          
-          <div class="space-y-4">
-            <div>
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations de base</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="space-y-2">
+              <Label class="flex items-center gap-2">
                 Titre de l'annonce <span class="text-red-500">*</span>
                 <HelpTooltip
                   title="Titre de l'annonce"
                   content="Un titre accrocheur augmente les vues. Utilisez des mots-clés importants comme le type de bien, la localisation et les caractéristiques principales (ex: 'Appartement 3 pièces avec balcon à Paris 15ème')."
                 />
-              </label>
-              <input
+              </Label>
+              <Input
                 v-model="form.title"
                 type="text"
                 required
-                :class="[
-                  'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                  fieldErrors.title ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                ]"
+                :class="fieldErrors.title ? 'border-red-300 focus-visible:ring-red-500' : ''"
                 placeholder="Ex: Appartement 3 pièces à Paris"
                 @blur="validateField('title')"
               />
-              <p v-if="fieldErrors.title" class="mt-1 text-sm text-red-600">{{ fieldErrors.title }}</p>
+              <p v-if="fieldErrors.title" class="text-sm text-red-600">{{ fieldErrors.title }}</p>
             </div>
 
-            <div>
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+            <div class="space-y-2">
+              <Label class="flex items-center gap-2">
                 Description <span class="text-red-500">*</span>
                 <HelpTooltip
                   title="Description détaillée"
                   content="Décrivez votre bien en détail : état, équipements, environnement, transports, etc. Une description complète et honnête augmente la confiance des visiteurs et les contacts qualifiés."
                 />
-              </label>
+              </Label>
               <textarea
                 v-model="form.description"
                 rows="5"
                 required
                 :class="[
-                  'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                  fieldErrors.description ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                  fieldErrors.description ? 'border-red-300 focus-visible:ring-red-500' : ''
                 ]"
                 placeholder="Décrivez votre bien immobilier..."
                 @blur="validateField('description')"
               />
-              <p v-if="fieldErrors.description" class="mt-1 text-sm text-red-600">{{ fieldErrors.description }}</p>
-              <p class="mt-1 text-xs text-gray-500">{{ form.description.length }} caractères</p>
+              <p v-if="fieldErrors.description" class="text-sm text-red-600">{{ fieldErrors.description }}</p>
+              <p class="text-xs text-muted-foreground">{{ form.description.length }} caractères</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+              <div class="space-y-2">
+                <Label>
                   Type de bien <span class="text-red-500">*</span>
-                </label>
-                <select
-                  v-model="form.propertyType"
-                  required
-                  :class="[
-                    'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                    fieldErrors.propertyType ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  ]"
-                  @blur="validateField('propertyType')"
-                >
-                  <option value="">Sélectionner...</option>
-                  <option value="APARTMENT">Appartement</option>
-                  <option value="HOUSE">Maison</option>
-                  <option value="VILLA">Villa</option>
-                  <option value="LAND">Terrain</option>
-                  <option value="COMMERCIAL">Commercial</option>
-                  <option value="OTHER">Autre</option>
-                </select>
-                <p v-if="fieldErrors.propertyType" class="mt-1 text-sm text-red-600">{{ fieldErrors.propertyType }}</p>
+                </Label>
+                <Select v-model="form.propertyType" required @update:model-value="validateField('propertyType')">
+                  <SelectTrigger :class="fieldErrors.propertyType ? 'border-red-300' : ''">
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="APARTMENT">Appartement</SelectItem>
+                    <SelectItem value="HOUSE">Maison</SelectItem>
+                    <SelectItem value="VILLA">Villa</SelectItem>
+                    <SelectItem value="LAND">Terrain</SelectItem>
+                    <SelectItem value="COMMERCIAL">Commercial</SelectItem>
+                    <SelectItem value="OTHER">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p v-if="fieldErrors.propertyType" class="text-sm text-red-600">{{ fieldErrors.propertyType }}</p>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+              <div class="space-y-2">
+                <Label>
                   Type de transaction <span class="text-red-500">*</span>
-                </label>
-                <select
-                  v-model="form.transactionType"
-                  required
-                  :class="[
-                    'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                    fieldErrors.transactionType ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  ]"
-                  @blur="validateField('transactionType')"
-                >
-                  <option value="">Sélectionner...</option>
-                  <option value="SALE">Vente</option>
-                  <option value="RENT">Location</option>
-                </select>
-                <p v-if="fieldErrors.transactionType" class="mt-1 text-sm text-red-600">{{ fieldErrors.transactionType }}</p>
+                </Label>
+                <Select v-model="form.transactionType" required @update:model-value="validateField('transactionType')">
+                  <SelectTrigger :class="fieldErrors.transactionType ? 'border-red-300' : ''">
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SALE">Vente</SelectItem>
+                    <SelectItem value="RENT">Location</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p v-if="fieldErrors.transactionType" class="text-sm text-red-600">{{ fieldErrors.transactionType }}</p>
               </div>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+            <div class="space-y-2">
+              <Label>
                 Prix <span class="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 v-model.number="form.price"
                 type="number"
                 required
                 min="0"
                 step="100"
-                :class="[
-                  'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                  fieldErrors.price ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                ]"
+                :class="fieldErrors.price ? 'border-red-300 focus-visible:ring-red-500' : ''"
                 placeholder="Ex: 250000"
                 @blur="validateField('price')"
               />
-              <p v-if="fieldErrors.price" class="mt-1 text-sm text-red-600">{{ fieldErrors.price }}</p>
+              <p v-if="fieldErrors.price" class="text-sm text-red-600">{{ fieldErrors.price }}</p>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Images -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Images</h2>
-          <ImageUpload
-            v-model="images"
-            :max-images="10"
-            ref="imageUploadRef"
-          />
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Images</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ImageUpload
+              v-model="images"
+              :max-images="10"
+              ref="imageUploadRef"
+            />
+          </CardContent>
+        </Card>
 
-        <!-- Caractéristiques -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Caractéristiques</h2>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Surface (m²)
-              </label>
-              <input
-                v-model.number="form.area"
-                type="number"
-                min="0"
-                step="1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ex: 75"
-              />
+        <!-- Caractéristiques principales -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Caractéristiques principales</CardTitle>
+            <CardDescription>Informations sur la superficie et les pièces</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="space-y-2">
+                <Label>Surface (m²)</Label>
+                <Input
+                  v-model.number="form.area"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ex: 75"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label>Pièces totales</Label>
+                <Input
+                  v-model.number="form.rooms"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ex: 4"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label>Chambres</Label>
+                <Input
+                  v-model.number="form.bedrooms"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ex: 3"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label>Salles de bain</Label>
+                <Input
+                  v-model.number="form.bathrooms"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="Ex: 2"
+                />
+              </div>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Chambres
-              </label>
-              <input
-                v-model.number="form.bedrooms"
-                type="number"
-                min="0"
-                step="1"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ex: 3"
-              />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div class="space-y-2">
+                <Label>Surface habitable (m²)</Label>
+                <Input
+                  v-model.number="form.totalInteriorLivableArea"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ex: 70"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label>Surface totale du bâtiment (m²)</Label>
+                <Input
+                  v-model.number="form.totalStructureArea"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Ex: 100"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- Informations de construction -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations de construction</CardTitle>
+            <CardDescription>Détails sur la construction et l'état du bien</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="space-y-2">
+                <Label>Année de construction</Label>
+                <Input
+                  v-model.number="form.yearBuilt"
+                  type="number"
+                  min="1800"
+                  :max="new Date().getFullYear()"
+                  step="1"
+                  placeholder="Ex: 2020"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label>Type de bien</Label>
+                <Select v-model="form.homeType">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CONDO">Appartement</SelectItem>
+                    <SelectItem value="HOUSE">Maison</SelectItem>
+                    <SelectItem value="TOWNHOUSE">Maison de ville</SelectItem>
+                    <SelectItem value="MULTI_FAMILY">Multifamilial</SelectItem>
+                    <SelectItem value="LAND">Terrain</SelectItem>
+                    <SelectItem value="OTHER">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div class="space-y-2">
+                <Label>État du bien</Label>
+                <Select v-model="form.condition">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EXCELLENT">Excellent</SelectItem>
+                    <SelectItem value="GOOD">Bon</SelectItem>
+                    <SelectItem value="FAIR">Correct</SelectItem>
+                    <SelectItem value="POOR">À rénover</SelectItem>
+                    <SelectItem value="NEW_CONSTRUCTION">Neuf</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Salles de bain
-              </label>
-              <input
-                v-model.number="form.bathrooms"
-                type="number"
-                min="0"
-                step="0.5"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ex: 2"
-              />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div class="space-y-2">
+                <Label>Quartier</Label>
+                <Input
+                  v-model="form.neighborhood"
+                  type="text"
+                  placeholder="Ex: Centre-ville"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label>Nom du bâtiment</Label>
+                <Input
+                  v-model="form.buildingName"
+                  type="text"
+                  placeholder="Ex: Résidence Les Jardins"
+                />
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
+        <!-- Équipements et caractéristiques -->
+        <Card>
+          <CardHeader>
+            <CardTitle>Équipements et caractéristiques</CardTitle>
+            <CardDescription>Sélectionnez les équipements et caractéristiques disponibles</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-6">
+            <!-- Équipements intérieurs -->
+            <div>
+              <Label class="text-base font-semibold mb-3 block">Équipements intérieurs</Label>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="dishwasher"
+                    :checked="selectedAppliances.includes('Dishwasher')"
+                    @update:checked="toggleAppliance('Dishwasher')"
+                  />
+                  <Label for="dishwasher" class="font-normal cursor-pointer">Lave-vaisselle</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="refrigerator"
+                    :checked="selectedAppliances.includes('Refrigerator')"
+                    @update:checked="toggleAppliance('Refrigerator')"
+                  />
+                  <Label for="refrigerator" class="font-normal cursor-pointer">Réfrigérateur</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="washer-dryer"
+                    :checked="selectedAppliances.includes('Washer/Dryer')"
+                    @update:checked="toggleAppliance('Washer/Dryer')"
+                  />
+                  <Label for="washer-dryer" class="font-normal cursor-pointer">Lave-linge/Sèche-linge</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="microwave"
+                    :checked="selectedAppliances.includes('Microwave')"
+                    @update:checked="toggleAppliance('Microwave')"
+                  />
+                  <Label for="microwave" class="font-normal cursor-pointer">Micro-ondes</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="oven"
+                    :checked="selectedAppliances.includes('Oven')"
+                    @update:checked="toggleAppliance('Oven')"
+                  />
+                  <Label for="oven" class="font-normal cursor-pointer">Four</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="air-conditioning"
+                    :checked="selectedFeatures.includes('air_conditioning')"
+                    @update:checked="toggleFeature('air_conditioning')"
+                  />
+                  <Label for="air-conditioning" class="font-normal cursor-pointer">Climatisation</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="heating"
+                    :checked="selectedFeatures.includes('heating')"
+                    @update:checked="toggleFeature('heating')"
+                  />
+                  <Label for="heating" class="font-normal cursor-pointer">Chauffage</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="fireplace"
+                    :checked="selectedFeatures.includes('fireplace')"
+                    @update:checked="toggleFeature('fireplace')"
+                  />
+                  <Label for="fireplace" class="font-normal cursor-pointer">Cheminée</Label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Caractéristiques extérieures -->
+            <div>
+              <Label class="text-base font-semibold mb-3 block">Caractéristiques extérieures</Label>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="balcony"
+                    :checked="selectedExteriorFeatures.includes('Balcony')"
+                    @update:checked="toggleExteriorFeature('Balcony')"
+                  />
+                  <Label for="balcony" class="font-normal cursor-pointer">Balcon</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="terrace"
+                    :checked="selectedExteriorFeatures.includes('Terrace')"
+                    @update:checked="toggleExteriorFeature('Terrace')"
+                  />
+                  <Label for="terrace" class="font-normal cursor-pointer">Terrasse</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="garden"
+                    :checked="selectedExteriorFeatures.includes('Garden')"
+                    @update:checked="toggleExteriorFeature('Garden')"
+                  />
+                  <Label for="garden" class="font-normal cursor-pointer">Jardin</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="patio"
+                    :checked="selectedExteriorFeatures.includes('Patio')"
+                    @update:checked="toggleExteriorFeature('Patio')"
+                  />
+                  <Label for="patio" class="font-normal cursor-pointer">Patio</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="courtyard"
+                    :checked="selectedExteriorFeatures.includes('Courtyard')"
+                    @update:checked="toggleExteriorFeature('Courtyard')"
+                  />
+                  <Label for="courtyard" class="font-normal cursor-pointer">Cour</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="pool"
+                    :checked="selectedFeatures.includes('pool')"
+                    @update:checked="toggleFeature('pool')"
+                  />
+                  <Label for="pool" class="font-normal cursor-pointer">Piscine</Label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parking -->
+            <div>
+              <Label class="text-base font-semibold mb-3 block">Parking</Label>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="garage"
+                    :checked="form.hasGarage"
+                    @update:checked="form.hasGarage = $event"
+                  />
+                  <Label for="garage" class="font-normal cursor-pointer">Garage</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="parking-street"
+                    :checked="selectedParkingFeatures.includes('Street')"
+                    @update:checked="toggleParkingFeature('Street')"
+                  />
+                  <Label for="parking-street" class="font-normal cursor-pointer">Parking rue</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="parking-covered"
+                    :checked="selectedParkingFeatures.includes('Covered')"
+                    @update:checked="toggleParkingFeature('Covered')"
+                  />
+                  <Label for="parking-covered" class="font-normal cursor-pointer">Parking couvert</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="parking-private"
+                    :checked="selectedParkingFeatures.includes('Private')"
+                    @update:checked="toggleParkingFeature('Private')"
+                  />
+                  <Label for="parking-private" class="font-normal cursor-pointer">Parking privé</Label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accessibilité -->
+            <div>
+              <Label class="text-base font-semibold mb-3 block">Accessibilité</Label>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="elevator"
+                    :checked="selectedFeatures.includes('elevator')"
+                    @update:checked="toggleFeature('elevator')"
+                  />
+                  <Label for="elevator" class="font-normal cursor-pointer">Ascenseur</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="wheelchair"
+                    :checked="selectedAccessibilityFeatures.includes('Wheelchair Access')"
+                    @update:checked="toggleAccessibilityFeature('Wheelchair Access')"
+                  />
+                  <Label for="wheelchair" class="font-normal cursor-pointer">Accès fauteuil roulant</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="ground-floor"
+                    :checked="selectedFeatures.includes('ground_floor')"
+                    @update:checked="toggleFeature('ground_floor')"
+                  />
+                  <Label for="ground-floor" class="font-normal cursor-pointer">Rez-de-chaussée</Label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Autres caractéristiques -->
+            <div>
+              <Label class="text-base font-semibold mb-3 block">Autres caractéristiques</Label>
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="pet-friendly"
+                    :checked="form.petFriendly"
+                    @update:checked="form.petFriendly = $event"
+                  />
+                  <Label for="pet-friendly" class="font-normal cursor-pointer">Animaux acceptés</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="furnished"
+                    :checked="selectedFeatures.includes('furnished')"
+                    @update:checked="toggleFeature('furnished')"
+                  />
+                  <Label for="furnished" class="font-normal cursor-pointer">Meublé</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="storage"
+                    :checked="selectedFeatures.includes('storage')"
+                    @update:checked="toggleFeature('storage')"
+                  />
+                  <Label for="storage" class="font-normal cursor-pointer">Cave/Stockage</Label>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <Checkbox
+                    id="alarm"
+                    :checked="selectedFeatures.includes('alarm')"
+                    @update:checked="toggleFeature('alarm')"
+                  />
+                  <Label for="alarm" class="font-normal cursor-pointer">Alarme</Label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Localisation du lave-linge -->
+            <div class="space-y-2">
+              <Label>Localisation du lave-linge</Label>
+              <Select v-model="form.laundryLocation">
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INSIDE">À l'intérieur</SelectItem>
+                  <SelectItem value="OUTSIDE">À l'extérieur</SelectItem>
+                  <SelectItem value="NONE">Aucun</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <!-- Localisation -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Localisation</h2>
-          
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+        <Card>
+          <CardHeader>
+            <CardTitle>Localisation</CardTitle>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="space-y-2">
+              <Label>
                 Adresse <span class="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 v-model="form.address"
                 type="text"
                 required
-                :class="[
-                  'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                  fieldErrors.address ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                ]"
+                :class="fieldErrors.address ? 'border-red-300 focus-visible:ring-red-500' : ''"
                 placeholder="Ex: 123 Rue de la République"
                 @blur="validateField('address')"
               />
-              <p v-if="fieldErrors.address" class="mt-1 text-sm text-red-600">{{ fieldErrors.address }}</p>
+              <p v-if="fieldErrors.address" class="text-sm text-red-600">{{ fieldErrors.address }}</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+              <div class="space-y-2">
+                <Label>
                   Ville <span class="text-red-500">*</span>
-                </label>
-                <input
+                </Label>
+                <Input
                   v-model="form.city"
                   type="text"
                   required
-                  :class="[
-                    'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                    fieldErrors.city ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  ]"
+                  :class="fieldErrors.city ? 'border-red-300 focus-visible:ring-red-500' : ''"
                   placeholder="Ex: Paris"
                   @blur="validateField('city')"
                 />
-                <p v-if="fieldErrors.city" class="mt-1 text-sm text-red-600">{{ fieldErrors.city }}</p>
+                <p v-if="fieldErrors.city" class="text-sm text-red-600">{{ fieldErrors.city }}</p>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Code postal
-                </label>
-                <input
+              <div class="space-y-2">
+                <Label>Code postal</Label>
+                <Input
                   v-model="form.postalCode"
                   type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: 75001"
                 />
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+              <div class="space-y-2">
+                <Label>
                   Pays <span class="text-red-500">*</span>
-                </label>
-                <input
+                </Label>
+                <Input
                   v-model="form.country"
                   type="text"
                   required
-                  :class="[
-                    'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                    fieldErrors.country ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                  ]"
+                  :class="fieldErrors.country ? 'border-red-300 focus-visible:ring-red-500' : ''"
                   placeholder="Ex: France"
                   @blur="validateField('country')"
                 />
-                <p v-if="fieldErrors.country" class="mt-1 text-sm text-red-600">{{ fieldErrors.country }}</p>
+                <p v-if="fieldErrors.country" class="text-sm text-red-600">{{ fieldErrors.country }}</p>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         <!-- Statut (uniquement en édition) -->
-        <div v-if="isEdit" class="bg-white rounded-lg shadow-sm p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Statut</h2>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Statut de l'annonce
-            </label>
-            <select
-              v-model="form.status"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="DRAFT">Brouillon</option>
-              <option value="AVAILABLE">Disponible</option>
-              <option value="PENDING">En attente</option>
-              <option value="SOLD">Vendu</option>
-              <option value="RENTED">Loué</option>
-            </select>
-          </div>
-        </div>
+        <Card v-if="isEdit">
+          <CardHeader>
+            <CardTitle>Statut</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div class="space-y-2">
+              <Label>Statut de l'annonce</Label>
+              <Select v-model="form.status">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">Brouillon</SelectItem>
+                  <SelectItem value="AVAILABLE">Disponible</SelectItem>
+                  <SelectItem value="PENDING">En attente</SelectItem>
+                  <SelectItem value="SOLD">Vendu</SelectItem>
+                  <SelectItem value="RENTED">Loué</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <!-- Actions -->
         <div class="flex items-center justify-end gap-4">
-          <router-link
-            to="/my-properties"
-            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            Annuler
-          </router-link>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            as-child
+          >
+            <router-link to="/my-properties">
+              Annuler
+            </router-link>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
             @click="showPreview = true"
             :disabled="submitting || !isFormValid"
-            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
           >
             Aperçu
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             :disabled="submitting || !isFormValid"
-            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {{ submitting ? 'Enregistrement...' : (isEdit ? 'Enregistrer' : 'Créer l\'annonce') }}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -362,6 +712,13 @@ import type { PropertyCreate, PropertyUpdate } from '@viridial/shared'
 import { useToast } from '@/composables/useToast'
 import ImageUpload from '@/components/ImageUpload.vue'
 import PropertyPreview from '@/components/PropertyPreview.vue'
+import HelpTooltip from '@/components/HelpTooltip.vue'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const router = useRouter()
 const route = useRoute()
@@ -376,7 +733,23 @@ const showPreview = ref(false)
 const imageUploadRef = ref<InstanceType<typeof ImageUpload>>()
 const images = ref<any[]>([])
 
-const form = ref<PropertyCreate & { status?: string; postalCode?: string }>({
+const form = ref<PropertyCreate & { 
+  status?: string
+  postalCode?: string
+  rooms?: number
+  totalInteriorLivableArea?: number
+  totalStructureArea?: number
+  yearBuilt?: number
+  homeType?: string
+  condition?: string
+  neighborhood?: string
+  buildingName?: string
+  laundryLocation?: string
+  hasGarage?: boolean
+  petFriendly?: boolean
+  virtualTourUrl?: string
+  specialOffer?: string
+}>({
   title: '',
   description: '',
   price: 0,
@@ -390,7 +763,27 @@ const form = ref<PropertyCreate & { status?: string; postalCode?: string }>({
   area: undefined,
   status: 'DRAFT',
   postalCode: '',
+  rooms: undefined,
+  totalInteriorLivableArea: undefined,
+  totalStructureArea: undefined,
+  yearBuilt: undefined,
+  homeType: undefined,
+  condition: undefined,
+  neighborhood: undefined,
+  buildingName: undefined,
+  laundryLocation: undefined,
+  hasGarage: false,
+  petFriendly: false,
+  virtualTourUrl: undefined,
+  specialOffer: undefined,
 })
+
+// Features arrays
+const selectedAppliances = ref<string[]>([])
+const selectedFeatures = ref<string[]>([])
+const selectedExteriorFeatures = ref<string[]>([])
+const selectedParkingFeatures = ref<string[]>([])
+const selectedAccessibilityFeatures = ref<string[]>([])
 
 const isFormValid = computed(() => {
   return form.value.title &&
@@ -408,6 +801,52 @@ const previewData = computed(() => ({
   ...form.value,
   id: isEdit.value ? Number(route.params.id) : undefined,
 }))
+
+// Functions to toggle features
+function toggleAppliance(appliance: string) {
+  const index = selectedAppliances.value.indexOf(appliance)
+  if (index > -1) {
+    selectedAppliances.value.splice(index, 1)
+  } else {
+    selectedAppliances.value.push(appliance)
+  }
+}
+
+function toggleFeature(feature: string) {
+  const index = selectedFeatures.value.indexOf(feature)
+  if (index > -1) {
+    selectedFeatures.value.splice(index, 1)
+  } else {
+    selectedFeatures.value.push(feature)
+  }
+}
+
+function toggleExteriorFeature(feature: string) {
+  const index = selectedExteriorFeatures.value.indexOf(feature)
+  if (index > -1) {
+    selectedExteriorFeatures.value.splice(index, 1)
+  } else {
+    selectedExteriorFeatures.value.push(feature)
+  }
+}
+
+function toggleParkingFeature(feature: string) {
+  const index = selectedParkingFeatures.value.indexOf(feature)
+  if (index > -1) {
+    selectedParkingFeatures.value.splice(index, 1)
+  } else {
+    selectedParkingFeatures.value.push(feature)
+  }
+}
+
+function toggleAccessibilityFeature(feature: string) {
+  const index = selectedAccessibilityFeatures.value.indexOf(feature)
+  if (index > -1) {
+    selectedAccessibilityFeatures.value.splice(index, 1)
+  } else {
+    selectedAccessibilityFeatures.value.push(feature)
+  }
+}
 
 onMounted(async () => {
   if (isEdit.value) {
@@ -434,6 +873,41 @@ async function loadProperty() {
       area: property.area || property.surface,
       status: property.status || 'DRAFT',
       postalCode: property.postalCode || '',
+      rooms: property.rooms,
+      totalInteriorLivableArea: property.totalInteriorLivableArea,
+      totalStructureArea: property.totalStructureArea,
+      yearBuilt: property.yearBuilt,
+      homeType: property.homeType,
+      condition: property.condition,
+      neighborhood: property.neighborhood,
+      buildingName: property.buildingName,
+      laundryLocation: property.laundryLocation,
+      hasGarage: property.hasGarage || false,
+      petFriendly: property.petFriendly || false,
+      virtualTourUrl: property.virtualTourUrl,
+      specialOffer: property.specialOffer,
+    }
+
+    // Load features from JSON strings
+    try {
+      if (property.appliancesIncluded) {
+        selectedAppliances.value = JSON.parse(property.appliancesIncluded)
+      }
+      if (property.exteriorFeatures) {
+        selectedExteriorFeatures.value = JSON.parse(property.exteriorFeatures)
+      }
+      if (property.parkingFeatures) {
+        selectedParkingFeatures.value = JSON.parse(property.parkingFeatures)
+      }
+      if (property.accessibilityFeatures) {
+        selectedAccessibilityFeatures.value = JSON.parse(property.accessibilityFeatures)
+      }
+      if ((property as any).features) {
+        const features = JSON.parse((property as any).features)
+        selectedFeatures.value = Object.keys(features).filter(key => features[key] === true)
+      }
+    } catch (err) {
+      console.warn('Error parsing features:', err)
     }
 
     // Charger les images existantes
@@ -553,28 +1027,64 @@ async function handleSubmit() {
   try {
     let propertyId: number
 
+    // Prepare features as JSON strings
+    const features: Record<string, boolean> = {}
+    selectedFeatures.value.forEach(feature => {
+      features[feature] = true
+    })
+
+    const commonData: any = {
+      rooms: form.value.rooms,
+      totalInteriorLivableArea: form.value.totalInteriorLivableArea,
+      totalStructureArea: form.value.totalStructureArea,
+      yearBuilt: form.value.yearBuilt,
+      homeType: form.value.homeType,
+      condition: form.value.condition,
+      neighborhood: form.value.neighborhood,
+      buildingName: form.value.buildingName,
+      postalCode: form.value.postalCode,
+      laundryLocation: form.value.laundryLocation,
+      hasGarage: form.value.hasGarage,
+      petFriendly: form.value.petFriendly,
+      virtualTourUrl: form.value.virtualTourUrl,
+      specialOffer: form.value.specialOffer,
+      appliancesIncluded: selectedAppliances.value.length > 0 ? JSON.stringify(selectedAppliances.value) : undefined,
+      exteriorFeatures: selectedExteriorFeatures.value.length > 0 ? JSON.stringify(selectedExteriorFeatures.value) : undefined,
+      parkingFeatures: selectedParkingFeatures.value.length > 0 ? JSON.stringify(selectedParkingFeatures.value) : undefined,
+      accessibilityFeatures: selectedAccessibilityFeatures.value.length > 0 ? JSON.stringify(selectedAccessibilityFeatures.value) : undefined,
+      features: Object.keys(features).length > 0 ? JSON.stringify(features) : undefined,
+    }
+
     if (isEdit.value) {
       const propertyIdParam = Number(route.params.id)
-      const updateData: PropertyUpdate = {
+      const updateData: PropertyUpdate & any = {
         ...form.value,
+        type: form.value.propertyType, // Le backend attend 'type' pas 'propertyType'
+        surface: form.value.area, // Le backend peut attendre 'surface' aussi
+        ...commonData,
         status: form.value.status as any,
       }
       const updated = await userPropertyService.updateProperty(propertyIdParam, updateData)
       propertyId = updated.id
       showToast('Annonce modifiée avec succès', 'success')
     } else {
-      const createData: PropertyCreate = {
+      const createData: PropertyCreate & any = {
+        // reference: générée automatiquement côté backend
         title: form.value.title,
         description: form.value.description,
         price: form.value.price,
         address: form.value.address,
         city: form.value.city,
         country: form.value.country,
-        propertyType: form.value.propertyType,
+        type: form.value.propertyType, // Le backend attend 'type' (obligatoire @NotBlank), pas 'propertyType'
+        propertyType: form.value.propertyType, // Garder aussi pour compatibilité avec le frontend
         transactionType: form.value.transactionType,
         bedrooms: form.value.bedrooms,
         bathrooms: form.value.bathrooms,
         area: form.value.area,
+        surface: form.value.area, // Le backend utilise 'surface' dans l'entité Property
+        status: form.value.status || 'DRAFT', // Statut obligatoire (@NotBlank)
+        ...commonData,
       }
       const created = await userPropertyService.createProperty(createData)
       propertyId = created.id

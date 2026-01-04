@@ -11,9 +11,8 @@ public class PropertyDTO {
 
     private Long id;
 
-    @NotBlank
     @Size(max = 50)
-    private String reference;
+    private String reference; // Générée automatiquement par le service si non fournie
 
     @NotBlank
     @Size(max = 255)

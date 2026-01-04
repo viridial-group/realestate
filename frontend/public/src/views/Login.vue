@@ -16,32 +16,23 @@
 
       <!-- Toggle Login/Register -->
       <div class="flex items-center justify-center gap-4">
-        <button
+        <Button
           @click="isLogin = true"
-          :class="[
-            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-            isLogin 
-              ? 'bg-blue-600 text-white' 
-              : 'text-gray-700 hover:bg-gray-100'
-          ]"
+          :variant="isLogin ? 'default' : 'outline'"
         >
           Connexion
-        </button>
-        <button
+        </Button>
+        <Button
           @click="isLogin = false"
-          :class="[
-            'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-            !isLogin 
-              ? 'bg-blue-600 text-white' 
-              : 'text-gray-700 hover:bg-gray-100'
-          ]"
+          :variant="!isLogin ? 'default' : 'outline'"
         >
           Inscription
-        </button>
+        </Button>
       </div>
 
       <!-- Formulaire -->
-      <div class="bg-white rounded-lg shadow-sm p-8">
+      <Card>
+        <CardContent class="p-8">
         <!-- Message d'erreur global -->
         <div
           v-if="globalError"
@@ -63,189 +54,166 @@
 
         <!-- Formulaire de connexion -->
         <form v-if="isLogin" @submit.prevent="handleLogin" class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <Label>
               Email <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               v-model="loginForm.email"
               type="email"
               required
-              :class="[
-                'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                fieldErrors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-              ]"
+              :class="fieldErrors.email ? 'border-red-300 focus-visible:ring-red-500' : ''"
               placeholder="votre@email.com"
               @blur="validateField('email', loginForm.email)"
             />
-            <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
+            <p v-if="fieldErrors.email" class="text-sm text-red-600">{{ fieldErrors.email }}</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <Label>
               Mot de passe <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               v-model="loginForm.password"
               type="password"
               required
-              :class="[
-                'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                fieldErrors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-              ]"
+              :class="fieldErrors.password ? 'border-red-300 focus-visible:ring-red-500' : ''"
               placeholder="Votre mot de passe"
               @blur="validateField('password', loginForm.password)"
             />
-            <p v-if="fieldErrors.password" class="mt-1 text-sm text-red-600">{{ fieldErrors.password }}</p>
+            <p v-if="fieldErrors.password" class="text-sm text-red-600">{{ fieldErrors.password }}</p>
           </div>
 
           <div class="flex items-center justify-between">
-            <label class="flex items-center">
-              <input
-                v-model="loginForm.rememberMe"
-                type="checkbox"
-                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            <div class="flex items-center space-x-2">
+              <Checkbox
+                v-model:checked="loginForm.rememberMe"
+                id="remember"
               />
-              <span class="ml-2 text-sm text-gray-600">Se souvenir de moi</span>
-            </label>
+              <Label for="remember" class="text-sm font-normal cursor-pointer">
+                Se souvenir de moi
+              </Label>
+            </div>
             <router-link
               to="/forgot-password"
-              class="text-sm text-blue-600 hover:text-blue-700"
+              class="text-sm text-primary hover:underline"
             >
               Mot de passe oublié ?
             </router-link>
           </div>
 
-          <button
+          <Button
             type="submit"
             :disabled="submitting"
-            class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+            class="w-full"
           >
             {{ submitting ? 'Connexion...' : 'Se connecter' }}
-          </button>
+          </Button>
         </form>
 
         <!-- Formulaire d'inscription -->
         <form v-else @submit.prevent="handleRegister" class="space-y-6">
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+            <div class="space-y-2">
+              <Label>
                 Prénom <span class="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 v-model="registerForm.firstName"
                 type="text"
                 required
-                :class="[
-                  'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                  fieldErrors.firstName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                ]"
+                :class="fieldErrors.firstName ? 'border-red-300 focus-visible:ring-red-500' : ''"
                 placeholder="Jean"
                 @blur="validateField('firstName', registerForm.firstName)"
               />
-              <p v-if="fieldErrors.firstName" class="mt-1 text-sm text-red-600">{{ fieldErrors.firstName }}</p>
+              <p v-if="fieldErrors.firstName" class="text-sm text-red-600">{{ fieldErrors.firstName }}</p>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+            <div class="space-y-2">
+              <Label>
                 Nom <span class="text-red-500">*</span>
-              </label>
-              <input
+              </Label>
+              <Input
                 v-model="registerForm.lastName"
                 type="text"
                 required
-                :class="[
-                  'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                  fieldErrors.lastName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                ]"
+                :class="fieldErrors.lastName ? 'border-red-300 focus-visible:ring-red-500' : ''"
                 placeholder="Dupont"
                 @blur="validateField('lastName', registerForm.lastName)"
               />
-              <p v-if="fieldErrors.lastName" class="mt-1 text-sm text-red-600">{{ fieldErrors.lastName }}</p>
+              <p v-if="fieldErrors.lastName" class="text-sm text-red-600">{{ fieldErrors.lastName }}</p>
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <Label>
               Email <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               v-model="registerForm.email"
               type="email"
               required
-              :class="[
-                'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                fieldErrors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-              ]"
+              :class="fieldErrors.email ? 'border-red-300 focus-visible:ring-red-500' : ''"
               placeholder="votre@email.com"
               @blur="validateField('email', registerForm.email)"
             />
-            <p v-if="fieldErrors.email" class="mt-1 text-sm text-red-600">{{ fieldErrors.email }}</p>
+            <p v-if="fieldErrors.email" class="text-sm text-red-600">{{ fieldErrors.email }}</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <Label>
               Mot de passe <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               v-model="registerForm.password"
               type="password"
               required
               minlength="8"
-              :class="[
-                'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                fieldErrors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-              ]"
+              :class="fieldErrors.password ? 'border-red-300 focus-visible:ring-red-500' : ''"
               placeholder="Minimum 8 caractères"
               @blur="validateField('password', registerForm.password)"
             />
-            <p v-if="fieldErrors.password" class="mt-1 text-sm text-red-600">{{ fieldErrors.password }}</p>
-            <p class="mt-1 text-xs text-gray-500">Au moins 8 caractères, une majuscule, une minuscule et un chiffre</p>
+            <p v-if="fieldErrors.password" class="text-sm text-red-600">{{ fieldErrors.password }}</p>
+            <p class="text-xs text-muted-foreground">Au moins 8 caractères, une majuscule, une minuscule et un chiffre</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <Label>
               Confirmer le mot de passe <span class="text-red-500">*</span>
-            </label>
-            <input
+            </Label>
+            <Input
               v-model="registerForm.confirmPassword"
               type="password"
               required
-              :class="[
-                'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2',
-                fieldErrors.confirmPassword ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-              ]"
+              :class="fieldErrors.confirmPassword ? 'border-red-300 focus-visible:ring-red-500' : ''"
               placeholder="Répétez le mot de passe"
               @blur="validateField('confirmPassword', registerForm.confirmPassword)"
             />
-            <p v-if="fieldErrors.confirmPassword" class="mt-1 text-sm text-red-600">{{ fieldErrors.confirmPassword }}</p>
+            <p v-if="fieldErrors.confirmPassword" class="text-sm text-red-600">{{ fieldErrors.confirmPassword }}</p>
           </div>
 
-          <div>
-            <label class="flex items-start">
-              <input
-                v-model="registerForm.acceptTerms"
-                type="checkbox"
-                required
-                class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span class="ml-2 text-sm text-gray-600">
-                J'accepte les 
-                <router-link to="/terms" class="text-blue-600 hover:text-blue-700">conditions d'utilisation</router-link>
-                et la 
-                <router-link to="/privacy" class="text-blue-600 hover:text-blue-700">politique de confidentialité</router-link>
-                <span class="text-red-500">*</span>
-              </span>
-            </label>
+          <div class="flex items-start space-x-2">
+            <Checkbox
+              v-model:checked="registerForm.acceptTerms"
+              id="terms"
+              required
+            />
+            <Label for="terms" class="text-sm font-normal cursor-pointer">
+              J'accepte les 
+              <router-link to="/terms" class="text-primary hover:underline">conditions d'utilisation</router-link>
+              et la 
+              <router-link to="/privacy" class="text-primary hover:underline">politique de confidentialité</router-link>
+              <span class="text-red-500">*</span>
+            </Label>
           </div>
 
-          <button
+          <Button
             type="submit"
             :disabled="submitting"
-            class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+            class="w-full"
           >
             {{ submitting ? 'Inscription...' : 'Créer mon compte' }}
-          </button>
+          </Button>
         </form>
 
         <!-- Lien vers l'abonnement professionnel -->
@@ -257,7 +225,8 @@
             </router-link>
           </p>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>
@@ -268,6 +237,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { AlertCircle, X } from 'lucide-vue-next'
 import { authService, useAuthStore } from '@viridial/shared'
 import { useToast } from '@/composables/useToast'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const router = useRouter()
 const route = useRoute()

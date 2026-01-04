@@ -180,7 +180,7 @@ const routes = [
   {
     path: '/profile/settings',
     name: 'ProfileSettings',
-    component: () => import('../views/Profile.vue'),
+    component: () => import('../views/Settings.vue'),
     meta: { requiresAuth: true, layout: 'user' }
   }
 ]

@@ -62,6 +62,12 @@ public class PropertyService {
 
     @Transactional
     public Property createProperty(Property property, String authToken) {
+        // S'assurer que createdBy est défini (doit être défini depuis le contrôleur)
+        if (property.getCreatedBy() == null) {
+            logger.warn("Property createdBy is null, cannot create property without user identification");
+            throw new IllegalArgumentException("Property must have a createdBy user ID");
+        }
+        
         // Optional: Validate permissions before creating (async validation)
         if (authToken != null && property.getCreatedBy() != null) {
             try {
@@ -80,6 +86,13 @@ public class PropertyService {
                 // In production, you might want to fail here or log and continue
                 // For now, we'll log and continue
             }
+        }
+
+        // Générer la référence unique si non fournie
+        if (property.getReference() == null || property.getReference().trim().isEmpty()) {
+            String reference = generatePropertyReference(property);
+            property.setReference(reference);
+            logger.debug("Generated property reference: {}", reference);
         }
 
         // Générer le slug SEO-friendly si non fourni
@@ -168,6 +181,27 @@ public class PropertyService {
         }
         
         return saved;
+    }
+
+    /**
+     * Génère une référence unique pour une propriété
+     */
+    private String generatePropertyReference(Property property) {
+        // Format: {TYPE}-{TIMESTAMP}-{RANDOM}
+        String typePrefix = property.getType() != null ? property.getType().substring(0, Math.min(3, property.getType().length())).toUpperCase() : "PROP";
+        long timestamp = System.currentTimeMillis();
+        String random = String.valueOf((int)(Math.random() * 10000));
+        String reference = String.format("%s-%d-%s", typePrefix, timestamp, random);
+        
+        // Vérifier l'unicité (si déjà existante, générer une nouvelle)
+        int attempts = 0;
+        while (propertyRepository.findByReference(reference).isPresent() && attempts < 10) {
+            random = String.valueOf((int)(Math.random() * 10000));
+            reference = String.format("%s-%d-%s", typePrefix, timestamp, random);
+            attempts++;
+        }
+        
+        return reference;
     }
 
     /**
