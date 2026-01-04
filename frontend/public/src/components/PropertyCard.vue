@@ -1,7 +1,7 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 overflow-hidden flex flex-col h-full transform"
-    :class="{ 'ring-2 ring-blue-500 ring-offset-2': highlighted }"
+    class="bg-white border border-gray-200 rounded-lg hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden flex flex-col h-full"
+    :class="{ 'ring-2 ring-blue-200 ring-offset-1 border-blue-300': highlighted }"
   >
     <!-- IMAGE -->
     <div class="w-full h-48 flex-shrink-0 relative">
@@ -14,25 +14,25 @@
         img-class="w-full h-full object-cover"
         @error="(e) => handleImageError(e)"
       />
-      <!-- Badge type de transaction (Location/Vente) -->
+      <!-- Badge type de transaction style Google -->
       <div
-        class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold text-white shadow-lg"
+        class="absolute top-3 left-3 px-2 py-1 rounded text-xs font-medium text-white shadow-sm"
         :style="{ backgroundColor: getTransactionTypeColor() }"
       >
         {{ getTransactionType() }}
       </div>
-      <!-- Badge statut -->
+      <!-- Badge statut style Google -->
       <div
         v-if="item.status !== 'Disponible'"
-        class="absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold text-white shadow-lg"
+        class="absolute top-3 right-3 px-2 py-1 rounded text-xs font-medium text-white shadow-sm"
         :style="{ backgroundColor: getStatusColor(item.status) }"
       >
         {{ item.status }}
       </div>
-      <!-- Badge nouveau (si créé il y a moins de 7 jours) -->
+      <!-- Badge nouveau style Google -->
       <div
         v-if="isNew"
-        class="absolute top-2 left-2 px-2 py-1 rounded text-xs font-semibold text-white bg-green-500 shadow-lg"
+        class="absolute top-3 right-3 px-2 py-1 rounded text-xs font-medium text-white bg-green-600 shadow-sm"
       >
         Nouveau
       </div>
@@ -40,18 +40,18 @@
 
     <!-- CONTENU -->
     <div class="flex-1 p-5 sm:p-6 flex flex-col">
-      <!-- Titre avec lien SEO -->
-      <h3 class="text-lg font-bold text-blue-800 dark:text-blue-400 mb-2 line-clamp-2">
+      <!-- Titre avec lien SEO style Google -->
+      <h3 class="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
         <router-link
           :to="item.slug ? `/property-slug/${item.slug}` : `/property/${item.id}`"
           :aria-label="`Voir les détails de ${item.title} à ${item.city}`"
-          class="hover:underline"
+          class="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
           itemprop="url"
         >
           <span
             v-for="(part, idx) in getHighlightedTitle(item.title)"
             :key="idx"
-            :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded' : ''"
+            :class="part.highlighted ? 'bg-yellow-200 px-1 rounded font-medium' : ''"
             itemprop="name"
           >
             {{ part.text }}
@@ -59,67 +59,64 @@
         </router-link>
       </h3>
 
-      <!-- Localisation et Type de transaction -->
+      <!-- Localisation et Type de transaction style Google -->
       <div class="flex items-center gap-2 mb-3 flex-wrap">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
-          📍 
+        <p class="text-sm text-gray-600">
+          <MapPin class="h-3 w-3 inline text-gray-500" />
           <span
             v-for="(part, idx) in getHighlightedCity(item.city)"
             :key="idx"
-            :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded font-medium' : ''"
+            :class="part.highlighted ? 'bg-yellow-200 px-1 rounded font-medium' : ''"
           >
             {{ part.text }}
           </span>
-          • {{ item.type }}
+          <span class="text-gray-300 mx-1">·</span>
+          <span>{{ item.type }}</span>
         </p>
-        <!-- Badge type de transaction visible dans le contenu -->
-        <span
-          class="px-2 py-1 rounded-full text-xs font-semibold text-white"
-          :style="{ backgroundColor: getTransactionTypeColor() }"
-        >
-          {{ getTransactionType() }}
-        </span>
       </div>
 
-      <!-- Description -->
-      <p class="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-2 flex-1" itemprop="description">
+      <!-- Description style Google -->
+      <p class="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2 flex-1" itemprop="description">
         <span
           v-for="(part, idx) in getHighlightedDescription(item.description)"
           :key="idx"
-          :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded font-medium' : ''"
+          :class="part.highlighted ? 'bg-yellow-200 px-1 rounded font-medium' : ''"
         >
           {{ part.text }}
         </span>
       </p>
 
-      <!-- Métadonnées -->
-      <div class="flex items-center gap-4 text-xs text-gray-600 mb-4">
-        <span v-if="item.bedrooms" itemprop="numberOfRooms" :content="item.bedrooms">
-          <span aria-hidden="true">🛏️</span> {{ item.bedrooms }}
+      <!-- Métadonnées style Google -->
+      <div class="flex items-center gap-3 text-xs text-gray-600 mb-4">
+        <span v-if="item.bedrooms" itemprop="numberOfRooms" :content="item.bedrooms" class="flex items-center gap-1">
+          <Bed class="h-3 w-3 text-gray-500" />
+          {{ item.bedrooms }}
         </span>
-        <span v-if="item.bathrooms">
-          <span aria-hidden="true">🚿</span> {{ item.bathrooms }}
+        <span v-if="item.bathrooms" class="flex items-center gap-1">
+          <Bath class="h-3 w-3 text-gray-500" />
+          {{ item.bathrooms }}
         </span>
-        <span itemprop="floorSize" itemscope itemtype="https://schema.org/QuantitativeValue">
+        <span itemprop="floorSize" itemscope itemtype="https://schema.org/QuantitativeValue" class="flex items-center gap-1">
           <span itemprop="value" :content="item.surface" class="hidden">{{ item.surface }}</span>
           <meta itemprop="unitCode" content="MTK" />
-          <span aria-hidden="true">📐</span> {{ item.surface }} m²
+          <Square class="h-3 w-3 text-gray-500" />
+          {{ item.surface }} m²
         </span>
       </div>
 
-      <!-- Prix et actions -->
-      <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
+      <!-- Prix et actions style Google -->
+      <div class="mt-auto pt-4 border-t border-gray-200">
         <div class="flex items-center justify-between mb-3">
           <div class="flex flex-col">
-            <div class="text-lg font-bold text-blue-600">
-              €{{ item.price.toLocaleString('fr-FR') }}
+            <div class="text-lg font-semibold text-gray-900">
+              {{ item.price.toLocaleString('fr-FR') }} €
             </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">
+            <div class="text-xs text-gray-500">
               {{ getTransactionType() === 'Location' ? '/mois' : '' }}
             </div>
           </div>
           <div v-if="item.rating" class="flex items-center gap-1 text-xs">
-            <span class="text-yellow-500">⭐</span>
+            <Star class="h-3 w-3 fill-yellow-400 text-yellow-400" />
             <span class="text-gray-600">{{ item.rating.toFixed(1) }}</span>
           </div>
         </div>
@@ -127,7 +124,7 @@
         <div class="flex gap-2">
           <button
             @click="handleDetails"
-            class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition-all duration-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1"
             :aria-label="`Voir les détails de ${item.title}`"
           >
             Voir détails
@@ -135,8 +132,8 @@
           <ContactForm
             :property-id="item.id"
             :property-title="item.title"
-            button-text="Contacter"
-            button-class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            button-text="Contact"
+            button-class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium shadow-sm"
             @success="handleContactSuccess"
           />
           <FavoriteButton
@@ -156,6 +153,7 @@ import { documentService } from '@/api/document.service'
 import type { Document } from '@/api/document.service'
 import { getPlaceholderImage } from '@/utils/imageOptimization'
 import { highlightText, parseSearchTerms } from '@/utils/searchHighlight'
+import { MapPin, Bed, Bath, Square, Star } from 'lucide-vue-next'
 import FavoriteButton from './FavoriteButton.vue'
 import CompareButton from './CompareButton.vue'
 import ImageOptimized from './ImageOptimized.vue'

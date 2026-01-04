@@ -262,7 +262,8 @@ import {
   Megaphone,
   Star,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Globe
 } from 'lucide-vue-next'
 import LanguageSelector from '@/components/shared/LanguageSelector.vue'
 
@@ -416,6 +417,14 @@ const navigationGroups = computed(() => {
       icon: Package,
       requiresAdmin: true
     },
+    // Configuration SaaS
+    {
+      name: 'countries',
+      label: 'Pays et Villes',
+      path: '/countries',
+      icon: Globe,
+      requiresAdmin: true
+    },
     // Système
     {
       name: 'audit',
@@ -474,6 +483,11 @@ const navigationGroups = computed(() => {
       id: 'billing',
       label: 'Facturation',
       items: filteredItems.filter(item => ['billing', 'plans'].includes(item.name))
+    },
+    {
+      id: 'saas-config',
+      label: 'Configuration SaaS',
+      items: filteredItems.filter(item => ['countries'].includes(item.name))
     },
     {
       id: 'system',

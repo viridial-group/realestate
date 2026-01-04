@@ -190,6 +190,18 @@ export const API_ENDPOINTS = {
     STATS: (id: number) => `/api/public/organizations/${id}/reviews/stats`,
     CREATE: (id: number) => `/api/public/organizations/${id}/reviews`,
     MARK_HELPFUL: (id: number) => `/api/public/organizations/reviews/${id}/helpful`
+  },
+  // SaaS Configuration - Countries & Cities
+  COUNTRIES: {
+    BASE: '/api/identity/countries',
+    BY_ID: (id: number) => `/api/identity/countries/${id}`,
+    BY_CODE: (code: string) => `/api/identity/countries/code/${code}`
+  },
+  CITIES: {
+    BASE: '/api/identity/cities',
+    BY_ID: (id: number) => `/api/identity/cities/${id}`,
+    BY_COUNTRY_CODE: (countryCode: string) => `/api/identity/cities/country/${countryCode}`,
+    BY_COUNTRY_ID: (countryId: number) => `/api/identity/cities/country-id/${countryId}`
   }
 } as const
 

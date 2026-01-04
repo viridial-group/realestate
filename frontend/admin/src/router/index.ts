@@ -22,6 +22,7 @@ import { advertisementRoutes } from './routes/advertisements.routes'
 import { reviewRoutes } from './routes/reviews.routes'
 import { visitRoutes } from './routes/visits.routes'
 import { dvfRoutes } from './routes/dvf.routes'
+import { countriesRoutes } from './routes/countries.routes'
 import { authRoutes } from './routes/auth.routes'
 
 const routes: RouteRecordRaw[] = [
@@ -47,7 +48,8 @@ const routes: RouteRecordRaw[] = [
       ...advertisementRoutes,
         ...reviewRoutes,
         ...visitRoutes,
-        ...dvfRoutes
+        ...dvfRoutes,
+        ...countriesRoutes
     ]
   },
   {

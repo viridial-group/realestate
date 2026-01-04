@@ -1,47 +1,99 @@
 <template>
   <div
     v-if="advertisement"
-    class="advertisement-banner relative overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-all"
+    class="advertisement-banner bg-white border border-gray-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg"
     :class="getBannerClass()"
   >
     <a
       :href="advertisement.linkUrl || '#'"
       target="_blank"
       rel="noopener noreferrer sponsored"
-      class="block relative"
+      class="block"
       @click.prevent="handleClick"
     >
-      <!-- Badge "Publicité" -->
-      <div class="absolute top-2 right-2 z-10 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
-        Publicité
+      <!-- Badge "Ad" style Google en haut à gauche -->
+      <div class="absolute top-0 left-0 z-10 bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-br">
+        Ad
       </div>
       
-      <!-- Image avec overlay -->
-      <div class="relative">
-        <img
-          v-if="advertisement.imageUrl"
-          :src="advertisement.imageUrl"
-          :alt="advertisement.title"
-          class="w-full h-full object-cover"
-          :class="getImageClass()"
-          loading="lazy"
-        />
-        <div v-else class="bg-gradient-to-br from-blue-500 to-purple-600" :class="getImageClass()">
-          <div class="h-full flex flex-col items-center justify-center p-6 text-white">
-            <h3 class="text-lg font-semibold mb-2 text-center">
-              {{ advertisement.title }}
-            </h3>
-            <p v-if="advertisement.description" class="text-sm text-center opacity-90">
-              {{ advertisement.description }}
-            </p>
-            <span v-if="advertisement.linkUrl" class="mt-3 text-xs underline">
-              En savoir plus →
-            </span>
+      <!-- Layout selon le type d'annonce -->
+      <div v-if="advertisement.adType === 'SIDEBAR'" class="flex flex-col">
+        <!-- Image en haut pour SIDEBAR -->
+        <div class="relative w-full" :class="getImageClass()">
+          <img
+            v-if="advertisement.imageUrl"
+            :src="advertisement.imageUrl"
+            :alt="advertisement.title"
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div v-else class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+            <div class="text-center p-4">
+              <div class="w-12 h-12 mx-auto mb-2 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
         
-        <!-- Overlay au survol -->
-        <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-300"></div>
+        <!-- Contenu texte en dessous -->
+        <div class="p-4 space-y-2">
+          <h3 class="text-sm font-medium text-gray-900 leading-tight line-clamp-2">
+            {{ advertisement.title }}
+          </h3>
+          <p v-if="advertisement.description" class="text-xs text-gray-600 leading-relaxed line-clamp-3">
+            {{ advertisement.description }}
+          </p>
+          <div v-if="advertisement.linkUrl" class="flex items-center text-xs text-blue-600 font-medium pt-1">
+            <span>{{ getDomainFromUrl(advertisement.linkUrl) }}</span>
+            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Layout horizontal pour BANNER et INLINE -->
+      <div v-else class="flex items-center">
+        <!-- Image à gauche -->
+        <div class="relative flex-shrink-0" :class="getImageClass()">
+          <img
+            v-if="advertisement.imageUrl"
+            :src="advertisement.imageUrl"
+            :alt="advertisement.title"
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div v-else class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+            <div class="text-center p-4">
+              <div class="w-10 h-10 mx-auto mb-2 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Contenu texte à droite -->
+        <div class="flex-1 p-4 space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="text-base font-medium text-gray-900 leading-tight flex-1">
+              {{ advertisement.title }}
+            </h3>
+          </div>
+          <p v-if="advertisement.description" class="text-sm text-gray-600 leading-relaxed line-clamp-2">
+            {{ advertisement.description }}
+          </p>
+          <div v-if="advertisement.linkUrl" class="flex items-center text-xs text-blue-600 font-medium pt-1">
+            <span>{{ getDomainFromUrl(advertisement.linkUrl) }}</span>
+            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
       </div>
     </a>
   </div>
@@ -67,23 +119,32 @@ onMounted(() => {
 function getBannerClass(): string {
   const classes: Record<string, string> = {
     BANNER: 'w-full',
-    SIDEBAR: 'w-full',
-    INLINE: 'w-full my-6',
-    POPUP: 'fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center',
-    SPONSORED_PROPERTY: 'w-full border-2 border-blue-500 rounded-lg'
+    SIDEBAR: 'w-full relative',
+    INLINE: 'w-full my-4',
+    POPUP: 'fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center max-w-md mx-auto',
+    SPONSORED_PROPERTY: 'w-full border-2 border-blue-200'
   }
-  return classes[props.advertisement.adType] || 'w-full'
+  return classes[props.advertisement.adType] || 'w-full relative'
 }
 
 function getImageClass(): string {
   const classes: Record<string, string> = {
-    BANNER: 'h-32 md:h-40',
-    SIDEBAR: 'h-48 md:h-64',
-    INLINE: 'h-32 md:h-40',
-    POPUP: 'h-96 w-96 max-w-[90vw]',
-    SPONSORED_PROPERTY: 'h-48'
+    BANNER: 'w-32 h-24',
+    SIDEBAR: 'h-40',
+    INLINE: 'w-32 h-24',
+    POPUP: 'h-64 w-full',
+    SPONSORED_PROPERTY: 'h-32 w-32'
   }
   return classes[props.advertisement.adType] || 'h-32'
+}
+
+function getDomainFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname.replace('www.', '')
+  } catch {
+    return url
+  }
 }
 
 async function recordImpression() {
@@ -122,11 +183,25 @@ async function handleClick() {
 
 <style scoped>
 .advertisement-banner {
-  transition: transform 0.2s ease-in-out;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .advertisement-banner:hover {
-  transform: scale(1.02);
+  border-color: #dadce0;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
-

@@ -320,8 +320,8 @@ const router = useRouter()
     <template>
       <section class="space-y-6" aria-label="Résultats de recherche immobilière">
         <header>
-          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-            {{ props.pagination?.totalElements || props.items.length }} annonce{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }} trouvée{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }}
+          <h2 class="text-sm text-gray-600 mb-4">
+            Environ {{ props.pagination?.totalElements || props.items.length }} résultat{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }}
           </h2>
         </header>
     
@@ -329,8 +329,8 @@ const router = useRouter()
           v-for="item in paginatedItems"
           :key="item.id"
           :id="`listing-${item.id}`"
-          class="overflow-hidden transition-all duration-300 hover:shadow-lg"
-          :class="{ 'ring-2 ring-primary ring-offset-2': props.highlightedId === item.id }"
+          class="overflow-hidden transition-all duration-200 bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-gray-300"
+          :class="{ 'ring-2 ring-blue-200 ring-offset-1 border-blue-300': props.highlightedId === item.id }"
           itemscope
           itemtype="https://schema.org/RealEstateListing"
         >
@@ -352,11 +352,11 @@ const router = useRouter()
                   @error="handleImageError"
                 />
               </a>
-              <!-- Badge transaction type en overlay -->
+              <!-- Badge transaction type en overlay style Google -->
               <div class="absolute top-3 left-3">
                 <Badge
-                  :class="getTransactionType(item) === 'Location' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'"
-                  class="text-white font-semibold shadow-md"
+                  :class="getTransactionType(item) === 'Location' ? 'bg-blue-600' : 'bg-red-600'"
+                  class="text-white text-xs font-medium px-2 py-1 rounded shadow-sm"
                 >
                   {{ getTransactionType(item) }}
                 </Badge>
@@ -368,23 +368,23 @@ const router = useRouter()
             <div class="space-y-3">
               <!-- TITRE + ÉTOILES -->
               <div class="flex justify-between items-start gap-4">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight" itemprop="name">
+                <h3 class="text-xl font-medium text-gray-900 leading-tight" itemprop="name">
                   <a
                     :href="getPropertyUrl(item)"
                     :aria-label="`Voir les détails de ${item.title}`"
-                    class="hover:text-primary transition-colors"
+                    class="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
                   >
                     <span
                       v-for="(part, idx) in getHighlightedTitle(item.title)"
                       :key="idx"
-                      :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded' : ''"
+                      :class="part.highlighted ? 'bg-yellow-200 px-1 rounded font-medium' : ''"
                     >
                       {{ part.text }}
                     </span>
                   </a>
                 </h3>
     
-                <!-- Étoiles & avis -->
+                <!-- Étoiles & avis style Google -->
                 <div v-if="item.reviews > 0" class="flex items-center gap-1 flex-shrink-0">
                   <div class="flex items-center">
                     <Star
@@ -396,67 +396,67 @@ const router = useRouter()
                       ]"
                     />
                   </div>
-                  <span class="text-sm text-gray-600 dark:text-gray-400 ml-1">
-                    ({{ item.reviews }})
+                  <span class="text-sm text-gray-600 ml-1">
+                    {{ item.rating.toFixed(1) }} ({{ item.reviews }})
                   </span>
                 </div>
               </div>
     
-              <!-- LOCALISATION & TYPE -->
+              <!-- LOCALISATION & TYPE style Google -->
               <div class="flex items-center gap-2 flex-wrap" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
-                <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                  <MapPin class="h-4 w-4" />
+                <div class="flex items-center gap-1 text-sm text-gray-600">
+                  <MapPin class="h-4 w-4 text-gray-500" />
                   <span itemprop="addressLocality">
                     <span
                       v-for="(part, idx) in getHighlightedCity(item.city)"
                       :key="idx"
-                      :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded font-medium' : ''"
+                      :class="part.highlighted ? 'bg-yellow-200 px-1 rounded font-medium' : ''"
                     >
                       {{ part.text }}
                     </span>
                   </span>
                   <span itemprop="addressCountry" class="hidden">FR</span>
                 </div>
-                <Separator orientation="vertical" class="h-4" />
-                <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                  <Home class="h-4 w-4" />
+                <span class="text-gray-300">·</span>
+                <div class="flex items-center gap-1 text-sm text-gray-600">
+                  <Home class="h-4 w-4 text-gray-500" />
                   <span itemprop="category">{{ item.type }}</span>
                 </div>
               </div>
     
-              <!-- DESCRIPTION -->
-              <p class="text-gray-700 dark:text-gray-300 text-sm line-clamp-2" itemprop="description">
+              <!-- DESCRIPTION style Google -->
+              <p class="text-gray-600 text-sm leading-relaxed line-clamp-2" itemprop="description">
                 <span
                   v-for="(part, idx) in getHighlightedDescription(item.description)"
                   :key="idx"
-                  :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded font-medium' : ''"
+                  :class="part.highlighted ? 'bg-yellow-200 px-1 rounded font-medium' : ''"
                 >
                   {{ part.text }}
                 </span>
               </p>
             </div>
     
-            <Separator class="my-4" />
+            <div class="border-t border-gray-200 my-4"></div>
     
-            <!-- MÉTADONNÉES & BOUTONS -->
+            <!-- MÉTADONNÉES & BOUTONS style Google -->
             <div class="flex flex-wrap justify-between items-center gap-4">
               <!-- Détails prix & surface -->
               <div class="flex items-center gap-4" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
                 <div class="flex items-center gap-1">
                   <Euro class="h-4 w-4 text-gray-500" />
                   <div class="flex flex-col">
-                    <span class="text-lg font-bold text-gray-900 dark:text-gray-100" itemprop="price" :content="item.price">
+                    <span class="text-lg font-semibold text-gray-900" itemprop="price" :content="item.price">
                       {{ item.price.toLocaleString('fr-FR') }} €
                     </span>
                     <span v-if="getTransactionType(item) === 'Location'" class="text-xs text-gray-500">/mois</span>
                   </div>
                   <span itemprop="priceCurrency" content="EUR" class="hidden">EUR</span>
                 </div>
-                <Separator orientation="vertical" class="h-8" />
+                <span class="text-gray-300">·</span>
                 <div class="flex items-center gap-1">
                   <Square class="h-4 w-4 text-gray-500" />
                   <div class="flex flex-col">
-                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100" itemprop="floorSize" itemscope itemtype="https://schema.org/QuantitativeValue">
+                    <span class="text-sm font-medium text-gray-700" itemprop="floorSize" itemscope itemtype="https://schema.org/QuantitativeValue">
                       <span itemprop="value" :content="item.surface">{{ item.surface }}</span>
                       <span itemprop="unitCode" content="MTK" class="hidden">MTK</span>
                       <span> m²</span>
@@ -466,19 +466,20 @@ const router = useRouter()
                 <meta itemprop="availability" content="https://schema.org/InStock" />
               </div>
     
-              <!-- Boutons avec shadcn-vue -->
+              <!-- Boutons style Google -->
               <div class="flex flex-wrap gap-2">
                 <ContactForm
                   :property-id="item.id"
                   :property-title="item.title"
                   button-text="Contact"
-                  button-class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                  button-class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 h-9 px-4 shadow-sm"
                 />
 
                 <Button
                   variant="outline"
                   size="sm"
                   as-child
+                  class="border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
                 >
                   <a
                     :href="getPropertyUrl(item)"
@@ -494,6 +495,7 @@ const router = useRouter()
                   variant="outline"
                   size="sm"
                   @click="handleVisualiser(item)"
+                  class="border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
                 >
                   <Eye class="h-4 w-4 mr-2" />
                   Carte
@@ -506,6 +508,7 @@ const router = useRouter()
                   variant="outline"
                   size="sm"
                   @click="handleAvis(item)"
+                  class="border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm"
                 >
                   <Star class="h-4 w-4 mr-2" />
                   Avis
@@ -526,10 +529,10 @@ const router = useRouter()
           <p class="text-sm mt-2">Essayez de modifier vos critères de recherche</p>
         </div>
         
-        <!-- Pagination serveur -->
+        <!-- Pagination serveur style Google -->
         <nav
           v-if="props.pagination && props.pagination.totalPages > 1"
-          class="flex items-center justify-center gap-2 mt-8 pt-6"
+          class="flex items-center justify-center gap-1 mt-8 pt-6 border-t border-gray-200"
           aria-label="Pagination des résultats"
         >
           <Button
@@ -537,6 +540,7 @@ const router = useRouter()
             size="sm"
             @click="prevPage"
             :disabled="props.pagination.first"
+            class="border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm disabled:opacity-50"
           >
             ‹ Précédent
           </Button>
@@ -549,7 +553,12 @@ const router = useRouter()
               :size="'sm'"
               :disabled="typeof page === 'string'"
               @click="typeof page === 'number' && goToPage(page)"
-              class="min-w-[40px]"
+              :class="[
+                'min-w-[40px]',
+                typeof page === 'number' && page === props.pagination.currentPage
+                  ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                  : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm'
+              ]"
             >
               {{ typeof page === 'number' ? page + 1 : page }}
             </Button>
@@ -560,22 +569,21 @@ const router = useRouter()
             size="sm"
             @click="nextPage"
             :disabled="props.pagination.last"
+            class="border-gray-300 bg-white hover:bg-gray-50 text-gray-700 shadow-sm disabled:opacity-50"
           >
             Suivant ›
           </Button>
         </nav>
         
-        <!-- Info pagination -->
+        <!-- Info pagination style Google -->
         <div
           v-if="props.pagination && props.items.length > 0"
-          class="text-center text-sm text-gray-500 mt-4"
+          class="text-center text-xs text-gray-500 mt-4"
           role="status"
           aria-live="polite"
         >
           <p>
-            Affichage de <strong>{{ props.pagination.currentPage * props.pagination.size + 1 }}</strong> à 
-            <strong>{{ Math.min((props.pagination.currentPage + 1) * props.pagination.size, props.pagination.totalElements) }}</strong> 
-            sur <strong>{{ props.pagination.totalElements }}</strong> annonce{{ props.pagination.totalElements > 1 ? 's' : '' }}
+            Page {{ props.pagination.currentPage + 1 }} sur {{ props.pagination.totalPages }}
           </p>
         </div>
       </section>

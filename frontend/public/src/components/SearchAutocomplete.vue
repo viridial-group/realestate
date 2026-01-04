@@ -1,125 +1,133 @@
 <template>
   <div class="relative">
-    <input
-      ref="inputRef"
-      :value="modelValue"
-      @input="handleInput"
-      @focus="showSuggestions = true"
-      @blur="handleBlur"
-      @keydown.down.prevent="navigateDown"
-      @keydown.up.prevent="navigateUp"
-      @keydown.enter.prevent="selectCurrent"
-      @keydown.escape="hideSuggestions"
-      class="w-full border border-gray-300 dark:border-gray-700 rounded-full px-5 py-3 text-base
-             bg-white dark:bg-gray-800 text-gray-900 dark:text-white
-             focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-      :placeholder="placeholder"
-    />
+    <div class="relative">
+      <Search class="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <input
+        ref="inputRef"
+        :value="modelValue"
+        @input="handleInput"
+        @focus="showSuggestions = true"
+        @blur="handleBlur"
+        @keydown.down.prevent="navigateDown"
+        @keydown.up.prevent="navigateUp"
+        @keydown.enter.prevent="selectCurrent"
+        @keydown.escape="hideSuggestions"
+        class="w-full border border-gray-300 rounded-full pl-12 pr-5 py-3 text-base
+               bg-white text-gray-900
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+               shadow-sm hover:shadow-md transition-shadow"
+        :placeholder="placeholder || 'Rechercher une propriété, une ville, une adresse...'"
+      />
+    </div>
 
-    <!-- Suggestions -->
+    <!-- Suggestions style Google -->
     <div
       v-if="showSuggestions && (allSuggestions.length > 0 || history.length > 0 || isLoadingSuggestions)"
-      class="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto"
+      class="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto"
     >
       <!-- Loading state -->
       <div v-if="isLoadingSuggestions" class="p-4 text-center text-gray-500 text-sm">
+        <Loader2 class="h-5 w-5 animate-spin mx-auto mb-2 text-gray-400" />
         Chargement des suggestions...
       </div>
 
       <!-- Historique de recherche -->
-      <div v-if="history.length > 0 && !modelValue && !isLoadingSuggestions" class="p-2 border-b border-gray-100 dark:border-gray-700">
-        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Recherches récentes</div>
+      <div v-if="history.length > 0 && !modelValue && !isLoadingSuggestions" class="p-2 border-b border-gray-200">
+        <div class="text-xs font-medium text-gray-500 px-3 py-2">Recherches récentes</div>
         <div
           v-for="(item, idx) in history"
           :key="idx"
           @click="selectSuggestion(item)"
-          class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between group cursor-pointer"
+          class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center justify-between group cursor-pointer rounded-md"
         >
-          <span class="text-sm text-gray-700 dark:text-gray-300">🔍 {{ item }}</span>
+          <div class="flex items-center gap-3">
+            <Clock class="h-4 w-4 text-gray-400" />
+            <span class="text-sm text-gray-700">{{ item }}</span>
+          </div>
           <button
             @click.stop="removeFromHistory(item)"
-            class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-opacity"
+            class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-opacity"
             type="button"
           >
-            ✕
+            <X class="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <!-- Suggestions intelligentes -->
+      <!-- Suggestions intelligentes style Google -->
       <div v-if="allSuggestions.length > 0 && !isLoadingSuggestions" class="p-2">
         <!-- Villes -->
-        <div v-if="suggestionsData.cities.length > 0" class="mb-2">
-          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Villes</div>
+        <div v-if="suggestionsData.cities.length > 0" class="mb-1">
+          <div class="text-xs font-medium text-gray-500 px-3 py-2">Villes</div>
           <button
             v-for="(city, idx) in suggestionsData.cities"
             :key="`city-${idx}`"
             @click="selectSuggestion(city)"
-            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(city) === selectedIndex }"
+            class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 rounded-md"
+            :class="{ 'bg-blue-50': getSuggestionIndex(city) === selectedIndex }"
           >
-            <span>📍</span>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ city }}</span>
+            <MapPin class="h-4 w-4 text-gray-400" />
+            <span class="text-sm text-gray-700">{{ city }}</span>
           </button>
         </div>
 
         <!-- Types -->
-        <div v-if="suggestionsData.types.length > 0" class="mb-2">
-          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Types</div>
+        <div v-if="suggestionsData.types.length > 0" class="mb-1">
+          <div class="text-xs font-medium text-gray-500 px-3 py-2">Types</div>
           <button
             v-for="(type, idx) in suggestionsData.types"
             :key="`type-${idx}`"
             @click="selectSuggestion(type)"
-            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(type) === selectedIndex }"
+            class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 rounded-md"
+            :class="{ 'bg-blue-50': getSuggestionIndex(type) === selectedIndex }"
           >
-            <span>🏠</span>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ type }}</span>
+            <Home class="h-4 w-4 text-gray-400" />
+            <span class="text-sm text-gray-700">{{ type }}</span>
           </button>
         </div>
 
         <!-- Adresses -->
-        <div v-if="suggestionsData.addresses.length > 0" class="mb-2">
-          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Adresses</div>
+        <div v-if="suggestionsData.addresses.length > 0" class="mb-1">
+          <div class="text-xs font-medium text-gray-500 px-3 py-2">Adresses</div>
           <button
             v-for="(address, idx) in suggestionsData.addresses"
             :key="`address-${idx}`"
             @click="selectSuggestion(address)"
-            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(address) === selectedIndex }"
+            class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 rounded-md"
+            :class="{ 'bg-blue-50': getSuggestionIndex(address) === selectedIndex }"
           >
-            <span>📍</span>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ address }}</span>
+            <MapPin class="h-4 w-4 text-gray-400" />
+            <span class="text-sm text-gray-700">{{ address }}</span>
           </button>
         </div>
 
         <!-- Suggestions intelligentes -->
-        <div v-if="smartSuggestions.length > 0" class="mb-2">
-          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Suggestions</div>
+        <div v-if="smartSuggestions.length > 0" class="mb-1">
+          <div class="text-xs font-medium text-gray-500 px-3 py-2">Suggestions</div>
           <button
             v-for="(suggestion, idx) in smartSuggestions"
             :key="`smart-${idx}`"
             @click="selectSuggestion(suggestion)"
-            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(suggestion) === selectedIndex }"
+            class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 rounded-md"
+            :class="{ 'bg-blue-50': getSuggestionIndex(suggestion) === selectedIndex }"
           >
-            <span>💡</span>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ suggestion }}</span>
+            <Lightbulb class="h-4 w-4 text-gray-400" />
+            <span class="text-sm text-gray-700">{{ suggestion }}</span>
           </button>
         </div>
 
         <!-- Recherches populaires -->
-        <div v-if="suggestionsData.popularSearches.length > 0 && modelValue" class="mb-2">
-          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Recherches populaires</div>
+        <div v-if="suggestionsData.popularSearches.length > 0 && modelValue" class="mb-1">
+          <div class="text-xs font-medium text-gray-500 px-3 py-2">Recherches populaires</div>
           <button
             v-for="(popular, idx) in suggestionsData.popularSearches"
             :key="`popular-${idx}`"
             @click="selectSuggestion(popular)"
-            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(popular) === selectedIndex }"
+            class="w-full text-left px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 rounded-md"
+            :class="{ 'bg-blue-50': getSuggestionIndex(popular) === selectedIndex }"
           >
-            <span>🔥</span>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ popular }}</span>
+            <TrendingUp class="h-4 w-4 text-gray-400" />
+            <span class="text-sm text-gray-700">{{ popular }}</span>
           </button>
         </div>
       </div>
@@ -129,6 +137,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { Search, Loader2, Clock, X, MapPin, Home, Lightbulb, TrendingUp } from 'lucide-vue-next'
 import { useSearchHistory } from '@/composables/useSearchHistory'
 import { useSearchSuggestions } from '@/composables/useSearchSuggestions'
 

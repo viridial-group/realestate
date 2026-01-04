@@ -1,39 +1,34 @@
 <template>
   <div
     v-if="showStats && stats"
-    class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4"
+    class="text-sm text-gray-600 mb-4 flex items-center justify-between"
   >
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-4 text-sm">
-        <div class="flex items-center gap-2">
-          <span class="text-blue-600 dark:text-blue-400 font-semibold">
-            {{ stats.totalResults }}
-          </span>
-          <span class="text-gray-600 dark:text-gray-400">
-            résultat{{ stats.totalResults > 1 ? 's' : '' }}
-          </span>
-        </div>
-        <div v-if="stats.searchTime" class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <span>⚡</span>
-          <span>{{ stats.searchTime }}ms</span>
-        </div>
-        <div v-if="stats.filtersActive" class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <span>🔍</span>
-          <span>{{ stats.filtersActive }} filtre{{ stats.filtersActive > 1 ? 's' : '' }} actif{{ stats.filtersActive > 1 ? 's' : '' }}</span>
-        </div>
-      </div>
-      <button
-        v-if="showClear"
-        @click="$emit('clear')"
-        class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline"
-      >
-        Effacer
-      </button>
+    <div class="flex items-center gap-4">
+      <span>
+        Environ <strong class="text-gray-900">{{ stats.totalResults }}</strong> résultat{{ stats.totalResults > 1 ? 's' : '' }}
+      </span>
+      <span v-if="stats.searchTime" class="text-gray-500 flex items-center gap-1">
+        <Zap class="h-3 w-3" />
+        ({{ stats.searchTime }}ms)
+      </span>
+      <span v-if="stats.filtersActive" class="text-gray-500 flex items-center gap-1">
+        <Filter class="h-3 w-3" />
+        {{ stats.filtersActive }} filtre{{ stats.filtersActive > 1 ? 's' : '' }}
+      </span>
     </div>
+    <button
+      v-if="showClear"
+      @click="$emit('clear')"
+      class="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+    >
+      Effacer les filtres
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Zap, Filter } from 'lucide-vue-next'
+
 defineProps<{
   stats?: {
     totalResults: number

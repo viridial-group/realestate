@@ -41,6 +41,8 @@
     const bedrooms = ref<number | null>(null)
     const bathrooms = ref<number | null>(null)
     const dateFilter = ref<string>('')
+    const country = ref<string>('')
+    const city = ref<string>('')
     const currentPage = ref(0)
     const highlightedListingId = ref<number | null>(null)
     const mapView = mapViewRef<InstanceType<typeof MapView> | null>(null)
@@ -343,7 +345,7 @@
     
     // Watcher pour recharger quand les filtres changent (avec debounce amélioré)
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
-    watch([query, transactionType, type, status, maxPrice, minSurface, bedrooms, bathrooms], () => {
+    watch([query, transactionType, type, status, maxPrice, minSurface, bedrooms, bathrooms, country, city], () => {
       // Réinitialiser à la page 0 quand les filtres changent
       currentPage.value = 0
       if (debounceTimer) {
@@ -377,6 +379,14 @@
       
       if (type.value && type.value !== 'Tous') {
         params.type = type.value
+      }
+      
+      if (country.value && country.value.trim()) {
+        params.country = country.value.trim()
+      }
+      
+      if (city.value && city.value.trim()) {
+        params.city = city.value.trim()
       }
       
       if (minPrice.value) {
@@ -578,6 +588,8 @@
       status.value = 'Tous'
       sortBy.value = 'default'
       dateFilter.value = ''
+      country.value = ''
+      city.value = ''
       currentPage.value = 0
       fetchProperties(true)
     }
@@ -674,6 +686,8 @@
       if (bathrooms.value) count++
       if (dateFilter.value) count++
       if (sortBy.value && sortBy.value !== 'default') count++
+      if (country.value && country.value.trim()) count++
+      if (city.value && city.value.trim()) count++
       return count
     }
 
@@ -788,6 +802,8 @@
                 :bedrooms="bedrooms"
                 :bathrooms="bathrooms"
                 :date-filter="dateFilter"
+                :country="country"
+                :city="city"
                 :show-date-filter="true"
                 @update:transactionType="transactionType = $event"
                 @update:type="type = $event"
@@ -798,6 +814,8 @@
                 @update:bedrooms="bedrooms = $event"
                 @update:bathrooms="bathrooms = $event"
                 @update:dateFilter="dateFilter = $event"
+                @update:country="country = $event"
+                @update:city="city = $event"
                 @clear-filters="clearFilters"
               />
             </aside>

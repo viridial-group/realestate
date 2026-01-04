@@ -14,92 +14,170 @@
       </div>
     </CardHeader>
     <CardContent class="space-y-6">
-      <!-- Transaction / Statut avec Select -->
+      <!-- Pays avec Combobox -->
+      <div class="space-y-2">
+        <Label>Pays</Label>
+        <Combobox
+          :model-value="countryValue === 'all' ? null : countryValue"
+          :search-value="countrySearch"
+          @update:search-value="countrySearch = $event"
+          @update:model-value="handleCountryChange"
+        >
+          <ComboboxAnchor as-child class="w-full">
+            <ComboboxInput placeholder="Rechercher un pays..." class="w-full" />
+          </ComboboxAnchor>
+          <ComboboxList class="w-full">
+            <ComboboxItem value="all">
+              <Check v-if="countryValue === 'all'" class="h-4 w-4" />
+              <span>Tous les pays</span>
+            </ComboboxItem>
+            <ComboboxItem
+              v-for="option in filteredCountryOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              <Check v-if="countryValue === option.value" class="h-4 w-4" />
+              <span>{{ option.label }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty>Aucun pays trouvé</ComboboxEmpty>
+          </ComboboxList>
+        </Combobox>
+      </div>
+
+      <!-- Ville avec Combobox -->
+      <div class="space-y-2">
+        <Label>Ville</Label>
+        <Combobox
+          :model-value="cityValue === 'all' ? null : cityValue"
+          :search-value="citySearch"
+          @update:search-value="citySearch = $event"
+          @update:model-value="handleCityChange"
+        >
+          <ComboboxAnchor as-child class="w-full">
+            <ComboboxInput placeholder="Rechercher une ville..." class="w-full" />
+          </ComboboxAnchor>
+          <ComboboxList class="w-full">
+            <ComboboxItem value="all">
+              <Check v-if="cityValue === 'all'" class="h-4 w-4" />
+              <span>Toutes les villes</span>
+            </ComboboxItem>
+            <ComboboxItem
+              v-for="option in filteredCityOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              <Check v-if="cityValue === option.value" class="h-4 w-4" />
+              <span>{{ option.label }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty>Aucune ville trouvée</ComboboxEmpty>
+          </ComboboxList>
+        </Combobox>
+      </div>
+
+      <Separator />
+
+      <!-- Transaction / Statut avec Combobox -->
       <div class="space-y-2">
         <Label>Transaction / Statut</Label>
-        <Select
-          :model-value="combinedFilterValue"
+        <Combobox
+          :model-value="combinedFilterValue === 'all' ? null : combinedFilterValue"
+          :search-value="transactionStatusSearch"
+          @update:search-value="transactionStatusSearch = $event"
           @update:model-value="handleCombinedFilterChange"
         >
-          <SelectTrigger class="w-full">
-            <SelectValue :placeholder="getCombinedFilterLabel()" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in transactionStatusOptions"
+          <ComboboxAnchor as-child class="w-full">
+            <ComboboxInput :placeholder="getCombinedFilterLabel()" class="w-full" />
+          </ComboboxAnchor>
+          <ComboboxList class="w-full">
+            <ComboboxItem
+              v-for="option in filteredTransactionStatusOptions"
               :key="option.value"
               :value="option.value"
             >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+              <Check v-if="combinedFilterValue === option.value" class="h-4 w-4" />
+              <span>{{ option.label }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty>Aucun résultat</ComboboxEmpty>
+          </ComboboxList>
+        </Combobox>
       </div>
 
-      <!-- Type de bien avec Select -->
+      <!-- Type de bien avec Combobox -->
       <div class="space-y-2">
         <Label>Type de bien</Label>
-        <Select
-          :model-value="typeValue"
+        <Combobox
+          :model-value="typeValue === 'Tous' ? null : typeValue"
+          :search-value="typeSearch"
+          @update:search-value="typeSearch = $event"
           @update:model-value="handleTypeChange"
         >
-          <SelectTrigger class="w-full">
-            <SelectValue :placeholder="typeValue || 'Tous'" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in typeOptions"
+          <ComboboxAnchor as-child class="w-full">
+            <ComboboxInput :placeholder="typeValue || 'Tous'" class="w-full" />
+          </ComboboxAnchor>
+          <ComboboxList class="w-full">
+            <ComboboxItem
+              v-for="option in filteredTypeOptions"
               :key="option.value"
               :value="option.value"
             >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+              <Check v-if="typeValue === option.value" class="h-4 w-4" />
+              <span>{{ option.label }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty>Aucun type trouvé</ComboboxEmpty>
+          </ComboboxList>
+        </Combobox>
       </div>
 
-      <!-- Trier par avec Select -->
+      <!-- Trier par avec Combobox -->
       <div class="space-y-2">
         <Label>Trier par</Label>
-        <Select
-          :model-value="sortByValue"
+        <Combobox
+          :model-value="sortByValue === 'default' ? null : sortByValue"
+          :search-value="sortSearch"
+          @update:search-value="sortSearch = $event"
           @update:model-value="handleSortByChange"
         >
-          <SelectTrigger class="w-full">
-            <SelectValue :placeholder="getSortLabel()" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in sortOptions"
+          <ComboboxAnchor as-child class="w-full">
+            <ComboboxInput :placeholder="getSortLabel()" class="w-full" />
+          </ComboboxAnchor>
+          <ComboboxList class="w-full">
+            <ComboboxItem
+              v-for="option in filteredSortOptions"
               :key="option.value"
               :value="option.value"
             >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+              <Check v-if="sortByValue === option.value" class="h-4 w-4" />
+              <span>{{ option.label }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty>Aucun résultat</ComboboxEmpty>
+          </ComboboxList>
+        </Combobox>
       </div>
 
-      <!-- Date de publication avec Select -->
+      <!-- Date de publication avec Combobox -->
       <div v-if="showDateFilter" class="space-y-2">
         <Label>Date de publication</Label>
-        <Select
-          :model-value="dateFilterValue"
+        <Combobox
+          :model-value="dateFilterValue === 'all' ? null : dateFilterValue"
+          :search-value="dateSearch"
+          @update:search-value="dateSearch = $event"
           @update:model-value="handleDateFilterChange"
         >
-          <SelectTrigger class="w-full">
-            <SelectValue :placeholder="getDateLabel()" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem
-              v-for="option in dateOptions"
+          <ComboboxAnchor as-child class="w-full">
+            <ComboboxInput :placeholder="getDateLabel()" class="w-full" />
+          </ComboboxAnchor>
+          <ComboboxList class="w-full">
+            <ComboboxItem
+              v-for="option in filteredDateOptions"
               :key="option.value"
               :value="option.value"
             >
-              {{ option.label }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+              <Check v-if="dateFilterValue === option.value" class="h-4 w-4" />
+              <span>{{ option.label }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty>Aucun résultat</ComboboxEmpty>
+          </ComboboxList>
+        </Combobox>
       </div>
 
       <Separator />
@@ -199,13 +277,15 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Combobox,
+  ComboboxAnchor,
+  ComboboxInput,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from '@/components/ui/combobox'
 import { Separator } from '@/components/ui/separator'
+import { Check } from 'lucide-vue-next'
 
 const props = defineProps<{
   transactionType?: string
@@ -218,6 +298,8 @@ const props = defineProps<{
   bathrooms?: number | null
   dateFilter?: string
   showDateFilter?: boolean
+  country?: string
+  city?: string
 }>()
 
 const emit = defineEmits<{
@@ -230,6 +312,8 @@ const emit = defineEmits<{
   'update:bedrooms': [value: number | null]
   'update:bathrooms': [value: number | null]
   'update:dateFilter': [value: string]
+  'update:country': [value: string]
+  'update:city': [value: string]
   'clear-filters': []
 }>()
 
@@ -238,10 +322,20 @@ const combinedFilterValue = ref('all')
 const typeValue = ref('Tous')
 const sortByValue = ref('default')
 const dateFilterValue = ref('all')
+const countryValue = ref('all')
+const cityValue = ref('all')
 const maxPriceValue = ref<number[]>([0])
 const minSurfaceValue = ref<number[]>([0])
 const selectedBedrooms = ref<number[]>([])
 const selectedBathrooms = ref<number[]>([])
+
+// Valeurs de recherche pour les Combobox
+const countrySearch = ref('')
+const citySearch = ref('')
+const transactionStatusSearch = ref('')
+const typeSearch = ref('')
+const sortSearch = ref('')
+const dateSearch = ref('')
 
 // Options
 const transactionStatusOptions = [
@@ -293,6 +387,112 @@ const bathroomOptions = [
   { value: 4, label: '4+ salles de bain' },
 ]
 
+const countryOptions = [
+  { value: 'FR', label: '🇫🇷 France' },
+  { value: 'BE', label: '🇧🇪 Belgique' },
+  { value: 'CH', label: '🇨🇭 Suisse' },
+  { value: 'LU', label: '🇱🇺 Luxembourg' },
+  { value: 'MC', label: '🇲🇨 Monaco' },
+  { value: 'ES', label: '🇪🇸 Espagne' },
+  { value: 'IT', label: '🇮🇹 Italie' },
+  { value: 'PT', label: '🇵🇹 Portugal' },
+  { value: 'DE', label: '🇩🇪 Allemagne' },
+  { value: 'GB', label: '🇬🇧 Royaume-Uni' },
+  { value: 'US', label: '🇺🇸 États-Unis' },
+  { value: 'CA', label: '🇨🇦 Canada' },
+  { value: 'MA', label: '🇲🇦 Maroc' },
+  { value: 'TN', label: '🇹🇳 Tunisie' },
+  { value: 'DZ', label: '🇩🇿 Algérie' },
+]
+
+const cityOptions = [
+  { value: 'Paris', label: 'Paris' },
+  { value: 'Lyon', label: 'Lyon' },
+  { value: 'Marseille', label: 'Marseille' },
+  { value: 'Toulouse', label: 'Toulouse' },
+  { value: 'Nice', label: 'Nice' },
+  { value: 'Nantes', label: 'Nantes' },
+  { value: 'Strasbourg', label: 'Strasbourg' },
+  { value: 'Montpellier', label: 'Montpellier' },
+  { value: 'Bordeaux', label: 'Bordeaux' },
+  { value: 'Lille', label: 'Lille' },
+  { value: 'Rennes', label: 'Rennes' },
+  { value: 'Reims', label: 'Reims' },
+  { value: 'Saint-Étienne', label: 'Saint-Étienne' },
+  { value: 'Toulon', label: 'Toulon' },
+  { value: 'Le Havre', label: 'Le Havre' },
+  { value: 'Grenoble', label: 'Grenoble' },
+  { value: 'Dijon', label: 'Dijon' },
+  { value: 'Angers', label: 'Angers' },
+  { value: 'Nîmes', label: 'Nîmes' },
+  { value: 'Villeurbanne', label: 'Villeurbanne' },
+  { value: 'Bruxelles', label: 'Bruxelles' },
+  { value: 'Anvers', label: 'Anvers' },
+  { value: 'Genève', label: 'Genève' },
+  { value: 'Zurich', label: 'Zurich' },
+  { value: 'Lausanne', label: 'Lausanne' },
+  { value: 'Casablanca', label: 'Casablanca' },
+  { value: 'Rabat', label: 'Rabat' },
+  { value: 'Tunis', label: 'Tunis' },
+  { value: 'Alger', label: 'Alger' },
+]
+
+
+// Options filtrées pour les Combobox
+const filteredCountryOptions = computed(() => {
+  if (!countrySearch.value) return countryOptions
+  const search = countrySearch.value.toLowerCase()
+  return countryOptions.filter(option => 
+    option.label.toLowerCase().includes(search) || 
+    option.value.toLowerCase().includes(search)
+  )
+})
+
+const filteredCityOptions = computed(() => {
+  if (!citySearch.value) return cityOptions
+  const search = citySearch.value.toLowerCase()
+  return cityOptions.filter(option => 
+    option.label.toLowerCase().includes(search) || 
+    option.value.toLowerCase().includes(search)
+  )
+})
+
+const filteredTransactionStatusOptions = computed(() => {
+  if (!transactionStatusSearch.value) return transactionStatusOptions
+  const search = transactionStatusSearch.value.toLowerCase()
+  return transactionStatusOptions.filter(option => 
+    option.label.toLowerCase().includes(search) || 
+    option.value.toLowerCase().includes(search)
+  )
+})
+
+const filteredTypeOptions = computed(() => {
+  if (!typeSearch.value) return typeOptions
+  const search = typeSearch.value.toLowerCase()
+  return typeOptions.filter(option => 
+    option.label.toLowerCase().includes(search) || 
+    option.value.toLowerCase().includes(search)
+  )
+})
+
+const filteredSortOptions = computed(() => {
+  if (!sortSearch.value) return sortOptions
+  const search = sortSearch.value.toLowerCase()
+  return sortOptions.filter(option => 
+    option.label.toLowerCase().includes(search) || 
+    option.value.toLowerCase().includes(search)
+  )
+})
+
+const filteredDateOptions = computed(() => {
+  if (!dateSearch.value) return dateOptions
+  const search = dateSearch.value.toLowerCase()
+  return dateOptions.filter(option => 
+    option.label.toLowerCase().includes(search) || 
+    option.value.toLowerCase().includes(search)
+  )
+})
+
 
 // Synchroniser les valeurs avec les props
 watch(() => props.transactionType, () => {
@@ -313,6 +513,14 @@ watch(() => props.sortBy, () => {
 
 watch(() => props.dateFilter, () => {
   dateFilterValue.value = props.dateFilter || 'all'
+}, { immediate: true })
+
+watch(() => props.country, () => {
+  countryValue.value = props.country || 'all'
+}, { immediate: true })
+
+watch(() => props.city, () => {
+  cityValue.value = props.city || 'all'
 }, { immediate: true })
 
 watch(() => props.maxPrice, () => {
@@ -356,7 +564,9 @@ const hasActiveFilters = computed(() => {
     selectedBathrooms.value.length > 0 ||
     hasCombinedFilter ||
     (typeValue.value && typeValue.value !== 'Tous') ||
-    (sortByValue.value && sortByValue.value !== 'default')
+    (sortByValue.value && sortByValue.value !== 'default') ||
+    (countryValue.value && countryValue.value !== 'all') ||
+    (cityValue.value && cityValue.value !== 'all')
   )
 })
 
@@ -398,8 +608,13 @@ function getDateLabel(): string {
 }
 
 function handleCombinedFilterChange(value: any) {
-  const stringValue = String(value || '')
-  if (!stringValue) return
+  if (value === null || value === undefined) {
+    combinedFilterValue.value = 'all'
+    emit('update:transactionType', 'Tous')
+    emit('update:status', 'Tous')
+    return
+  }
+  const stringValue = String(value)
   combinedFilterValue.value = stringValue
   if (stringValue === 'all') {
     emit('update:transactionType', 'Tous')
@@ -420,24 +635,58 @@ function handleCombinedFilterChange(value: any) {
 }
 
 function handleTypeChange(value: any) {
-  const stringValue = String(value || '')
-  if (!stringValue) return
+  if (value === null || value === undefined) {
+    typeValue.value = 'Tous'
+    emit('update:type', 'Tous')
+    return
+  }
+  const stringValue = String(value)
   typeValue.value = stringValue
   emit('update:type', stringValue)
 }
 
 function handleSortByChange(value: any) {
-  const stringValue = String(value || '')
-  if (!stringValue) return
+  if (value === null || value === undefined) {
+    sortByValue.value = 'default'
+    emit('update:sortBy', 'default')
+    return
+  }
+  const stringValue = String(value)
   sortByValue.value = stringValue
   emit('update:sortBy', stringValue)
 }
 
 function handleDateFilterChange(value: any) {
-  const stringValue = String(value || 'all')
+  if (value === null || value === undefined || value === 'all') {
+    dateFilterValue.value = 'all'
+    emit('update:dateFilter', '')
+    return
+  }
+  const stringValue = String(value)
   dateFilterValue.value = stringValue
-  // Ne pas émettre si c'est 'all' (toutes les dates)
-  emit('update:dateFilter', stringValue === 'all' ? '' : stringValue)
+  emit('update:dateFilter', stringValue)
+}
+
+function handleCountryChange(value: any) {
+  if (value === null || value === undefined || value === 'all') {
+    countryValue.value = 'all'
+    emit('update:country', '')
+  } else {
+    const stringValue = String(value)
+    countryValue.value = stringValue
+    emit('update:country', stringValue)
+  }
+}
+
+function handleCityChange(value: any) {
+  if (value === null || value === undefined || value === 'all') {
+    cityValue.value = 'all'
+    emit('update:city', '')
+  } else {
+    const stringValue = String(value)
+    cityValue.value = stringValue
+    emit('update:city', stringValue)
+  }
 }
 
 

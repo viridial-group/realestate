@@ -1,84 +1,84 @@
 <template>
-  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-50 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+      <div class="flex items-center justify-between h-14">
         <!-- Logo -->
         <div class="flex items-center gap-3">
           <router-link to="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-              <span class="text-xl">🏠</span>
+            <div class="h-8 w-8 rounded bg-blue-600 flex items-center justify-center">
+              <Home class="h-5 w-5 text-white" />
             </div>
-            <span class="text-xl font-semibold text-gray-900 dark:text-white">RealEstate</span>
+            <span class="text-lg font-medium text-gray-900">RealEstate</span>
           </router-link>
         </div>
 
         <!-- Navigation -->
-        <nav class="hidden md:flex items-center gap-6">
-              <router-link
-                to="/search"
-                class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                active-class="text-blue-600 dark:text-blue-400"
-              >
-                Recherche
-              </router-link>
+        <nav class="hidden md:flex items-center gap-1">
+          <router-link
+            to="/search"
+            class="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            active-class="text-blue-600 bg-blue-50"
+          >
+            Recherche
+          </router-link>
           <router-link
             to="/publish"
-            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            active-class="text-blue-600 dark:text-blue-400"
+            class="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            active-class="text-blue-600 bg-blue-50"
           >
             Publier
           </router-link>
           <router-link
             to="/about"
-            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            active-class="text-blue-600 dark:text-blue-400"
+            class="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            active-class="text-blue-600 bg-blue-50"
           >
             À propos
           </router-link>
           <router-link
             to="/agencies"
-            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            active-class="text-blue-600 dark:text-blue-400"
+            class="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            active-class="text-blue-600 bg-blue-50"
           >
             Agences
           </router-link>
           <router-link
             to="/subscribe"
-            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            active-class="text-blue-600 dark:text-blue-400"
+            class="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            active-class="text-blue-600 bg-blue-50"
           >
             S'abonner
           </router-link>
         </nav>
 
         <!-- Actions -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
           <DarkModeToggle />
           <router-link
             to="/compare"
-            class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors relative"
-            active-class="text-blue-600 dark:text-blue-400"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors relative"
+            active-class="text-blue-600 bg-blue-50"
           >
-            <span>⚖️</span>
+            <Scale class="h-4 w-4" />
             <span>Comparer</span>
             <ComparisonBadge />
           </router-link>
           <router-link
             to="/favorites"
-            class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            active-class="text-blue-600 dark:text-blue-400"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            active-class="text-blue-600 bg-blue-50"
           >
-            <span>⭐</span>
+            <Star class="h-4 w-4" />
             <span>Favoris</span>
           </router-link>
           <button
-            class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
           >
-            <span>🔍</span>
+            <HelpCircle class="h-4 w-4" />
             <span>Aide</span>
           </button>
           <button
-            class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm font-medium"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium shadow-sm"
           >
             Connexion
           </button>
@@ -90,6 +90,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { Home, Scale, Star, HelpCircle } from 'lucide-vue-next'
 import ComparisonBadge from './ComparisonBadge.vue'
 import DarkModeToggle from './DarkModeToggle.vue'
 </script>

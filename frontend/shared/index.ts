@@ -122,4 +122,7 @@ export type {
   TopAdvertisement
 } from './types/advertisement.types'
 export { advertisementService } from './api/advertisement.service'
+export { countryService } from './api/country.service'
+export { cityService } from './api/city.service'
+export type * from './types/country.types'
 

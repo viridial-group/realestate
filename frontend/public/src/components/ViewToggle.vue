@@ -1,36 +1,33 @@
 <template>
-  <div class="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-1">
+  <div class="flex items-center gap-1 bg-white rounded-md border border-gray-300 p-1 shadow-sm">
     <button
       @click="setView('list')"
-      class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+      class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
       :class="view === 'list'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-600 hover:bg-gray-100'"
+        ? 'bg-blue-600 text-white shadow-sm'
+        : 'text-gray-700 hover:bg-gray-100'"
       title="Vue liste"
     >
-      <span class="flex items-center gap-1">
-        <span>☰</span>
-        <span class="hidden sm:inline">Liste</span>
-      </span>
+      <List class="h-4 w-4" />
+      <span class="hidden sm:inline">Liste</span>
     </button>
     <button
       @click="setView('grid')"
-      class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+      class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5"
       :class="view === 'grid'
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-600 hover:bg-gray-100'"
+        ? 'bg-blue-600 text-white shadow-sm'
+        : 'text-gray-700 hover:bg-gray-100'"
       title="Vue grille"
     >
-      <span class="flex items-center gap-1">
-        <span>⊞</span>
-        <span class="hidden sm:inline">Grille</span>
-      </span>
+      <Grid3x3 class="h-4 w-4" />
+      <span class="hidden sm:inline">Grille</span>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { List, Grid3x3 } from 'lucide-vue-next'
 
 const props = defineProps<{
   modelValue?: 'list' | 'grid'

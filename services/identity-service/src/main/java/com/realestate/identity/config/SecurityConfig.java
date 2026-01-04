@@ -72,6 +72,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/identity/auth/**").permitAll()
                         .requestMatchers("/api/identity/utils/**").permitAll() // Password hash generation utility
                         .requestMatchers("/api/public/organizations/**").permitAll() // Public organizations endpoint
+                        // Public read access to countries and cities (GET only)
+                        .requestMatchers("/api/identity/countries", "/api/identity/countries/**").permitAll()
+                        .requestMatchers("/api/identity/cities", "/api/identity/cities/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
