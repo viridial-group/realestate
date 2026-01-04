@@ -17,6 +17,13 @@ export { auditService } from './api/audit.service'
 export type { AuditLog, AuditLogSearchParams, AuditLogPage } from './api/audit.service'
 export { workflowService } from './api/workflow.service'
 export { roleService } from './api/role.service'
+export { contactService } from './api/contact.service'
+export type { PaginatedResponse } from './api/contact.service'
+export { reviewService } from './api/review.service'
+export { priceHistoryService } from './api/price-history.service'
+export { priceAlertService } from './api/price-alert.service'
+export { visitAppointmentService } from './api/visit-appointment.service'
+export { marketDataService } from './api/market-data.service'
 export { TaskStatusEnum } from './types/workflow.types'
 export type {
   Workflow,
@@ -63,6 +70,13 @@ export type * from './types/billing.types'
 export type * from './types/notification.types'
 export type * from './types/workflow.types'
 export type * from './types/role.types'
+export type * from './types/contact.types'
+export type * from './types/review.types'
+export type * from './types/price-history.types'
+export type * from './types/price-alert.types'
+export type * from './types/visit-appointment.types'
+export type * from './types/market-data.types'
+export type { DVFImportHistory, DVFStats } from './types/market-data.types'
 
 // Enums from property.types (exported as values, not types)
 export { PropertyType, PropertyStatus } from './types/property.types'
@@ -75,4 +89,37 @@ export { API_ENDPOINTS, API_BASE_URL } from './constants/api.constants'
 
 // Enums
 export { UserStatus, UserRole } from './types/user.types'
+
+// Organization Reviews
+export type {
+  OrganizationReview,
+  OrganizationReviewCreate,
+  OrganizationReviewStats,
+  OrganizationWithReviews,
+  OrganizationPerformanceStats,
+  RatingDistribution
+} from './types/organization-review.types'
+export { organizationReviewService } from './api/organization-review.service'
+
+// Organization Contact Messages
+export type {
+  OrganizationContactMessage,
+  OrganizationContactMessageCreate
+} from './types/organization-contact.types'
+export { organizationContactService } from './api/organization-contact.service'
+export type {
+  Advertisement,
+  AdvertisementCreate,
+  AdvertisementUpdate,
+  AdvertisementStats,
+  AdvertisementSearchParams,
+  AdvertisementAnalytics,
+  DailyStats,
+  WeeklyStats,
+  MonthlyStats,
+  TypeStats,
+  PositionStats,
+  TopAdvertisement
+} from './types/advertisement.types'
+export { advertisementService } from './api/advertisement.service'
 

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,10 +41,20 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        return user.getRoles().stream()
+        Set<GrantedAuthority> authorities = new java.util.HashSet<>();
+        
+        // Add roles as ROLE_* authorities
+        user.getRoles().forEach(role -> {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+        });
+        
+        // Add permissions as authorities
+        user.getRoles().stream()
                 .flatMap(role -> role.getPermissions().stream()
                         .map(permission -> new SimpleGrantedAuthority(permission.getName())))
-                .collect(Collectors.toSet());
+                .forEach(authorities::add);
+        
+        return authorities;
     }
 }
 

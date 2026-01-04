@@ -11,6 +11,8 @@ import com.realestate.property.repository.PropertyAccessRepository;
 import com.realestate.property.repository.PropertyFeatureRepository;
 import com.realestate.property.repository.PropertyRepository;
 import com.realestate.property.specification.PropertySpecification;
+import com.realestate.property.util.SlugGenerator;
+import com.realestate.property.dto.PriceHistoryCreateDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,9 @@ public class PropertyService {
     private final PropertyEventProducer eventProducer;
     private final IdentityServiceClient identityServiceClient;
     private final ResourceServiceClient resourceServiceClient;
+    private final SlugGenerator slugGenerator;
+    @Autowired(required = false)
+    private PriceHistoryService priceHistoryService;
 
     public PropertyService(
             PropertyRepository propertyRepository,
@@ -44,13 +49,15 @@ public class PropertyService {
             PropertyFeatureRepository propertyFeatureRepository,
             @Autowired(required = false) PropertyEventProducer eventProducer,
             @Autowired(required = false) IdentityServiceClient identityServiceClient,
-            @Autowired(required = false) ResourceServiceClient resourceServiceClient) {
+            @Autowired(required = false) ResourceServiceClient resourceServiceClient,
+            SlugGenerator slugGenerator) {
         this.propertyRepository = propertyRepository;
         this.propertyAccessRepository = propertyAccessRepository;
         this.propertyFeatureRepository = propertyFeatureRepository;
         this.eventProducer = eventProducer;
         this.identityServiceClient = identityServiceClient;
         this.resourceServiceClient = resourceServiceClient;
+        this.slugGenerator = slugGenerator;
     }
 
     @Transactional
@@ -75,7 +82,74 @@ public class PropertyService {
             }
         }
 
+        // Générer le slug SEO-friendly si non fourni
+        if (property.getSlug() == null || property.getSlug().trim().isEmpty()) {
+            String slug = slugGenerator.generatePropertySlug(
+                property.getType(),
+                property.getCity(),
+                property.getBedrooms(),
+                property.getTitle(),
+                null // ID sera disponible après sauvegarde
+            );
+            property.setSlug(slug);
+        }
+
+        // Hériter automatiquement les horaires du bureau de l'organisation si non fournis
+        if ((property.getOfficeHours() == null || property.getOfficeHours().trim().isEmpty()) 
+            && property.getOrganizationId() != null 
+            && identityServiceClient != null) {
+            try {
+                Optional<com.realestate.common.client.dto.OrganizationInfoDTO> orgInfo = identityServiceClient
+                        .getOrganizationById(property.getOrganizationId(), null)
+                        .block();
+                if (orgInfo.isPresent() && orgInfo.get().getDefaultOfficeHours() != null 
+                    && !orgInfo.get().getDefaultOfficeHours().trim().isEmpty()) {
+                    property.setOfficeHours(orgInfo.get().getDefaultOfficeHours());
+                    logger.debug("Inherited office hours from organization {} for property", property.getOrganizationId());
+                } else {
+                    // Utiliser les horaires par défaut du système
+                    property.setOfficeHours(com.realestate.property.util.OfficeHoursHelper.getDefaultOfficeHours());
+                    logger.debug("Using default office hours for property");
+                }
+            } catch (Exception e) {
+                logger.warn("Error fetching organization default office hours, using system default: {}", e.getMessage());
+                // Utiliser les horaires par défaut en cas d'erreur
+                property.setOfficeHours(com.realestate.property.util.OfficeHoursHelper.getDefaultOfficeHours());
+            }
+        }
+        
         Property saved = propertyRepository.save(property);
+        
+        // Enregistrer le prix initial dans l'historique
+        if (priceHistoryService != null && saved.getPrice() != null) {
+            try {
+                PriceHistoryCreateDTO priceHistoryDTO = new PriceHistoryCreateDTO();
+                priceHistoryDTO.setPropertyId(saved.getId());
+                priceHistoryDTO.setPrice(saved.getPrice());
+                priceHistoryDTO.setCurrency(saved.getCurrency() != null ? saved.getCurrency() : "EUR");
+                priceHistoryDTO.setSource("AUTO");
+                priceHistoryDTO.setChangeReason("Prix initial lors de la création");
+                priceHistoryDTO.setChangeDate(saved.getCreatedAt() != null ? saved.getCreatedAt() : java.time.LocalDateTime.now());
+                
+                priceHistoryService.createPriceHistory(priceHistoryDTO, saved.getCreatedBy());
+            } catch (Exception e) {
+                logger.warn("Failed to create initial price history entry for property {}: {}", saved.getId(), e.getMessage());
+                // Ne pas bloquer la création de la propriété si l'historique échoue
+            }
+        }
+        
+        // Mettre à jour le slug avec l'ID si nécessaire
+        if (saved.getSlug() != null && !saved.getSlug().endsWith("-" + saved.getId())) {
+            String finalSlug = slugGenerator.generatePropertySlug(
+                saved.getType(),
+                saved.getCity(),
+                saved.getBedrooms(),
+                saved.getTitle(),
+                saved.getId()
+            );
+            saved.setSlug(finalSlug);
+            saved = propertyRepository.save(saved);
+        }
         
         // Publish event to Kafka (if Kafka is configured)
         if (eventProducer != null) {
@@ -318,6 +392,21 @@ public class PropertyService {
 
     @Transactional
     public Property updateProperty(Long id, Property propertyDetails) {
+        // Générer ou mettre à jour le slug si le titre, type, ville ou chambres ont changé
+        if (propertyDetails.getTitle() != null || 
+            propertyDetails.getType() != null || 
+            propertyDetails.getCity() != null || 
+            propertyDetails.getBedrooms() != null) {
+            
+            String newSlug = slugGenerator.generatePropertySlug(
+                propertyDetails.getType() != null ? propertyDetails.getType() : null,
+                propertyDetails.getCity() != null ? propertyDetails.getCity() : null,
+                propertyDetails.getBedrooms() != null ? propertyDetails.getBedrooms() : null,
+                propertyDetails.getTitle() != null ? propertyDetails.getTitle() : "",
+                id
+            );
+            propertyDetails.setSlug(newSlug);
+        }
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Property not found with id: " + id));
 
@@ -333,7 +422,30 @@ public class PropertyService {
         if (propertyDetails.getStatus() != null) {
             property.setStatus(propertyDetails.getStatus());
         }
-        if (propertyDetails.getPrice() != null) {
+        // Enregistrer l'historique des prix si le prix a changé
+        BigDecimal oldPrice = property.getPrice();
+        if (propertyDetails.getPrice() != null && !propertyDetails.getPrice().equals(oldPrice)) {
+            property.setPrice(propertyDetails.getPrice());
+            
+            // Enregistrer dans l'historique des prix
+            if (priceHistoryService != null) {
+                try {
+                    PriceHistoryCreateDTO priceHistoryDTO = new PriceHistoryCreateDTO();
+                    priceHistoryDTO.setPropertyId(id);
+                    priceHistoryDTO.setPrice(propertyDetails.getPrice());
+                    priceHistoryDTO.setCurrency(propertyDetails.getCurrency() != null ? propertyDetails.getCurrency() : property.getCurrency());
+                    priceHistoryDTO.setSource("AUTO");
+                    priceHistoryDTO.setChangeReason("Prix mis à jour via l'API");
+                    
+                    // Récupérer l'ID de l'utilisateur depuis propertyDetails ou property
+                    Long userId = propertyDetails.getCreatedBy() != null ? propertyDetails.getCreatedBy() : property.getCreatedBy();
+                    priceHistoryService.createPriceHistory(priceHistoryDTO, userId);
+                } catch (Exception e) {
+                    logger.warn("Failed to create price history entry for property {}: {}", id, e.getMessage());
+                    // Ne pas bloquer la mise à jour de la propriété si l'historique échoue
+                }
+            }
+        } else if (propertyDetails.getPrice() != null) {
             property.setPrice(propertyDetails.getPrice());
         }
         if (propertyDetails.getCurrency() != null) {

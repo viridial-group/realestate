@@ -66,3 +66,10 @@ Souhaitez-vous que je commence par l'Option 1 (Billing) ?
 
 clean package -DskipTests
 java -jar target/*.jar
+
+Exemple :
+
+kill -9 1234
+
+✅ Vérifier que le port est libéré
+lsof -i :5432

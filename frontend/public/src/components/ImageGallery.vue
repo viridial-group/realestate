@@ -19,8 +19,9 @@
       <button
         v-if="images.length > 1"
         @click="previousImage"
-        class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+        class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white active:scale-95 rounded-full p-2 shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="currentIndex === 0"
+        :aria-label="'Image précédente'"
       >
         <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -29,8 +30,9 @@
       <button
         v-if="images.length > 1"
         @click="nextImage"
-        class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+        class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white active:scale-95 rounded-full p-2 shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="currentIndex === images.length - 1"
+        :aria-label="'Image suivante'"
       >
         <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -55,8 +57,10 @@
         v-for="(img, index) in images"
         :key="img.id"
         @click="goToImage(index)"
-        class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all"
+        class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         :class="index === currentIndex ? 'border-blue-600 ring-2 ring-blue-300' : 'border-gray-200 hover:border-gray-300'"
+        :aria-label="`Voir l'image ${index + 1}`"
+        :aria-current="index === currentIndex ? 'true' : undefined"
       >
         <img
           :src="getImageUrl(img)"

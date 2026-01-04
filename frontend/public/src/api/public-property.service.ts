@@ -10,6 +10,7 @@ export interface PublicProperty {
   description?: string
   type: string
   status: string
+  transactionType?: string // RENT, SALE - Type de transaction
   price: number
   currency?: string
   surface?: number
@@ -27,9 +28,26 @@ export interface PublicProperty {
   dateOnMarket?: string
   createdAt?: string
   updatedAt?: string
+  slug?: string // Slug SEO-friendly
+  // Zillow-inspired fields
+  petFriendly?: boolean
+  specialOffer?: string
+  officeHours?: string // JSON string
+  neighborhood?: string
+  walkScore?: number
+  transitScore?: number
+  bikeScore?: number
+  buildingName?: string
+  flooring?: string // JSON array string
+  unitFeatures?: string // JSON array string
+  buildingAmenities?: string // JSON array string
+  availableUnits?: string // JSON array string
+  petPolicy?: string // JSON string
+  parkingPolicy?: string
 }
 
 export interface PublicPropertySearchParams {
+  organizationId?: number
   type?: string
   city?: string
   country?: string
@@ -41,6 +59,7 @@ export interface PublicPropertySearchParams {
   bathrooms?: number
   search?: string
   sortBy?: string
+  transactionType?: string // Location, Vente, RENT, SALE
   createdAfter?: string // Filtre par date
   page?: number
   size?: number
@@ -54,6 +73,14 @@ export interface PagedResponse<T> {
   size: number
   first: boolean
   last: boolean
+}
+
+export interface SearchSuggestions {
+  cities: string[]
+  types: string[]
+  addresses: string[]
+  titles: string[]
+  popularSearches: string[]
 }
 
 /**
@@ -118,6 +145,34 @@ export const publicPropertyService = {
     } catch (error) {
       console.error(`Error fetching property ${reference}:`, error)
       throw error
+    }
+  },
+
+  /**
+   * Récupère une propriété publiée par slug (SEO-friendly)
+   */
+  async getPublishedPropertyBySlug(slug: string): Promise<PublicProperty> {
+    try {
+      const response = await apiClient.get<PublicProperty>(`/public/properties/slug/${slug}`)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching property by slug ${slug}:`, error)
+      throw error
+    }
+  },
+
+  /**
+   * Récupère des suggestions complètes de recherche
+   */
+  async getSearchSuggestions(search?: string): Promise<SearchSuggestions> {
+    try {
+      const response = await apiClient.get<SearchSuggestions>('/public/properties/suggestions', {
+        params: search ? { search } : {}
+      })
+      return response.data || { cities: [], types: [], addresses: [], titles: [], popularSearches: [] }
+    } catch (error) {
+      console.error('Error fetching search suggestions:', error)
+      return { cities: [], types: [], addresses: [], titles: [], popularSearches: [] }
     }
   },
 }

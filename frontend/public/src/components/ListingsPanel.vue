@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { documentService } from '@/api/document.service'
 import type { Document } from '@/api/document.service'
 import { getPlaceholderImage } from '@/utils/imageOptimization'
 import { highlightText, parseSearchTerms } from '@/utils/searchHighlight'
 import CompareButton from './CompareButton.vue'
+import ContactForm from './ContactForm.vue'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { MapPin, Home, Euro, Square, Star, MessageSquare, Eye, ExternalLink } from 'lucide-vue-next'
+
+const router = useRouter()
     
     type Listing = {
       id: number
@@ -12,6 +21,7 @@ import CompareButton from './CompareButton.vue'
       city: string
       type: string
       status: 'Disponible' | 'Vendu' | 'Loué'
+      transactionType?: 'Location' | 'Vente' | null // Type de transaction depuis l'API
       price: number
       surface: number
       lat: number
@@ -96,16 +106,14 @@ import CompareButton from './CompareButton.vue'
     
     // Actions
     function handleAvis(item: Listing) {
-      alert(`Voir avis pour : ${item.title}`)
+      emit('listing-click', item.id)
+      // Naviguer vers la page de détail pour voir les avis
+      router.push(`/property/${item.id}`)
     }
     
     function handleContact(item: Listing) {
-      alert(`Contact pour : ${item.title}`)
-    }
-    
-    function handleDetails(item: Listing) {
-      // Navigate to details page
-      window.location.href = `/property/${item.id}`
+      // Le ContactForm est maintenant géré directement dans le template
+      // Cette fonction peut être supprimée ou utilisée pour ouvrir un modal si nécessaire
     }
     
     function handleVisualiser(item: Listing) {
@@ -131,6 +139,33 @@ import CompareButton from './CompareButton.vue'
 
     function getHighlightedCity(city: string): Array<{ text: string; highlighted: boolean }> {
       return highlightText(city, searchTerms.value)
+    }
+
+    function getTransactionType(item: Listing): string {
+      // Utiliser transactionType de l'API si disponible
+      if (item.transactionType) {
+        return item.transactionType
+      }
+      
+      // Fallback : déduire du status si transactionType n'est pas défini
+      if (item.status === 'Loué') {
+        return 'Location'
+      } else if (item.status === 'Vendu') {
+        return 'Vente'
+      }
+      
+      // Par défaut pour les propriétés disponibles
+      return 'Vente'
+    }
+
+    function getTransactionTypeColor(item: Listing): string {
+      const transactionType = getTransactionType(item)
+      if (transactionType === 'Location') {
+        return '#1a73e8' // Bleu pour location
+      } else if (transactionType === 'Vente') {
+        return '#ea4335' // Rouge pour vente
+      }
+      return '#1a73e8' // Par défaut bleu (location)
     }
     
     // Images
@@ -176,79 +211,221 @@ import CompareButton from './CompareButton.vue'
       const img = event.target as HTMLImageElement
       img.src = getPlaceholderImage(400, 300)
     }
+    
+    // Générer un alt text SEO-friendly pour les images
+    function getImageAlt(item: Listing): string {
+      const transactionType = getTransactionType(item)
+      const transactionText = transactionType === 'Location' ? 'à louer' : 'à vendre'
+      return `${item.type} ${transactionText} - ${item.title} - ${item.city} - ${item.surface}m² - ${item.price.toLocaleString('fr-FR')}€`
+    }
+    
+    // Générer l'URL canonique pour chaque propriété
+    function getPropertyUrl(item: Listing): string {
+      const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://viridial.com'
+      return `${siteUrl}/property/${item.id}`
+    }
+    
+    // Générer les structured data pour la liste de résultats
+    const structuredData = computed(() => {
+      if (!props.items || props.items.length === 0) {
+        return null
+      }
+      
+      const items = props.items.map((item, index) => {
+        const propertyUrl = getPropertyUrl(item)
+        const transactionType = getTransactionType(item)
+        const isRent = transactionType === 'Location'
+        
+        const structuredItem: any = {
+          '@type': 'ListItem',
+          position: (props.pagination?.currentPage || 0) * (props.pagination?.size || 20) + index + 1,
+          item: {
+            '@type': 'RealEstateListing',
+            '@id': propertyUrl,
+            name: item.title,
+            description: item.description || item.title,
+            url: propertyUrl,
+            address: {
+              '@type': 'PostalAddress',
+              addressLocality: item.city,
+              addressCountry: 'FR'
+            },
+            ...(item.lat && item.lng && {
+              geo: {
+                '@type': 'GeoCoordinates',
+                latitude: item.lat,
+                longitude: item.lng
+              }
+            }),
+            floorSize: {
+              '@type': 'QuantitativeValue',
+              value: item.surface,
+              unitCode: 'MTK'
+            },
+            numberOfRooms: item.surface > 0 ? Math.round(item.surface / 20) : undefined,
+            offers: {
+              '@type': 'Offer',
+              price: item.price,
+              priceCurrency: 'EUR',
+              availability: 'https://schema.org/InStock',
+              ...(isRent && {
+                priceSpecification: {
+                  '@type': 'UnitPriceSpecification',
+                  price: item.price,
+                  priceCurrency: 'EUR',
+                  unitCode: 'MON'
+                }
+              })
+            },
+            ...(getImageUrl(item) && !getImageUrl(item).includes('placeholder') && {
+              image: getImageUrl(item)
+            })
+          }
+        }
+        
+        return structuredItem
+      })
+      
+      return {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: `Résultats de recherche immobilière`,
+        description: `${props.pagination?.totalElements || props.items.length} annonce${(props.pagination?.totalElements || props.items.length) > 1 ? 's' : ''} trouvée${(props.pagination?.totalElements || props.items.length) > 1 ? 's' : ''}`,
+        numberOfItems: props.pagination?.totalElements || props.items.length,
+        itemListElement: items
+      }
+    })
+    
+    // Injecter les structured data dans le head
+    watch(structuredData, (newData) => {
+      if (typeof document === 'undefined') return
+      
+      // Supprimer l'ancien script
+      const existingScript = document.querySelector('script[data-listings-structured-data]')
+      if (existingScript) {
+        existingScript.remove()
+      }
+      
+      // Ajouter le nouveau script si des données existent
+      if (newData) {
+        const script = document.createElement('script')
+        script.type = 'application/ld+json'
+        script.setAttribute('data-listings-structured-data', 'true')
+        script.textContent = JSON.stringify(newData, null, 2)
+        document.head.appendChild(script)
+      }
+    }, { immediate: true })
     </script>
     
     <template>
-      <div class="space-y-6">
-        <h2 class="text-xl font-semibold text-gray-800">
-          {{ props.pagination?.totalElements || props.items.length }} annonce{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }} trouvée{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }}
-        </h2>
+      <section class="space-y-6" aria-label="Résultats de recherche immobilière">
+        <header>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            {{ props.pagination?.totalElements || props.items.length }} annonce{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }} trouvée{{ (props.pagination?.totalElements || props.items.length) > 1 ? 's' : '' }}
+          </h2>
+        </header>
     
-        <div
+        <Card
           v-for="item in paginatedItems"
           :key="item.id"
           :id="`listing-${item.id}`"
-          class="bg-white shadow-md rounded-lg hover:shadow-lg transition overflow-hidden flex flex-col sm:flex-row"
+          class="overflow-hidden transition-all duration-300 hover:shadow-lg"
           :class="{ 'ring-2 ring-primary ring-offset-2': props.highlightedId === item.id }"
+          itemscope
+          itemtype="https://schema.org/RealEstateListing"
         >
-          <!-- IMAGE -->
-          <div class="w-full sm:w-40 h-48 sm:h-40 flex-shrink-0">
-            <img
-              :src="getImageUrl(item)"
-              alt="Image annonce"
-              class="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-              @error="handleImageError"
-            />
-          </div>
+          <div class="flex flex-col sm:flex-row">
+            <!-- IMAGE -->
+            <div class="w-full sm:w-64 h-48 sm:h-auto flex-shrink-0 relative overflow-hidden">
+              <a
+                :href="getPropertyUrl(item)"
+                :aria-label="`Voir les détails de ${item.title}`"
+                class="block w-full h-full"
+              >
+                <img
+                  :src="getImageUrl(item)"
+                  :alt="getImageAlt(item)"
+                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                  itemprop="image"
+                  @error="handleImageError"
+                />
+              </a>
+              <!-- Badge transaction type en overlay -->
+              <div class="absolute top-3 left-3">
+                <Badge
+                  :class="getTransactionType(item) === 'Location' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'"
+                  class="text-white font-semibold shadow-md"
+                >
+                  {{ getTransactionType(item) }}
+                </Badge>
+              </div>
+            </div>
     
-          <!-- CONTENU -->
-          <div class="flex-1 p-4 flex flex-col justify-between">
-            <div>
+            <!-- CONTENU -->
+            <CardContent class="flex-1 p-6 flex flex-col justify-between">
+            <div class="space-y-3">
               <!-- TITRE + ÉTOILES -->
-              <div class="flex justify-between items-start flex-wrap">
-                <h3 class="text-lg font-bold text-blue-800 dark:text-blue-400">
-                  <span
-                    v-for="(part, idx) in getHighlightedTitle(item.title)"
-                    :key="idx"
-                    :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded' : ''"
+              <div class="flex justify-between items-start gap-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight" itemprop="name">
+                  <a
+                    :href="getPropertyUrl(item)"
+                    :aria-label="`Voir les détails de ${item.title}`"
+                    class="hover:text-primary transition-colors"
                   >
-                    {{ part.text }}
-                  </span>
+                    <span
+                      v-for="(part, idx) in getHighlightedTitle(item.title)"
+                      :key="idx"
+                      :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded' : ''"
+                    >
+                      {{ part.text }}
+                    </span>
+                  </a>
                 </h3>
     
                 <!-- Étoiles & avis -->
-                <div class="flex items-center text-sm mt-1 sm:mt-0">
-                  <span
-                    v-for="i in 5"
-                    :key="i"
-                    class="text-xs mr-0.5"
-                    :class="i <= Math.round(item.rating) ? 'text-yellow-500' : 'text-gray-300'"
-                  >
-                    ★
-                  </span>
-                  <span class="text-gray-600 ml-2 text-sm">
-                    ({{ item.reviews }} avis)
+                <div v-if="item.reviews > 0" class="flex items-center gap-1 flex-shrink-0">
+                  <div class="flex items-center">
+                    <Star
+                      v-for="i in 5"
+                      :key="i"
+                      :class="[
+                        'h-4 w-4',
+                        i <= Math.round(item.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                      ]"
+                    />
+                  </div>
+                  <span class="text-sm text-gray-600 dark:text-gray-400 ml-1">
+                    ({{ item.reviews }})
                   </span>
                 </div>
               </div>
     
               <!-- LOCALISATION & TYPE -->
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                📍 
-                <span
-                  v-for="(part, idx) in getHighlightedCity(item.city)"
-                  :key="idx"
-                  :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded font-medium' : ''"
-                >
-                  {{ part.text }}
-                </span>
-                • {{ item.type }}
-              </p>
+              <div class="flex items-center gap-2 flex-wrap" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+                <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                  <MapPin class="h-4 w-4" />
+                  <span itemprop="addressLocality">
+                    <span
+                      v-for="(part, idx) in getHighlightedCity(item.city)"
+                      :key="idx"
+                      :class="part.highlighted ? 'bg-yellow-200 dark:bg-yellow-900 px-1 rounded font-medium' : ''"
+                    >
+                      {{ part.text }}
+                    </span>
+                  </span>
+                  <span itemprop="addressCountry" class="hidden">FR</span>
+                </div>
+                <Separator orientation="vertical" class="h-4" />
+                <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                  <Home class="h-4 w-4" />
+                  <span itemprop="category">{{ item.type }}</span>
+                </div>
+              </div>
     
               <!-- DESCRIPTION -->
-              <p class="text-gray-700 dark:text-gray-300 text-sm mt-2 line-clamp-3">
+              <p class="text-gray-700 dark:text-gray-300 text-sm line-clamp-2" itemprop="description">
                 <span
                   v-for="(part, idx) in getHighlightedDescription(item.description)"
                   :key="idx"
@@ -259,106 +436,148 @@ import CompareButton from './CompareButton.vue'
               </p>
             </div>
     
+            <Separator class="my-4" />
+    
             <!-- MÉTADONNÉES & BOUTONS -->
-            <div class="mt-4 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex flex-wrap justify-between items-center gap-4">
               <!-- Détails prix & surface -->
-              <div class="text-sm text-gray-800 font-medium">
-                €{{ item.price }} • {{ item.surface }} m²
+              <div class="flex items-center gap-4" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                <div class="flex items-center gap-1">
+                  <Euro class="h-4 w-4 text-gray-500" />
+                  <div class="flex flex-col">
+                    <span class="text-lg font-bold text-gray-900 dark:text-gray-100" itemprop="price" :content="item.price">
+                      {{ item.price.toLocaleString('fr-FR') }} €
+                    </span>
+                    <span v-if="getTransactionType(item) === 'Location'" class="text-xs text-gray-500">/mois</span>
+                  </div>
+                  <span itemprop="priceCurrency" content="EUR" class="hidden">EUR</span>
+                </div>
+                <Separator orientation="vertical" class="h-8" />
+                <div class="flex items-center gap-1">
+                  <Square class="h-4 w-4 text-gray-500" />
+                  <div class="flex flex-col">
+                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100" itemprop="floorSize" itemscope itemtype="https://schema.org/QuantitativeValue">
+                      <span itemprop="value" :content="item.surface">{{ item.surface }}</span>
+                      <span itemprop="unitCode" content="MTK" class="hidden">MTK</span>
+                      <span> m²</span>
+                    </span>
+                  </div>
+                </div>
+                <meta itemprop="availability" content="https://schema.org/InStock" />
               </div>
     
-              <!-- Boutons style Google -->
+              <!-- Boutons avec shadcn-vue -->
               <div class="flex flex-wrap gap-2">
-                <button
-                  @click="handleContact(item)"
-                  class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-100 transition flex items-center justify-center"
-                >
-                  <span class="font-medium text-sm">Contact</span>
-                </button>
+                <ContactForm
+                  :property-id="item.id"
+                  :property-title="item.title"
+                  button-text="Contact"
+                  button-class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                />
 
-                <button
-                  @click="handleDetails(item)"
-                  class="bg-gray-50 text-gray-800 px-3 py-1 rounded-full hover:bg-gray-100 transition flex items-center justify-center"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  as-child
                 >
-                  <span class="font-medium text-sm">Détails</span>
-                </button>
+                  <a
+                    :href="getPropertyUrl(item)"
+                    :aria-label="`Voir les détails de ${item.title}`"
+                    itemprop="url"
+                  >
+                    <ExternalLink class="h-4 w-4 mr-2" />
+                    Détails
+                  </a>
+                </Button>
 
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   @click="handleVisualiser(item)"
-                  class="bg-purple-50 text-purple-700 px-3 py-1 rounded-full hover:bg-purple-100 transition flex items-center justify-center"
                 >
-                  <span class="font-medium text-sm">Voir Map</span>
-                </button>
+                  <Eye class="h-4 w-4 mr-2" />
+                  Carte
+                </Button>
 
                 <CompareButton :property-id="item.id" />
 
-                <button
+                <Button
+                  v-if="item.reviews > 0"
+                  variant="outline"
+                  size="sm"
                   @click="handleAvis(item)"
-                  class="bg-yellow-50 text-yellow-800 px-3 py-1 rounded-full hover:bg-yellow-100 transition flex items-center justify-center"
                 >
-                  <span class="font-medium text-sm">Avis</span>
-                </button>
+                  <Star class="h-4 w-4 mr-2" />
+                  Avis
+                </Button>
               </div>
             </div>
+          </CardContent>
           </div>
-        </div>
+        </Card>
     
         <div
           v-if="props.items.length === 0"
           class="text-center text-gray-500 py-10"
+          role="status"
+          aria-live="polite"
         >
-          Aucune annonce trouvée
+          <p>Aucune annonce trouvée</p>
+          <p class="text-sm mt-2">Essayez de modifier vos critères de recherche</p>
         </div>
         
         <!-- Pagination serveur -->
-        <div
+        <nav
           v-if="props.pagination && props.pagination.totalPages > 1"
-          class="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-gray-200"
+          class="flex items-center justify-center gap-2 mt-8 pt-6"
+          aria-label="Pagination des résultats"
         >
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             @click="prevPage"
             :disabled="props.pagination.first"
-            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
           >
             ‹ Précédent
-          </button>
+          </Button>
           
           <div class="flex gap-1">
-            <button
+            <Button
               v-for="page in visiblePages"
               :key="page"
-              @click="typeof page === 'number' && goToPage(page)"
+              :variant="typeof page === 'number' && page === props.pagination.currentPage ? 'default' : 'outline'"
+              :size="'sm'"
               :disabled="typeof page === 'string'"
-              class="px-3 py-2 rounded-lg border text-sm font-medium transition-colors min-w-[40px]"
-              :class="
-                typeof page === 'number' && page === props.pagination.currentPage
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : typeof page === 'string'
-                  ? 'border-transparent text-gray-400 cursor-default'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              "
+              @click="typeof page === 'number' && goToPage(page)"
+              class="min-w-[40px]"
             >
               {{ typeof page === 'number' ? page + 1 : page }}
-            </button>
+            </Button>
           </div>
           
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             @click="nextPage"
             :disabled="props.pagination.last"
-            class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
           >
             Suivant ›
-          </button>
-        </div>
+          </Button>
+        </nav>
         
         <!-- Info pagination -->
         <div
           v-if="props.pagination && props.items.length > 0"
           class="text-center text-sm text-gray-500 mt-4"
+          role="status"
+          aria-live="polite"
         >
-          Affichage de {{ props.pagination.currentPage * props.pagination.size + 1 }} à 
-          {{ Math.min((props.pagination.currentPage + 1) * props.pagination.size, props.pagination.totalElements) }} 
-          sur {{ props.pagination.totalElements }} annonce{{ props.pagination.totalElements > 1 ? 's' : '' }}
+          <p>
+            Affichage de <strong>{{ props.pagination.currentPage * props.pagination.size + 1 }}</strong> à 
+            <strong>{{ Math.min((props.pagination.currentPage + 1) * props.pagination.size, props.pagination.totalElements) }}</strong> 
+            sur <strong>{{ props.pagination.totalElements }}</strong> annonce{{ props.pagination.totalElements > 1 ? 's' : '' }}
+          </p>
         </div>
-      </div>
+      </section>
     </template>
     

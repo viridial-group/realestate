@@ -341,6 +341,36 @@
               <span class="text-sm text-muted-foreground">Prix</span>
               <span class="text-lg font-bold text-primary">{{ formatPrice(property.price) }}</span>
             </div>
+              <div v-if="loadingUnreadCounts || property.unreadMessagesCount !== undefined" class="flex items-center justify-between pt-2 border-t">
+              <span class="text-sm text-muted-foreground">Messages</span>
+              <div v-if="loadingUnreadCounts" class="flex items-center gap-1 text-muted-foreground">
+                <Loader2 class="h-3 w-3 animate-spin" />
+              </div>
+              <router-link
+                v-else-if="property.unreadMessagesCount && property.unreadMessagesCount > 0"
+                :to="`/contacts?propertyId=${property.id}`"
+                @click.stop
+                class="inline-flex items-center"
+              >
+                <Badge variant="default" class="bg-blue-500 text-white hover:bg-blue-600 cursor-pointer">
+                  <Mail class="h-3 w-3 mr-1" />
+                  {{ property.unreadMessagesCount }} non lu{{ property.unreadMessagesCount > 1 ? 's' : '' }}
+                </Badge>
+              </router-link>
+              <span v-else class="text-xs text-muted-foreground">Aucun</span>
+            </div>
+            <div v-if="propertyReviewStats[property.id]" class="flex items-center justify-between pt-2 border-t">
+              <span class="text-sm text-muted-foreground">Avis</span>
+              <div class="flex items-center gap-1">
+                <Star class="h-3 w-3 text-yellow-500 fill-current" />
+                <span class="text-sm font-medium">
+                  {{ propertyReviewStats[property.id].averageRating.toFixed(1) }}
+                </span>
+                <span class="text-xs text-muted-foreground">
+                  ({{ propertyReviewStats[property.id].totalReviews }})
+                </span>
+              </div>
+            </div>
           </div>
         </CardContent>
         <CardFooter class="flex justify-between">
@@ -385,6 +415,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Prix</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Statut</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Créée le</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Messages</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Actions</th>
               </tr>
             </thead>
@@ -422,6 +453,22 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                   {{ formatDate(property.createdAt) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm" @click.stop>
+                  <div v-if="loadingUnreadCounts" class="flex items-center gap-1 text-muted-foreground">
+                    <Loader2 class="h-3 w-3 animate-spin" />
+                  </div>
+                  <router-link
+                    v-else-if="property.unreadMessagesCount && property.unreadMessagesCount > 0"
+                    :to="`/contacts?propertyId=${property.id}`"
+                    class="inline-flex items-center"
+                  >
+                    <Badge variant="default" class="bg-blue-500 text-white hover:bg-blue-600 cursor-pointer">
+                      <Mail class="h-3 w-3 mr-1" />
+                      {{ property.unreadMessagesCount }}
+                    </Badge>
+                  </router-link>
+                  <span v-else class="text-muted-foreground text-xs">-</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right" @click.stop>
                   <DropdownMenu>
@@ -510,16 +557,20 @@ import {
   List,
   CheckCircle,
   Key,
-  MapPin
+  MapPin,
+  Mail,
+  Loader2
 } from 'lucide-vue-next'
 import PropertyMap from '@/components/properties/PropertyMap.vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
-import { propertyService, organizationService, type Property, type Organization } from '@viridial/shared'
+import { propertyService, organizationService, reviewService, type Property, type Organization, type ReviewStats } from '@viridial/shared'
+import { Star } from 'lucide-vue-next'
 
 const router = useRouter()
 const { toast } = useToast()
 const loading = ref(false)
+const loadingUnreadCounts = ref(false)
 const searchQuery = ref('')
 const selectedOrganizationId = ref<number | null>(null)
 const selectedType = ref<string | null>(null)
@@ -542,6 +593,8 @@ const pageSize = 12
 const properties = ref<Property[]>([])
 const statsData = ref({ total: 0, available: 0, sold: 0, rented: 0 })
 const selectedIds = ref<number[]>([])
+const propertyReviewStats = ref<Record<number, ReviewStats>>({})
+const loadingReviewStats = ref(false)
 
 // Calculer les valeurs max pour les sliders
 const maxPrice = computed(() => {
@@ -998,6 +1051,10 @@ const loadProperties = async () => {
       sold: properties.value.filter((p) => p.status === 'SOLD').length,
       rented: properties.value.filter((p) => p.status === 'RENTED').length
     }
+
+    // Charger les comptes de messages non lus de façon asynchrone
+    await loadUnreadMessagesCounts()
+    await loadReviewStats()
   } catch (error: any) {
     console.error('Error loading properties:', error)
     toast({
@@ -1007,6 +1064,57 @@ const loadProperties = async () => {
     })
   } finally {
     loading.value = false
+  }
+}
+
+const loadUnreadMessagesCounts = async () => {
+  if (properties.value.length === 0) return
+  
+  loadingUnreadCounts.value = true
+  try {
+    const propertyIds = properties.value.map(p => Number(p.id))
+    const counts = await propertyService.getUnreadMessagesCount(propertyIds)
+    
+    // Mettre à jour les propriétés avec les comptes
+    properties.value = properties.value.map(property => ({
+      ...property,
+      unreadMessagesCount: counts[Number(property.id)] || 0
+    }))
+  } catch (error: any) {
+    console.error('Error loading unread messages counts:', error)
+    // Ne pas afficher d'erreur toast pour ne pas perturber l'utilisateur
+    // Les comptes sont optionnels
+  } finally {
+    loadingUnreadCounts.value = false
+  }
+}
+
+const loadReviewStats = async () => {
+  if (properties.value.length === 0) return
+  
+  loadingReviewStats.value = true
+  try {
+    // Charger les stats pour toutes les propriétés en parallèle
+    const statsPromises = properties.value.map(async (property) => {
+      try {
+        const stats = await reviewService.getStatsByProperty(Number(property.id))
+        return { propertyId: Number(property.id), stats }
+      } catch (error) {
+        // Si une propriété n'a pas d'avis, on ignore l'erreur
+        return null
+      }
+    })
+    
+    const results = await Promise.all(statsPromises)
+    results.forEach((result) => {
+      if (result && result.stats.totalReviews > 0) {
+        propertyReviewStats.value[result.propertyId] = result.stats
+      }
+    })
+  } catch (error: any) {
+    console.error('Error loading review stats:', error)
+  } finally {
+    loadingReviewStats.value = false
   }
 }
 

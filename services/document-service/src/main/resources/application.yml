@@ -54,6 +54,9 @@ image:
     max-height: ${IMAGE_OPTIMIZATION_MAX_HEIGHT:1920}
     quality: ${IMAGE_OPTIMIZATION_QUALITY:0.85}
     max-file-size-mb: ${IMAGE_OPTIMIZATION_MAX_FILE_SIZE_MB:5}
+    webp:
+      enabled: ${IMAGE_OPTIMIZATION_WEBP_ENABLED:true}
+      quality: ${IMAGE_OPTIMIZATION_WEBP_QUALITY:0.80}
 
 management:
   endpoints:

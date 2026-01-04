@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: property-service
+  main:
+    allow-bean-definition-overriding: true
   
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/realestate_db}
@@ -82,6 +84,8 @@ services:
     url: ${IDENTITY_SERVICE_URL:http://localhost:8081}
   resource:
     url: ${RESOURCE_SERVICE_URL:http://localhost:8084}
+  notification:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
 
 # Resilience4j Configuration
 resilience4j:
@@ -106,4 +110,12 @@ resilience4j:
       resourceService:
         maxAttempts: 3
         waitDuration: 500ms
+
+# DVF (Demandes de Valeurs Foncières) Configuration
+dvf:
+  enabled: ${DVF_ENABLED:false}
+  max-transactions-per-batch: ${DVF_MAX_BATCH:1000}
+  scheduler:
+    enabled: ${DVF_SCHEDULER_ENABLED:false}
+    departments: ${DVF_DEPARTMENTS:75,13,69,33,31,59,44,67,92,93,94}
 

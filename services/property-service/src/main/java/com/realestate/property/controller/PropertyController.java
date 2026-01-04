@@ -4,6 +4,7 @@ import com.realestate.property.dto.PropertyDTO;
 import com.realestate.property.entity.Property;
 import com.realestate.property.mapper.PropertyMapper;
 import com.realestate.property.service.PropertyService;
+import com.realestate.property.service.ContactMessageService;
 import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,10 +28,15 @@ public class PropertyController {
 
     private final PropertyService propertyService;
     private final PropertyMapper propertyMapper;
+    private final ContactMessageService contactMessageService;
 
-    public PropertyController(PropertyService propertyService, PropertyMapper propertyMapper) {
+    public PropertyController(
+            PropertyService propertyService, 
+            PropertyMapper propertyMapper,
+            ContactMessageService contactMessageService) {
         this.propertyService = propertyService;
         this.propertyMapper = propertyMapper;
+        this.contactMessageService = contactMessageService;
     }
 
     @PostMapping
@@ -186,5 +192,19 @@ public class PropertyController {
             @RequestBody List<String> values) {
         List<com.realestate.property.entity.PropertyFeature> synced = propertyService.syncFeaturesFromJsonArray(id, key, values);
         return ResponseEntity.ok(synced);
+    }
+
+    @PostMapping("/unread-messages-count")
+    @Operation(
+        summary = "Get unread messages count for properties", 
+        description = "Returns a map of property IDs to unread messages count. This endpoint is designed to be called asynchronously after loading the property list, with a loading indicator."
+    )
+    public ResponseEntity<Map<Long, Long>> getUnreadMessagesCount(
+            @RequestBody List<Long> propertyIds) {
+        if (propertyIds == null || propertyIds.isEmpty()) {
+            return ResponseEntity.ok(Map.of());
+        }
+        Map<Long, Long> counts = contactMessageService.countUnreadMessagesByPropertyIds(propertyIds);
+        return ResponseEntity.ok(counts);
     }
 }

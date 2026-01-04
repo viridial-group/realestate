@@ -60,6 +60,28 @@ export const propertyService = {
   async getPropertyFeatures(id: number): Promise<PropertyFeature[]> {
     const response = await httpClient.get<PropertyFeature[]>(API_ENDPOINTS.PROPERTIES.FEATURES(id))
     return response.data || []
+  },
+
+  /**
+   * Récupérer le nombre de messages non lus pour plusieurs propriétés (batch)
+   * Retourne un map avec propertyId comme clé et le nombre de messages non lus comme valeur
+   */
+  async getUnreadMessagesCount(propertyIds: number[]): Promise<Record<number, number>> {
+    if (!propertyIds || propertyIds.length === 0) {
+      return {}
+    }
+    const response = await httpClient.post<Record<string, number>>(
+      API_ENDPOINTS.PROPERTIES.UNREAD_MESSAGES_COUNT,
+      propertyIds
+    )
+    // Convertir les clés string en number pour correspondre au type Property.id
+    const result: Record<number, number> = {}
+    if (response.data) {
+      Object.entries(response.data).forEach(([key, value]) => {
+        result[Number(key)] = value
+      })
+    }
+    return result
   }
 }
 

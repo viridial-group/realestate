@@ -158,6 +158,26 @@ public class RoleService {
         userRepository.save(user);
     }
 
+    /**
+     * Assign a role to a user by role name
+     * Useful for assigning system roles like ORGANIZATION_ADMIN
+     */
+    @Transactional
+    public void assignRoleToUserByName(Long userId, String roleName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role with name: " + roleName));
+
+        // Add role if not already assigned
+        if (!user.getRoles().contains(role)) {
+            user.getRoles().add(role);
+            role.getUsers().add(user);
+            userRepository.save(user);
+        }
+    }
+
     @Transactional(readOnly = true)
     public long countRoles() {
         return roleRepository.count();

@@ -3,26 +3,34 @@
     import { useRoute } from 'vue-router'
     import { usePublicProperties } from '@/composables/usePublicProperties'
     import { ref as mapViewRef } from 'vue'
-    import FiltersBar from '@/components/FiltersBar.vue'
     import ListingsPanel from '@/components/ListingsPanel.vue'
     import InterestsPanel from '@/components/InterestsPanel.vue'
     import MapView from '@/components/MapView.vue'
-    import QuickFilters from '@/components/QuickFilters.vue'
     import ViewToggle from '@/components/ViewToggle.vue'
     import Breadcrumbs from '@/components/Breadcrumbs.vue'
     import PropertyCard from '@/components/PropertyCard.vue'
-    import AdvancedFilters from '@/components/AdvancedFilters.vue'
     import SearchSuggestions from '@/components/SearchSuggestions.vue'
     import ShareSearchButton from '@/components/ShareSearchButton.vue'
     import SearchStats from '@/components/SearchStats.vue'
+    import SkeletonLoader from '@/components/SkeletonLoader.vue'
+    import ErrorMessage from '@/components/ErrorMessage.vue'
+    import EmptyState from '@/components/EmptyState.vue'
+    import AdvertisementSlot from '@/components/AdvertisementSlot.vue'
+    import SearchAutocomplete from '@/components/SearchAutocomplete.vue'
+    import SidebarFilters from '@/components/SidebarFilters.vue'
     import { interests } from '@/data/interests'
-    import { useShareSearch } from '@/composables/useShareSearch'
+    import { useSEO, generateSiteStructuredData } from '@/composables/useSEO'
     
     // Composable pour les propriétés
     const { formattedProperties, loading, error, pagination, loadProperties } = usePublicProperties()
     
+    // État de chargement séparé pour les filtres (ne remplace pas le contenu)
+    const filtersLoading = ref(false)
+    const initialLoad = ref(true)
+    
     // Filtres
     const query = ref('')
+    const transactionType = ref('Tous')
     const type = ref('Tous')
     const status = ref('Tous')
     const sortBy = ref('default')
@@ -38,6 +46,7 @@
     const mapView = mapViewRef<InstanceType<typeof MapView> | null>(null)
     const userLocation = ref<{ lat: number; lng: number } | null>(null)
     const viewMode = ref<'list' | 'grid'>('list')
+    const resultsSectionRef = ref<HTMLElement | null>(null)
     
     // Suggestions de recherche similaires
     const searchSuggestions = computed(() => {
@@ -61,39 +70,301 @@
       return suggestions.slice(0, 6) // Limiter à 6 suggestions
     })
     
+    // SEO dynamique basé sur les filtres
+    const seoTitle = computed(() => {
+      const parts: string[] = []
+      
+      if (query.value && query.value.trim()) {
+        parts.push(query.value.trim())
+      }
+      
+      if (type.value && type.value !== 'Tous') {
+        const typeLabels: Record<string, string> = {
+          'APARTMENT': 'Appartements',
+          'HOUSE': 'Maisons',
+          'VILLA': 'Villas',
+          'LAND': 'Terrains',
+          'COMMERCIAL': 'Locaux commerciaux'
+        }
+        parts.push(typeLabels[type.value] || type.value)
+      }
+      
+      if (transactionType.value && transactionType.value !== 'Tous') {
+        const transactionLabels: Record<string, string> = {
+          'RENT': 'à louer',
+          'SALE': 'à vendre'
+        }
+        parts.push(transactionLabels[transactionType.value] || transactionType.value)
+      }
+      
+      if (parts.length > 0) {
+        return parts.join(' ') + ' | Recherche Immobilier'
+      }
+      
+      return 'Recherche de biens immobiliers | Viridial'
+    })
+    
+    const seoDescription = computed(() => {
+      const parts: string[] = []
+      
+      if (query.value && query.value.trim()) {
+        parts.push(`Recherche de biens immobiliers pour "${query.value.trim()}"`)
+      } else {
+        parts.push('Trouvez votre bien immobilier idéal')
+      }
+      
+      if (type.value && type.value !== 'Tous') {
+        const typeLabels: Record<string, string> = {
+          'APARTMENT': 'appartements',
+          'HOUSE': 'maisons',
+          'VILLA': 'villas',
+          'LAND': 'terrains',
+          'COMMERCIAL': 'locaux commerciaux'
+        }
+        parts.push(typeLabels[type.value] || type.value.toLowerCase())
+      } else {
+        parts.push('appartements, maisons et villas')
+      }
+      
+      if (transactionType.value && transactionType.value !== 'Tous') {
+        parts.push(transactionType.value === 'RENT' ? 'à louer' : 'à vendre')
+      } else {
+        parts.push('à vendre ou à louer')
+      }
+      
+      if (pagination.value && pagination.value.totalElements > 0) {
+        parts.push(`- ${pagination.value.totalElements} annonce${pagination.value.totalElements > 1 ? 's' : ''} disponible${pagination.value.totalElements > 1 ? 's' : ''}`)
+      }
+      
+      parts.push('en France')
+      
+      return parts.join(' ') + '. Recherchez parmi des milliers d\'annonces immobilières vérifiées.'
+    })
+    
+    const seoKeywords = computed(() => {
+      const keywords: string[] = ['immobilier', 'recherche', 'France']
+      
+      if (query.value && query.value.trim()) {
+        keywords.push(query.value.trim().toLowerCase())
+      }
+      
+      if (type.value && type.value !== 'Tous') {
+        keywords.push(type.value.toLowerCase())
+      }
+      
+      if (transactionType.value && transactionType.value !== 'Tous') {
+        keywords.push(transactionType.value === 'RENT' ? 'location' : 'vente')
+      }
+      
+      keywords.push('achat', 'appartement', 'maison', 'villa', 'annonces immobilières')
+      
+      return keywords
+    })
+    
+    const canonicalUrl = computed(() => {
+      const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://viridial.com'
+      const params = new URLSearchParams()
+      
+      if (query.value && query.value.trim()) {
+        params.set('q', query.value.trim())
+      }
+      if (type.value && type.value !== 'Tous') {
+        params.set('type', type.value)
+      }
+      if (transactionType.value && transactionType.value !== 'Tous') {
+        params.set('transaction', transactionType.value)
+      }
+      if (maxPrice.value) {
+        params.set('maxPrice', maxPrice.value.toString())
+      }
+      if (minPrice.value) {
+        params.set('minPrice', minPrice.value.toString())
+      }
+      if (minSurface.value) {
+        params.set('minSurface', minSurface.value.toString())
+      }
+      if (bedrooms.value) {
+        params.set('bedrooms', bedrooms.value.toString())
+      }
+      
+      const queryString = params.toString()
+      return queryString ? `${siteUrl}/search?${queryString}` : `${siteUrl}/search`
+    })
+    
+    // Fonction pour mettre à jour le SEO
+    function updateSEO() {
+      const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://viridial.com'
+      
+      useSEO({
+        title: seoTitle.value,
+        description: seoDescription.value,
+        keywords: seoKeywords.value,
+        type: 'website',
+        canonical: canonicalUrl.value,
+        url: canonicalUrl.value
+      })
+      
+      // Ajouter les structured data Organization et WebSite (une seule fois)
+      if (typeof document !== 'undefined') {
+        const existingSiteScript = document.querySelector('script[data-site-structured-data]')
+        if (!existingSiteScript) {
+          const siteStructuredData = generateSiteStructuredData(siteUrl)
+          const script = document.createElement('script')
+          script.type = 'application/ld+json'
+          script.setAttribute('data-site-structured-data', 'true')
+          script.textContent = JSON.stringify(siteStructuredData, null, 2)
+          document.head.appendChild(script)
+        }
+        
+        // Ajouter les structured data pour la recherche (SearchAction et ItemList)
+        addSearchStructuredData(siteUrl)
+      }
+    }
+    
+    // Fonction pour ajouter les structured data de recherche
+    function addSearchStructuredData(siteUrl: string) {
+      if (typeof document === 'undefined') return
+      
+      // Supprimer l'ancien script de recherche
+      const existingScript = document.querySelector('script[data-search-structured-data]')
+      if (existingScript) {
+        existingScript.remove()
+      }
+      
+      const searchUrl = canonicalUrl.value
+      
+      // Structured Data: WebSite avec SearchAction
+      const websiteStructuredData = {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        '@id': `${siteUrl}#website`,
+        url: siteUrl,
+        name: 'Viridial - Annonces Immobilières',
+        description: 'Plateforme immobilière pour trouver votre bien idéal',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${siteUrl}/search?q={search_term_string}`
+          },
+          'query-input': 'required name=search_term_string'
+        }
+      }
+      
+      // Structured Data: ItemList pour les résultats de recherche
+      let itemListStructuredData: any = null
+      if (formattedProperties.value && formattedProperties.value.length > 0) {
+        const items = formattedProperties.value.slice(0, 10).map((property, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'RealEstateListing',
+            '@id': `${siteUrl}/property/${property.id}`,
+            name: property.title,
+            description: property.description || property.title,
+            url: `${siteUrl}/property/${property.id}`,
+            ...((property as any).imageUrl && {
+              image: (property as any).imageUrl
+            }),
+            ...(property.price && {
+              offers: {
+                '@type': 'Offer',
+                price: property.price,
+                priceCurrency: 'EUR',
+                availability: 'https://schema.org/InStock'
+              }
+            })
+          }
+        }))
+        
+        itemListStructuredData = {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          '@id': `${searchUrl}#search-results`,
+          name: seoTitle.value,
+          description: seoDescription.value,
+          numberOfItems: pagination.value?.totalElements || items.length,
+          itemListElement: items
+        }
+      }
+      
+      // Injecter les structured data
+      const script = document.createElement('script')
+      script.type = 'application/ld+json'
+      script.setAttribute('data-search-structured-data', 'true')
+      
+      const allStructuredData = {
+        '@context': 'https://schema.org',
+        '@graph': [
+          websiteStructuredData,
+          ...(itemListStructuredData ? [itemListStructuredData] : [])
+        ]
+      }
+      
+      script.textContent = JSON.stringify(allStructuredData, null, 2)
+      document.head.appendChild(script)
+    }
+    
     // Charger les propriétés au montage
     onMounted(() => {
       // Vérifier si des paramètres de recherche sont passés depuis la landing page
       const route = useRoute()
-      if (route.query.search) {
-        query.value = route.query.search as string
+      if (route.query.search || route.query.q) {
+        query.value = (route.query.search || route.query.q) as string
       }
       if (route.query.type) {
         type.value = route.query.type as string
       }
+      if (route.query.transaction) {
+        transactionType.value = route.query.transaction as string
+      }
+      if (route.query.maxPrice) {
+        maxPrice.value = Number(route.query.maxPrice)
+      }
+      if (route.query.minPrice) {
+        minPrice.value = Number(route.query.minPrice)
+      }
+      if (route.query.minSurface) {
+        minSurface.value = Number(route.query.minSurface)
+      }
+      if (route.query.bedrooms) {
+        bedrooms.value = Number(route.query.bedrooms)
+      }
+      
       fetchProperties()
+      updateSEO()
+      initialLoad.value = false
     })
+    
+    // Mettre à jour le SEO quand les filtres ou résultats changent
+    watch([query, transactionType, type, status, formattedProperties, pagination], () => {
+      updateSEO()
+    }, { deep: true })
     
     // Watcher pour recharger quand les filtres changent (avec debounce amélioré)
     let debounceTimer: ReturnType<typeof setTimeout> | null = null
-    watch([query, type, status, maxPrice, minSurface, bedrooms, bathrooms], () => {
+    watch([query, transactionType, type, status, maxPrice, minSurface, bedrooms, bathrooms], () => {
       // Réinitialiser à la page 0 quand les filtres changent
       currentPage.value = 0
       if (debounceTimer) {
         clearTimeout(debounceTimer)
       }
+      // Utiliser filtersLoading au lieu de loading pour éviter le resize
+      filtersLoading.value = true
       debounceTimer = setTimeout(() => {
-        fetchProperties()
+        fetchProperties(true)
       }, 500) // Debounce de 500ms (augmenté pour réduire les appels API)
     })
     
     // Watcher pour changer de page
     watch(currentPage, () => {
-      fetchProperties()
+      fetchProperties(false)
+      // Scroller vers le haut lors du changement de page
+      scrollToResultsTop()
     })
     
     // Fonction pour charger les propriétés depuis l'API
-    async function fetchProperties() {
+    async function fetchProperties(isFilterChange = false) {
       const params: any = {
         page: currentPage.value,
         size: 20, // 20 items par page
@@ -137,6 +408,18 @@
         params.sortBy = sortBy.value
       }
       
+      // Filtre par type de transaction
+      if (transactionType.value && transactionType.value !== 'Tous') {
+        // Convertir Location/Vente en RENT/SALE pour l'API
+        if (transactionType.value === 'Location') {
+          params.transactionType = 'RENT'
+        } else if (transactionType.value === 'Vente') {
+          params.transactionType = 'SALE'
+        } else {
+          params.transactionType = transactionType.value
+        }
+      }
+      
       // Filtre par date
       if (dateFilter.value) {
         const now = new Date()
@@ -163,7 +446,52 @@
         params.createdAfter = startDate.toISOString()
       }
       
-      await loadProperties(params)
+      // Si c'est un changement de filtre, ne pas utiliser loading global
+      if (isFilterChange) {
+        try {
+          await loadProperties(params)
+          // Invalider la taille de la carte après le chargement pour mettre à jour les marqueurs
+          if (mapView.value) {
+            setTimeout(() => {
+              mapView.value?.invalidateSize()
+            }, 100)
+          }
+          // Scroller vers le haut de la liste des résultats
+          scrollToResultsTop()
+        } finally {
+          filtersLoading.value = false
+        }
+      } else {
+        await loadProperties(params)
+        if (initialLoad.value) {
+          initialLoad.value = false
+        } else {
+          // Scroller vers le haut lors des recherches non initiales
+          scrollToResultsTop()
+        }
+      }
+    }
+    
+    // Fonction pour scroller vers le haut de la liste des résultats
+    function scrollToResultsTop() {
+      // Attendre que le DOM soit mis à jour
+      setTimeout(() => {
+        if (resultsSectionRef.value) {
+          resultsSectionRef.value.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          })
+        } else {
+          // Fallback : scroller vers le haut de la page de résultats
+          const statsElement = document.querySelector('[data-results-start]')
+          if (statsElement) {
+            statsElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            })
+          }
+        }
+      }, 100)
     }
     
     // Fonctions de pagination
@@ -196,15 +524,46 @@
         return (l as any).hasCoordinates !== false || true // Pour l'instant, on affiche tout
       })
       
-      // Filtre par status (côté client car l'API filtre déjà PUBLISHED/AVAILABLE)
-      if (status.value && status.value !== 'Tous') {
-        filtered = filtered.filter(l => l.status === status.value)
+      // Filtre combiné par type de transaction et status
+      // Si transactionType ou status est défini, on filtre
+      if ((transactionType.value && transactionType.value !== 'Tous') || (status.value && status.value !== 'Tous')) {
+        filtered = filtered.filter(l => {
+          const listingTransactionType = getTransactionTypeFromStatus(l.status)
+          
+          // Vérifier le type de transaction
+          if (transactionType.value && transactionType.value !== 'Tous') {
+            if (listingTransactionType !== transactionType.value) {
+              return false
+            }
+          }
+          
+          // Vérifier le status
+          if (status.value && status.value !== 'Tous') {
+            if (l.status !== status.value) {
+              return false
+            }
+          }
+          
+          return true
+        })
       }
       
       // Le tri est maintenant fait côté serveur, pas besoin de trier ici
       
       return filtered
     })
+    
+    // Fonction helper pour déterminer le type de transaction depuis le statut
+    function getTransactionTypeFromStatus(status: string): string {
+      if (status === 'Loué') {
+        return 'Location'
+      } else if (status === 'Vendu') {
+        return 'Vente'
+      }
+      // Pour les propriétés disponibles, on détermine le type de transaction
+      // Par défaut, on retourne "Location" car c'est le plus courant
+      return 'Location'
+    }
     
     function clearFilters() {
       maxPrice.value = null
@@ -214,12 +573,13 @@
       bedrooms.value = null
       bathrooms.value = null
       query.value = ''
+      transactionType.value = 'Tous'
       type.value = 'Tous'
       status.value = 'Tous'
       sortBy.value = 'default'
       dateFilter.value = ''
       currentPage.value = 0
-      fetchProperties()
+      fetchProperties(true)
     }
     
     function handleMarkerClick(listingId: number) {
@@ -256,7 +616,7 @@
     function handleSuggestionClick(suggestion: string) {
       query.value = suggestion
       currentPage.value = 0
-      fetchProperties()
+      fetchProperties(true)
     }
     
     function handleUserLocationUpdated(location: { lat: number; lng: number }) {
@@ -303,6 +663,7 @@
     function getActiveFiltersCount(): number {
       let count = 0
       if (query.value && query.value.trim()) count++
+      if (transactionType.value && transactionType.value !== 'Tous') count++
       if (type.value && type.value !== 'Tous') count++
       if (status.value && status.value !== 'Tous') count++
       if (maxPrice.value) count++
@@ -320,126 +681,133 @@
     </script>
     
     <template>
-      <div>
-        <!-- Breadcrumbs avec bouton de partage -->
-        <div class="flex items-center justify-between mb-4">
-          <Breadcrumbs :items="breadcrumbs" />
-          <ShareSearchButton
-            :search-params="{
-              query,
-              type,
-              status,
-              maxPrice,
-              minSurface,
-              bedrooms,
-              bathrooms,
-              sortBy,
-              dateFilter
-            }"
-          />
-        </div>
-        
-        <!-- Filtres -->
-        <FiltersBar
-          v-model:query="query"
-          v-model:type="type"
-          v-model:status="status"
-          v-model:sortBy="sortBy"
-          v-model:maxPrice="maxPrice"
-          v-model:minSurface="minSurface"
-          v-model:bedrooms="bedrooms"
-          v-model:bathrooms="bathrooms"
-          v-model:dateFilter="dateFilter"
-          :show-date-filter="true"
-          @clear-filters="clearFilters"
-        />
-        
-        <!-- Filtres rapides -->
-        <div class="mt-4">
-          <QuickFilters
-            :active-filters="{ maxPrice, type, minSurface }"
-            @filter-change="handleQuickFilterChange"
-            @clear-all="handleClearQuickFilters"
-          />
-        </div>
-        
-        <!-- Filtres avancés -->
-        <div class="mt-4">
-          <AdvancedFilters
-            :minPrice="minPrice"
-            :maxPrice="maxPrice"
-            :minSurface="minSurface"
-            :maxSurface="maxSurface"
-            :bedrooms="bedrooms"
-            :bathrooms="bathrooms"
-            @update:minPrice="minPrice = $event"
-            @update:maxPrice="maxPrice = $event"
-            @update:minSurface="minSurface = $event"
-            @update:maxSurface="maxSurface = $event"
-            @update:bedrooms="bedrooms = $event"
-            @update:bathrooms="bathrooms = $event"
-            @apply="fetchProperties"
-            @reset="clearFilters"
-          />
-        </div>
-        
-        <!-- État de chargement -->
-        <div v-if="loading" class="mt-6 text-center py-12">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="mt-4 text-gray-600">Chargement des propriétés...</p>
-        </div>
-        
-        <!-- Message d'erreur -->
-        <div v-else-if="error" class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <div class="flex items-center gap-2">
-            <span class="text-red-600">⚠️</span>
-            <p class="text-red-800">{{ error }}</p>
+      <div class="w-full">
+        <!-- Header fixe avec recherche uniquement -->
+        <div class="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-md mb-6 py-4">
+          <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <SearchAutocomplete
+                  :model-value="query || ''"
+                  @update:model-value="query = $event"
+                  placeholder="Rechercher une ville, un quartier, un type…"
+                />
+              </div>
+              <ShareSearchButton
+                :search-params="{
+                  query,
+                  type,
+                  status,
+                  maxPrice,
+                  minSurface,
+                  bedrooms,
+                  bathrooms,
+                  sortBy,
+                  dateFilter
+                }"
+              />
+            </div>
           </div>
-          <button
-            @click="fetchProperties"
-            class="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-          >
-            Réessayer
-          </button>
         </div>
+
+        <!-- Breadcrumbs -->
+        <div class="mb-6">
+          <Breadcrumbs :items="breadcrumbs" />
+        </div>
+        
+        <!-- État de chargement initial avec skeleton -->
+        <div v-if="loading && initialLoad" class="mt-6 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SkeletonLoader v-for="i in 6" :key="i" type="property-card" />
+          </div>
+        </div>
+        
+        <!-- Message d'erreur amélioré -->
+        <ErrorMessage
+          v-else-if="error"
+          :title="'Erreur de chargement'"
+          :message="error"
+          :show-retry="true"
+          :show-home="true"
+          @retry="fetchProperties"
+          @go-home="() => { query = ''; clearFilters(); fetchProperties() }"
+        />
         
         <!-- Contenu principal -->
         <template v-else>
+          <!-- Overlay de chargement pour les filtres (ne remplace pas le contenu) -->
+          <div v-show="filtersLoading" class="fixed inset-0 bg-black bg-opacity-10 z-40 pointer-events-none">
+            <div class="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg px-4 py-2 flex items-center gap-2">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span class="text-sm text-gray-700 dark:text-gray-300">Mise à jour...</span>
+            </div>
+          </div>
           <!-- Statistiques de recherche -->
-          <SearchStats
-            :stats="{
-              totalResults: pagination?.totalElements || 0,
-              filtersActive: getActiveFiltersCount()
-            }"
-            :show-stats="true"
-            :show-clear="hasActiveFilters"
-            @clear="clearFilters"
-          />
+          <div data-results-start>
+            <SearchStats
+              :stats="{
+                totalResults: pagination?.totalElements || 0,
+                filtersActive: getActiveFiltersCount()
+              }"
+              :show-stats="true"
+              :show-clear="hasActiveFilters"
+              @clear="clearFilters"
+            />
+          </div>
           
           <!-- 🗺️ MAP APRÈS FILTRES -->
-          <div class="mt-6">
+          <div class="mt-6" style="min-height: 500px;">
             <div class="mb-3 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
                 {{ filteredListings.length }} annonce{{ filteredListings.length > 1 ? 's' : '' }} sur la carte
               </h3>
             </div>
-            <MapView 
-              ref="mapView"
-              :listings="filteredListings" 
-              :interests="interests"
-              :highlighted-listing-id="highlightedListingId"
-              @marker-click="handleMarkerClick"
-              @user-location-updated="handleUserLocationUpdated"
-            />
+            <div style="position: relative; width: 100%; height: 500px;">
+              <MapView 
+                ref="mapView"
+                :listings="filteredListings" 
+                :interests="interests"
+                :highlighted-listing-id="highlightedListingId"
+                @marker-click="handleMarkerClick"
+                @user-location-updated="handleUserLocationUpdated"
+              />
+            </div>
           </div>
         
           <!-- Résultats -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
-            <section class="lg:col-span-8">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 mt-8 w-full max-w-screen-2xl mx-auto">
+            <!-- Filtres à gauche (fixe) -->
+            <aside class="lg:col-span-3 space-y-6">
+              <SidebarFilters
+                :transaction-type="transactionType"
+                :type="type"
+                :status="status"
+                :sort-by="sortBy"
+                :max-price="maxPrice"
+                :min-surface="minSurface"
+                :bedrooms="bedrooms"
+                :bathrooms="bathrooms"
+                :date-filter="dateFilter"
+                :show-date-filter="true"
+                @update:transactionType="transactionType = $event"
+                @update:type="type = $event"
+                @update:status="status = $event"
+                @update:sortBy="sortBy = $event"
+                @update:maxPrice="maxPrice = $event"
+                @update:minSurface="minSurface = $event"
+                @update:bedrooms="bedrooms = $event"
+                @update:bathrooms="bathrooms = $event"
+                @update:dateFilter="dateFilter = $event"
+                @clear-filters="clearFilters"
+              />
+            </aside>
+
+            <!-- Contenu principal au centre -->
+            <section ref="resultsSectionRef" class="lg:col-span-6" style="min-height: 400px;">
               <!-- En-tête avec toggle vue et compteur -->
-              <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-4">
-                  <h2 class="text-xl font-semibold text-gray-800">
+                  <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
                     {{ pagination?.totalElements || filteredListings.length }} annonce{{ (pagination?.totalElements || filteredListings.length) > 1 ? 's' : '' }}
                   </h2>
                   <ViewToggle v-model="viewMode" />
@@ -447,7 +815,7 @@
               </div>
               
               <!-- Vue liste -->
-              <div v-if="viewMode === 'list'">
+              <div v-show="viewMode === 'list'">
                 <ListingsPanel 
                   :items="filteredListings" 
                   :highlighted-id="highlightedListingId"
@@ -461,7 +829,7 @@
               </div>
               
               <!-- Vue grille -->
-              <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div v-show="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <PropertyCard
                   v-for="item in filteredListings"
                   :key="item.id"
@@ -496,21 +864,49 @@
                 </button>
               </div>
             </section>
-        
-            <aside class="lg:col-span-4">
-              <InterestsPanel 
-                :user-location="userLocation"
-                :max-distance="10"
-                @interest-click="handleInterestClick" 
-              />
+
+            <!-- Panel d'intérêts et annonces à droite (fixe) -->
+            <aside class="lg:col-span-3">
+              <div class="sticky top-24 space-y-6">
+                <InterestsPanel 
+                  :user-location="userLocation"
+                  :max-distance="10"
+                  @interest-click="handleInterestClick" 
+                />
+                
+                <!-- Annonces publicitaires -->
+                <div>
+                  <AdvertisementSlot
+                    ad-type="SIDEBAR"
+                    position="SIDEBAR_RIGHT"
+                    :city="query"
+                    page-type="SEARCH"
+                  />
+                </div>
+                
+                <!-- Annonce BANNER supplémentaire -->
+                <div>
+                  <AdvertisementSlot
+                    ad-type="BANNER"
+                    position="SIDEBAR_RIGHT"
+                    :city="query"
+                    page-type="SEARCH"
+                  />
+                </div>
+              </div>
             </aside>
           </div>
           
           <!-- Message si aucune propriété -->
-          <div v-if="!loading && filteredListings.length === 0" class="mt-6 text-center py-12 bg-gray-50 rounded-lg">
-            <p class="text-gray-600 text-lg">Aucune propriété trouvée</p>
-            <p class="text-gray-500 text-sm mt-2">Essayez de modifier vos critères de recherche</p>
-          </div>
+          <EmptyState
+            v-if="!loading && filteredListings.length === 0"
+            title="Aucune propriété trouvée"
+            description="Aucun bien ne correspond à vos critères de recherche. Essayez de modifier vos filtres ou d'élargir votre recherche."
+            icon="search"
+            action-label="Réinitialiser les filtres"
+            :show-action="hasActiveFilters"
+            @action="clearFilters"
+          />
           
           <!-- Suggestions de recherche -->
           <SearchSuggestions

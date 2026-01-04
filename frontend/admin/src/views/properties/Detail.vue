@@ -294,6 +294,82 @@
             </CardContent>
           </Card>
 
+          <!-- Historique des Prix -->
+          <PriceHistoryChart :property-id="propertyId" />
+          
+          <!-- Données de Marché (DVF) -->
+          <MarketDataCard 
+            :property-id="propertyId"
+            :postal-code="property.postalCode"
+            :property-type="property.type || property.propertyType"
+          />
+          
+          <!-- Alertes de Prix -->
+          <PriceAlertsList :property-id="propertyId" />
+          
+          <!-- Rendez-vous de Visite -->
+          <VisitsList :property-id="propertyId" />
+
+          <!-- Statistiques des Avis -->
+          <Card v-if="reviewStats">
+            <CardHeader>
+              <CardTitle class="flex items-center gap-2">
+                <Star class="h-5 w-5 text-yellow-500" />
+                Statistiques des Avis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="space-y-2">
+                  <p class="text-sm text-muted-foreground">Note moyenne</p>
+                  <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1">
+                      <Star
+                        v-for="i in 5"
+                        :key="i"
+                        :class="[
+                          'h-5 w-5',
+                          i <= Math.round(reviewStats.averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        ]"
+                      />
+                    </div>
+                    <span class="text-lg font-bold">{{ reviewStats.averageRating.toFixed(1) }}/5</span>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-sm text-muted-foreground">Nombre total d'avis</p>
+                  <p class="text-2xl font-bold">{{ reviewStats.totalReviews }}</p>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-sm text-muted-foreground">Distribution des notes</p>
+                  <div class="space-y-1">
+                    <div
+                      v-for="rating in [5, 4, 3, 2, 1]"
+                      :key="rating"
+                      class="flex items-center gap-2"
+                    >
+                      <span class="text-xs w-8">{{ rating }}★</span>
+                      <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div
+                          class="bg-yellow-400 h-2 rounded-full"
+                          :style="{ width: `${(reviewStats.ratingPercentages?.[rating] || 0)}%` }"
+                        />
+                      </div>
+                      <span class="text-xs text-muted-foreground w-8 text-right">
+                        {{ reviewStats.ratingDistribution?.[rating] || 0 }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t">
+                <Button variant="outline" @click="router.push(`/reviews?propertyId=${property.id}`)">
+                  Voir tous les avis
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <!-- Financial & Listing -->
           <Card v-if="(property as any).region || (property as any).pricePerSquareFoot || (property as any).dateOnMarket">
             <CardHeader>
@@ -539,8 +615,13 @@ import {
   Eye,
   Loader2
 } from 'lucide-vue-next'
-import { propertyService, documentService, organizationService, type Property, PropertyType, PropertyStatus, type PropertyFeature } from '@viridial/shared'
+import { propertyService, documentService, organizationService, reviewService, type Property, PropertyType, PropertyStatus, type PropertyFeature, type ReviewStats } from '@viridial/shared'
 import PropertyMap from '@/components/properties/PropertyMap.vue'
+import PriceHistoryChart from '@/components/properties/PriceHistoryChart.vue'
+import PriceAlertsList from '@/components/properties/PriceAlertsList.vue'
+import VisitsList from '@/components/properties/VisitsList.vue'
+import MarketDataCard from '@/components/properties/MarketDataCard.vue'
+import { Star } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -554,6 +635,7 @@ const selectedImage = ref<string | null>(null)
 const selectedImageIndex = ref(0)
 const organizationName = ref<string | null>(null)
 const assignedUserName = ref<string | null>(null)
+const reviewStats = ref<ReviewStats | null>(null)
 
 const propertyId = computed(() => Number(route.params.id))
 
@@ -567,6 +649,7 @@ const hasLocation = computed(() => {
 onMounted(() => {
   loadProperty()
   loadPropertyFeatures()
+  loadReviewStats()
 })
 
 const loadProperty = async () => {
@@ -624,9 +707,13 @@ const loadProperty = async () => {
 
 const loadPropertyFeatures = async () => {
   try {
-    propertyFeatures.value = await propertyService.getPropertyFeatures(propertyId.value)
+    const features = await propertyService.getPropertyFeatures(propertyId.value)
+    // S'assurer que features est toujours un tableau
+    propertyFeatures.value = Array.isArray(features) ? features : []
   } catch (error: any) {
     console.warn('Could not load property features:', error)
+    // S'assurer que propertyFeatures reste un tableau vide en cas d'erreur
+    propertyFeatures.value = []
     // Ne pas afficher d'erreur si c'est une 401 (l'utilisateur sera redirigé)
     if (error.response?.status !== 401) {
       toast({
@@ -638,7 +725,22 @@ const loadPropertyFeatures = async () => {
   }
 }
 
+const loadReviewStats = async () => {
+  try {
+    reviewStats.value = await reviewService.getStatsByProperty(propertyId.value)
+  } catch (error: any) {
+    console.warn('Could not load review stats:', error)
+    // Ne pas afficher d'erreur si c'est une 401 (l'utilisateur sera redirigé)
+    if (error.response?.status !== 401) {
+      // Stats optionnelles, on ne montre pas d'erreur
+    }
+  }
+}
+
 const getFeaturesByKey = (key: string) => {
+  if (!propertyFeatures.value || !Array.isArray(propertyFeatures.value)) {
+    return []
+  }
   return propertyFeatures.value.filter((feature: PropertyFeature) => feature.key === key)
 }
 

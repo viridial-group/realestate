@@ -2,6 +2,7 @@ package com.realestate.property.controller;
 
 import com.realestate.property.dto.PagedPropertyResponse;
 import com.realestate.property.dto.PropertyDTO;
+import com.realestate.property.dto.SearchSuggestionsDTO;
 import com.realestate.property.service.PublicPropertyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +39,7 @@ public class PublicPropertyController {
                      "- Automatic filtering by status PUBLISHED or AVAILABLE"
     )
     public ResponseEntity<PagedPropertyResponse> getPublishedProperties(
+            @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String country,
@@ -49,6 +51,7 @@ public class PublicPropertyController {
             @RequestParam(required = false) Integer bathrooms,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String transactionType,
             @RequestParam(required = false) String createdAfter,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int size) {
@@ -59,8 +62,8 @@ public class PublicPropertyController {
         }
         
             PagedPropertyResponse response = publicPropertyService.getPublishedProperties(
-                    type, city, country, minPrice, maxPrice, minSurface, maxSurface,
-                    bedrooms, bathrooms, search, sortBy, createdAfter, page, size);
+                    organizationId, type, city, country, minPrice, maxPrice, minSurface, maxSurface,
+                    bedrooms, bathrooms, search, sortBy, transactionType, createdAfter, page, size);
         
         return ResponseEntity.ok(response);
     }
@@ -75,6 +78,18 @@ public class PublicPropertyController {
             @RequestParam(required = false) String search) {
         List<String> cities = publicPropertyService.getAvailableCities(search);
         return ResponseEntity.ok(cities);
+    }
+
+    @GetMapping("/suggestions")
+    @Operation(
+        summary = "Get search suggestions",
+        description = "Returns comprehensive search suggestions including cities, types, addresses, titles, and popular searches. " +
+                     "Useful for autocomplete during typing."
+    )
+    public ResponseEntity<SearchSuggestionsDTO> getSearchSuggestions(
+            @RequestParam(required = false) String search) {
+        SearchSuggestionsDTO suggestions = publicPropertyService.getSearchSuggestions(search);
+        return ResponseEntity.ok(suggestions);
     }
 
     @GetMapping("/{id}")
@@ -98,6 +113,19 @@ public class PublicPropertyController {
     )
     public ResponseEntity<PropertyDTO> getPublishedPropertyByReference(@PathVariable String reference) {
         PropertyDTO property = publicPropertyService.getPublishedPropertyByReference(reference);
+        return ResponseEntity.ok(property);
+    }
+
+    @GetMapping("/slug/{slug}")
+    @Operation(
+        summary = "Get published property by slug (SEO-friendly, cached)",
+        description = "Returns property information for a specific property slug (SEO-friendly URL). " +
+                     "Only returns if property is published/available. " +
+                     "Results are cached in Redis for performance. " +
+                     "Example: /api/public/properties/slug/appartement-paris-3-pieces-123"
+    )
+    public ResponseEntity<PropertyDTO> getPublishedPropertyBySlug(@PathVariable String slug) {
+        PropertyDTO property = publicPropertyService.getPublishedPropertyBySlug(slug);
         return ResponseEntity.ok(property);
     }
 }

@@ -1,13 +1,20 @@
 package com.realestate.identity.controller;
 
+import com.realestate.common.exception.BadRequestException;
+import com.realestate.common.exception.ResourceNotFoundException;
 import com.realestate.identity.dto.AuthResponse;
 import com.realestate.identity.dto.LoginRequest;
 import com.realestate.identity.dto.RefreshTokenRequest;
 import com.realestate.identity.dto.RegisterRequest;
+import com.realestate.identity.dto.SubscribeRequest;
+import com.realestate.identity.dto.SubscribeResponse;
 import com.realestate.identity.service.AuthService;
+import com.realestate.identity.service.SubscribeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +24,14 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Authentication", description = "Authentication API for user registration, login, token refresh, and logout")
 public class AuthController {
 
-    private final AuthService authService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthService authService) {
+    private final AuthService authService;
+    private final SubscribeService subscribeService;
+
+    public AuthController(AuthService authService, SubscribeService subscribeService) {
         this.authService = authService;
+        this.subscribeService = subscribeService;
     }
 
     @PostMapping("/register")
@@ -65,6 +76,32 @@ public class AuthController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/subscribe")
+    @Operation(
+            summary = "Subscribe with organization creation",
+            description = "Creates a new user, organization, assigns user as organization admin, and creates a subscription in one transaction"
+    )
+    public ResponseEntity<SubscribeResponse> subscribe(@Valid @RequestBody SubscribeRequest request) {
+        try {
+            SubscribeResponse response = subscribeService.subscribe(request);
+            logger.info("Subscription successful for email: {}", request.getEmail());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (BadRequestException e) {
+            logger.warn("Bad request for subscription: {}", e.getMessage());
+            // L'exception sera gérée par GlobalExceptionHandler
+            throw e;
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Resource not found for subscription: {}", e.getMessage());
+            // L'exception sera gérée par GlobalExceptionHandler
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error during subscription for email {}: {}", 
+                    request.getEmail(), e.getMessage(), e);
+            // L'exception sera gérée par GlobalExceptionHandler
+            throw new BadRequestException("Une erreur inattendue s'est produite lors de l'inscription. Veuillez réessayer.");
         }
     }
 }

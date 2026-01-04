@@ -7,11 +7,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
+
+/**
+ * Service pour l'optimisation et la conversion d'images
+ * Supporte WebP via ImageIO (nécessite une bibliothèque WebP dans le classpath)
+ * Utilise sejda-commons 1.1.7 (dernière version disponible)
+ */
 
 /**
  * Service pour l'optimisation et la compression d'images
@@ -35,6 +45,12 @@ public class ImageOptimizationService {
 
     @Value("${image.optimization.max-file-size-mb:5}")
     private int maxFileSizeMB;
+
+    @Value("${image.optimization.webp.enabled:true}")
+    private boolean webpEnabled;
+
+    @Value("${image.optimization.webp.quality:0.80}")
+    private double webpQuality;
 
     /**
      * Optimise une image en réduisant sa taille et en compressant
@@ -208,6 +224,189 @@ public class ImageOptimizationService {
 
         // Optimiser si le fichier dépasse 500KB
         return fileSize > 500 * 1024;
+    }
+
+    /**
+     * Convertit une image en format WebP
+     * 
+     * @param inputStream Le flux d'entrée de l'image originale
+     * @param mimeType Le type MIME de l'image originale
+     * @return Un tableau de bytes contenant l'image en WebP
+     * @throws IOException Si une erreur survient lors de la conversion
+     */
+    public byte[] convertToWebP(InputStream inputStream, String mimeType) throws IOException {
+        if (!webpEnabled) {
+            logger.debug("WebP conversion is disabled");
+            return readAllBytes(inputStream);
+        }
+
+        if (!isImageType(mimeType)) {
+            logger.debug("File type {} is not an image, cannot convert to WebP", mimeType);
+            return readAllBytes(inputStream);
+        }
+
+        try {
+            BufferedImage image = ImageIO.read(inputStream);
+            if (image == null) {
+                logger.warn("Could not read image for WebP conversion");
+                return readAllBytes(inputStream);
+            }
+
+            // Redimensionner si nécessaire
+            int originalWidth = image.getWidth();
+            int originalHeight = image.getHeight();
+            boolean needsResize = originalWidth > maxWidth || originalHeight > maxHeight;
+
+            if (needsResize) {
+                int[] newDimensions = calculateDimensions(originalWidth, originalHeight, maxWidth, maxHeight);
+                image = Thumbnails.of(image)
+                        .size(newDimensions[0], newDimensions[1])
+                        .asBufferedImage();
+            }
+
+            // Convertir en WebP
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            
+            // Essayer d'utiliser ImageIO avec WebP si disponible (via webp-imageio)
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByMIMEType("image/webp");
+            if (writers.hasNext()) {
+                ImageWriter writer = writers.next();
+                try (ImageOutputStream ios = ImageIO.createImageOutputStream(outputStream)) {
+                    writer.setOutput(ios);
+                    
+                    // Configurer les paramètres de qualité WebP si supporté
+                    ImageWriteParam writeParam = writer.getDefaultWriteParam();
+                    if (writeParam.canWriteCompressed()) {
+                        writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                        // WebP quality: 0.0 (lowest) to 1.0 (highest)
+                        writeParam.setCompressionQuality((float) webpQuality);
+                    }
+                    
+                    writer.write(null, new javax.imageio.IIOImage(image, null, null), writeParam);
+                } finally {
+                    writer.dispose();
+                }
+            } else {
+                // Fallback: utiliser Thumbnailator pour convertir en JPEG optimisé
+                // Note: Thumbnailator ne supporte pas WebP nativement
+                logger.warn("WebP writer not available (webp-imageio may not be loaded), falling back to optimized JPEG");
+                Thumbnails.of(image)
+                        .scale(1.0)
+                        .outputFormat("jpg")
+                        .outputQuality(webpQuality) // Utiliser la même qualité
+                        .toOutputStream(outputStream);
+            }
+
+            byte[] webpBytes = outputStream.toByteArray();
+            logger.info("Image converted to WebP: {} bytes", webpBytes.length);
+            return webpBytes;
+        } catch (Exception e) {
+            logger.error("Error converting image to WebP: {}", e.getMessage(), e);
+            // En cas d'erreur, retourner l'image originale
+            return readAllBytes(inputStream);
+        }
+    }
+
+    /**
+     * Génère une variante WebP d'une image existante
+     * 
+     * @param imageBytes Les bytes de l'image originale
+     * @param mimeType Le type MIME de l'image originale
+     * @return Les bytes de l'image en WebP
+     * @throws IOException Si une erreur survient
+     */
+    public byte[] generateWebPVariant(byte[] imageBytes, String mimeType) throws IOException {
+        return convertToWebP(new ByteArrayInputStream(imageBytes), mimeType);
+    }
+
+    /**
+     * Optimise une image avec une largeur spécifique
+     */
+    public byte[] optimizeImageWithWidth(InputStream inputStream, String mimeType, int targetWidth) throws IOException {
+        byte[] originalBytes = readAllBytes(inputStream);
+        
+        if (!optimizationEnabled || !isImageType(mimeType)) {
+            return originalBytes;
+        }
+
+        try {
+            BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(originalBytes));
+            if (originalImage == null) {
+                return originalBytes;
+            }
+
+            int originalWidth = originalImage.getWidth();
+            int originalHeight = originalImage.getHeight();
+            
+            // Calculer la hauteur proportionnelle
+            int targetHeight = (int) ((double) originalHeight * targetWidth / originalWidth);
+            
+            String outputFormat = getOutputFormat(mimeType);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            
+            Thumbnails.of(originalImage)
+                    .size(targetWidth, targetHeight)
+                    .outputFormat(outputFormat)
+                    .outputQuality(quality)
+                    .toOutputStream(outputStream);
+
+            return outputStream.toByteArray();
+        } catch (Exception e) {
+            logger.error("Error optimizing image with width: {}", e.getMessage(), e);
+            return originalBytes;
+        }
+    }
+
+    /**
+     * Vérifie si WebP est supporté par le système
+     * Nécessite webp-imageio dans le classpath
+     */
+    public boolean isWebPSupported() {
+        try {
+            // Enregistrer le provider WebP si disponible
+            // webp-imageio s'enregistre automatiquement via ServiceLoader
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByMIMEType("image/webp");
+            boolean supported = writers.hasNext();
+            
+            if (supported) {
+                logger.debug("WebP support is available via webp-imageio");
+            } else {
+                logger.debug("WebP support is not available. Make sure webp-imageio is in the classpath.");
+            }
+            
+            return supported;
+        } catch (Exception e) {
+            logger.debug("WebP support check failed: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Initialise le support WebP en enregistrant le provider
+     * Appelé automatiquement au démarrage si nécessaire
+     */
+    public void initializeWebPSupport() {
+        try {
+            // webp-imageio s'enregistre automatiquement via ServiceLoader
+            // Mais on peut forcer l'enregistrement si nécessaire
+            String[] mimeTypes = ImageIO.getWriterMIMETypes();
+            boolean webpFound = false;
+            for (String mimeType : mimeTypes) {
+                if (mimeType.equals("image/webp")) {
+                    webpFound = true;
+                    break;
+                }
+            }
+            
+            if (webpFound) {
+                logger.info("WebP support initialized successfully");
+            } else {
+                logger.warn("WebP support not found. WebP conversion will fallback to optimized JPEG. " +
+                           "To enable WebP, add a WebP ImageIO library to the classpath.");
+            }
+        } catch (Exception e) {
+            logger.error("Error initializing WebP support: {}", e.getMessage(), e);
+        }
     }
 
     /**

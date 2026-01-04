@@ -16,6 +16,12 @@ import { documentRoutes } from './routes/documents.routes'
 import { documentationRoutes } from './routes/documentation.routes'
 import { plansRoutes } from './routes/plans.routes'
 import { roleRoutes } from './routes/roles.routes'
+import { contactRoutes } from './routes/contacts.routes'
+import { organizationContactRoutes } from './routes/organization-contacts.routes'
+import { advertisementRoutes } from './routes/advertisements.routes'
+import { reviewRoutes } from './routes/reviews.routes'
+import { visitRoutes } from './routes/visits.routes'
+import { dvfRoutes } from './routes/dvf.routes'
 import { authRoutes } from './routes/auth.routes'
 
 const routes: RouteRecordRaw[] = [
@@ -35,7 +41,13 @@ const routes: RouteRecordRaw[] = [
       ...documentRoutes,
       ...documentationRoutes,
       ...plansRoutes,
-      ...roleRoutes
+      ...roleRoutes,
+      ...contactRoutes,
+      ...organizationContactRoutes,
+      ...advertisementRoutes,
+        ...reviewRoutes,
+        ...visitRoutes,
+        ...dvfRoutes
     ]
   },
   {

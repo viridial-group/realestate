@@ -222,11 +222,21 @@
       }
     }
     
+    // Expose method to invalidate map size (useful after DOM changes)
+    function invalidateSize() {
+      if (map.value) {
+        setTimeout(() => {
+          map.value?.invalidateSize()
+        }, 100)
+      }
+    }
+    
     defineExpose({
       centerOnPOI,
       centerOnListing,
       centerOnUserLocation,
-      getUserLocation
+      getUserLocation,
+      invalidateSize
     })
     
     // Fonction pour obtenir l'icône selon le type de bien

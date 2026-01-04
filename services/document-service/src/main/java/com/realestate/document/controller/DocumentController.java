@@ -4,6 +4,7 @@ import com.realestate.document.dto.DocumentDTO;
 import com.realestate.document.entity.Document;
 import com.realestate.document.mapper.DocumentMapper;
 import com.realestate.document.service.DocumentService;
+import com.realestate.document.service.ImageOptimizationService;
 import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,10 +30,15 @@ public class DocumentController {
 
     private final DocumentService documentService;
     private final DocumentMapper documentMapper;
+    private final ImageOptimizationService imageOptimizationService;
 
-    public DocumentController(DocumentService documentService, DocumentMapper documentMapper) {
+    public DocumentController(
+            DocumentService documentService, 
+            DocumentMapper documentMapper,
+            ImageOptimizationService imageOptimizationService) {
         this.documentService = documentService;
         this.documentMapper = documentMapper;
+        this.imageOptimizationService = imageOptimizationService;
     }
 
     @PostMapping("/upload")
@@ -138,6 +144,92 @@ public class DocumentController {
             documentService.deleteDocument(id);
             return ResponseEntity.noContent().build();
         } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/webp")
+    @Operation(summary = "Get document as WebP", description = "Returns the document converted to WebP format if it's an image")
+    public ResponseEntity<byte[]> getDocumentAsWebP(@PathVariable Long id) {
+        try {
+            Document document = documentService.getDocumentById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Document", id));
+
+            // Vérifier si c'est une image
+            if (document.getMimeType() == null || !document.getMimeType().startsWith("image/")) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Lire le fichier original
+            Path filePath = documentService.getDocumentPath(document);
+            if (!java.nio.file.Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Convertir en WebP
+            try (java.io.InputStream inputStream = java.nio.file.Files.newInputStream(filePath)) {
+                byte[] webpBytes = imageOptimizationService.convertToWebP(
+                        inputStream, 
+                        document.getMimeType()
+                );
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("image/webp"))
+                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000") // Cache 1 an
+                        .header(HttpHeaders.CONTENT_DISPOSITION, 
+                                "inline; filename=\"" + document.getName().replaceFirst("\\.[^.]+$", ".webp") + "\"")
+                        .body(webpBytes);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/optimized")
+    @Operation(summary = "Get optimized image", description = "Returns an optimized version of the image with optional width parameter")
+    public ResponseEntity<byte[]> getOptimizedImage(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer width) {
+        try {
+            Document document = documentService.getDocumentById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Document", id));
+
+            if (document.getMimeType() == null || !document.getMimeType().startsWith("image/")) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            Path filePath = documentService.getDocumentPath(document);
+            if (!java.nio.file.Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Lire et optimiser l'image
+            try (java.io.InputStream inputStream = java.nio.file.Files.newInputStream(filePath)) {
+                byte[] optimizedBytes;
+                
+                if (width != null && width > 0) {
+                    // Optimiser avec une largeur spécifique
+                    optimizedBytes = imageOptimizationService.optimizeImageWithWidth(
+                            inputStream, 
+                            document.getMimeType(), 
+                            width
+                    );
+                } else {
+                    // Optimisation standard
+                    optimizedBytes = imageOptimizationService.optimizeImage(
+                            inputStream, 
+                            document.getMimeType()
+                    );
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(document.getMimeType()))
+                        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000")
+                        .header(HttpHeaders.CONTENT_DISPOSITION, 
+                                "inline; filename=\"" + document.getName() + "\"")
+                        .body(optimizedBytes);
+            }
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

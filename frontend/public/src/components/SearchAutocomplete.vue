@@ -18,41 +18,110 @@
 
     <!-- Suggestions -->
     <div
-      v-if="showSuggestions && (suggestions.length > 0 || history.length > 0 || smartSuggestions.length > 0)"
+      v-if="showSuggestions && (allSuggestions.length > 0 || history.length > 0 || isLoadingSuggestions)"
       class="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto"
     >
+      <!-- Loading state -->
+      <div v-if="isLoadingSuggestions" class="p-4 text-center text-gray-500 text-sm">
+        Chargement des suggestions...
+      </div>
+
       <!-- Historique de recherche -->
-      <div v-if="history.length > 0 && !modelValue" class="p-2 border-b border-gray-100">
-        <div class="text-xs font-semibold text-gray-500 px-3 py-1">Recherches récentes</div>
-        <button
+      <div v-if="history.length > 0 && !modelValue && !isLoadingSuggestions" class="p-2 border-b border-gray-100 dark:border-gray-700">
+        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Recherches récentes</div>
+        <div
           v-for="(item, idx) in history"
           :key="idx"
           @click="selectSuggestion(item)"
-          class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center justify-between group"
+          class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between group cursor-pointer"
         >
-          <span class="text-sm text-gray-700">🔍 {{ item }}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">🔍 {{ item }}</span>
           <button
             @click.stop="removeFromHistory(item)"
-            class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-opacity"
+            class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-opacity"
+            type="button"
           >
             ✕
           </button>
-        </button>
+        </div>
       </div>
 
-      <!-- Suggestions de villes -->
-      <div v-if="suggestions.length > 0" class="p-2">
-        <div class="text-xs font-semibold text-gray-500 px-3 py-1">Villes</div>
-        <button
-          v-for="(suggestion, idx) in suggestions"
-          :key="idx"
-          @click="selectSuggestion(suggestion)"
-          class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
-          :class="{ 'bg-blue-50': idx === selectedIndex }"
-        >
-          <span>📍</span>
-          <span class="text-sm text-gray-700">{{ suggestion }}</span>
-        </button>
+      <!-- Suggestions intelligentes -->
+      <div v-if="allSuggestions.length > 0 && !isLoadingSuggestions" class="p-2">
+        <!-- Villes -->
+        <div v-if="suggestionsData.cities.length > 0" class="mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Villes</div>
+          <button
+            v-for="(city, idx) in suggestionsData.cities"
+            :key="`city-${idx}`"
+            @click="selectSuggestion(city)"
+            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(city) === selectedIndex }"
+          >
+            <span>📍</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ city }}</span>
+          </button>
+        </div>
+
+        <!-- Types -->
+        <div v-if="suggestionsData.types.length > 0" class="mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Types</div>
+          <button
+            v-for="(type, idx) in suggestionsData.types"
+            :key="`type-${idx}`"
+            @click="selectSuggestion(type)"
+            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(type) === selectedIndex }"
+          >
+            <span>🏠</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ type }}</span>
+          </button>
+        </div>
+
+        <!-- Adresses -->
+        <div v-if="suggestionsData.addresses.length > 0" class="mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Adresses</div>
+          <button
+            v-for="(address, idx) in suggestionsData.addresses"
+            :key="`address-${idx}`"
+            @click="selectSuggestion(address)"
+            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(address) === selectedIndex }"
+          >
+            <span>📍</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ address }}</span>
+          </button>
+        </div>
+
+        <!-- Suggestions intelligentes -->
+        <div v-if="smartSuggestions.length > 0" class="mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Suggestions</div>
+          <button
+            v-for="(suggestion, idx) in smartSuggestions"
+            :key="`smart-${idx}`"
+            @click="selectSuggestion(suggestion)"
+            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(suggestion) === selectedIndex }"
+          >
+            <span>💡</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ suggestion }}</span>
+          </button>
+        </div>
+
+        <!-- Recherches populaires -->
+        <div v-if="suggestionsData.popularSearches.length > 0 && modelValue" class="mb-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-1">Recherches populaires</div>
+          <button
+            v-for="(popular, idx) in suggestionsData.popularSearches"
+            :key="`popular-${idx}`"
+            @click="selectSuggestion(popular)"
+            class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+            :class="{ 'bg-blue-50 dark:bg-blue-900/20': getSuggestionIndex(popular) === selectedIndex }"
+          >
+            <span>🔥</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ popular }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -60,7 +129,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { publicPropertyService } from '@/api/public-property.service'
 import { useSearchHistory } from '@/composables/useSearchHistory'
 import { useSearchSuggestions } from '@/composables/useSearchSuggestions'
 
@@ -74,11 +142,15 @@ const emit = defineEmits<{
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
-const suggestions = ref<string[]>([]) // Suggestions de villes depuis l'API
 const showSuggestions = ref(false)
 const selectedIndex = ref(-1)
 const { history, addToHistory, removeFromHistory } = useSearchHistory()
-const { generateSuggestions } = useSearchSuggestions()
+const { suggestions: suggestionsData, isLoading: isLoadingSuggestions, loadSuggestions, generateSuggestions } = useSearchSuggestions()
+
+// Charger les suggestions par défaut au montage
+onMounted(() => {
+  loadSuggestions()
+})
 
 // Suggestions intelligentes basées sur la requête
 const smartSuggestions = computed(() => {
@@ -88,6 +160,32 @@ const smartSuggestions = computed(() => {
   return generateSuggestions(props.modelValue)
 })
 
+// Toutes les suggestions combinées pour la navigation au clavier
+const allSuggestions = computed(() => {
+  const result: string[] = []
+  if (suggestionsData.value.cities.length > 0) {
+    result.push(...suggestionsData.value.cities)
+  }
+  if (suggestionsData.value.types.length > 0) {
+    result.push(...suggestionsData.value.types)
+  }
+  if (suggestionsData.value.addresses.length > 0) {
+    result.push(...suggestionsData.value.addresses)
+  }
+  if (smartSuggestions.value.length > 0) {
+    result.push(...smartSuggestions.value)
+  }
+  if (suggestionsData.value.popularSearches.length > 0 && props.modelValue) {
+    result.push(...suggestionsData.value.popularSearches)
+  }
+  return result
+})
+
+// Obtenir l'index d'une suggestion dans la liste complète
+function getSuggestionIndex(suggestion: string): number {
+  return allSuggestions.value.indexOf(suggestion)
+}
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Charger les suggestions quand la valeur change
@@ -96,18 +194,15 @@ watch(() => props.modelValue, async (newValue) => {
     clearTimeout(debounceTimer)
   }
 
-  if (!newValue || newValue.trim().length < 2) {
-    suggestions.value = []
+  if (!newValue || newValue.trim().length < 1) {
+    // Charger les suggestions par défaut si la recherche est vide
+    loadSuggestions()
     return
   }
 
+  // Debounce pour éviter trop de requêtes
   debounceTimer = setTimeout(async () => {
-    try {
-      suggestions.value = await publicPropertyService.getAvailableCities(newValue.trim())
-    } catch (error) {
-      console.error('Error fetching city suggestions:', error)
-      suggestions.value = []
-    }
+    await loadSuggestions(newValue.trim())
   }, 300) // Debounce de 300ms
 })
 
@@ -131,23 +226,25 @@ function hideSuggestions() {
 }
 
 function navigateDown() {
-  const allSuggestions = [...smartSuggestions.value, ...suggestions.value]
-  const maxIndex = allSuggestions.length - 1
+  const maxIndex = allSuggestions.value.length - 1
   if (selectedIndex.value < maxIndex) {
     selectedIndex.value++
+  } else {
+    selectedIndex.value = 0 // Boucler vers le début
   }
 }
 
 function navigateUp() {
   if (selectedIndex.value > 0) {
     selectedIndex.value--
+  } else {
+    selectedIndex.value = allSuggestions.value.length - 1 // Boucler vers la fin
   }
 }
 
 function selectCurrent() {
-  const allSuggestions = [...smartSuggestions.value, ...suggestions.value]
-  if (selectedIndex.value >= 0 && selectedIndex.value < allSuggestions.length) {
-    selectSuggestion(allSuggestions[selectedIndex.value])
+  if (selectedIndex.value >= 0 && selectedIndex.value < allSuggestions.value.length) {
+    selectSuggestion(allSuggestions.value[selectedIndex.value])
   }
 }
 

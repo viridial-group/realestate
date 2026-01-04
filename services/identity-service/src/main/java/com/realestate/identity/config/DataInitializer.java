@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @Configuration
@@ -38,50 +37,199 @@ public class DataInitializer {
 
             logger.info("Initializing default roles and permissions...");
 
-            // Create Permissions
+            // Create Permissions - User
             Permission userRead = createPermissionIfNotExists(permissionRepository,
                     "USER_READ", "user", "READ", "Read user information");
             Permission userWrite = createPermissionIfNotExists(permissionRepository,
                     "USER_WRITE", "user", "WRITE", "Create and update users");
             Permission userDelete = createPermissionIfNotExists(permissionRepository,
                     "USER_DELETE", "user", "DELETE", "Delete users");
+            
+            // Create Permissions - Organization
             Permission organizationRead = createPermissionIfNotExists(permissionRepository,
                     "ORGANIZATION_READ", "organization", "READ", "Read organization information");
             Permission organizationWrite = createPermissionIfNotExists(permissionRepository,
                     "ORGANIZATION_WRITE", "organization", "WRITE", "Create and update organizations");
+            Permission organizationDelete = createPermissionIfNotExists(permissionRepository,
+                    "ORGANIZATION_DELETE", "organization", "DELETE", "Delete organizations");
+            
+            // Create Permissions - Property
             Permission propertyRead = createPermissionIfNotExists(permissionRepository,
                     "PROPERTY_READ", "property", "READ", "Read property information");
             Permission propertyWrite = createPermissionIfNotExists(permissionRepository,
                     "PROPERTY_WRITE", "property", "WRITE", "Create and update properties");
+            Permission propertyDelete = createPermissionIfNotExists(permissionRepository,
+                    "PROPERTY_DELETE", "property", "DELETE", "Delete properties");
+            
+            // Create Permissions - Document
+            Permission documentRead = createPermissionIfNotExists(permissionRepository,
+                    "DOCUMENT_READ", "document", "READ", "Read document information");
+            Permission documentWrite = createPermissionIfNotExists(permissionRepository,
+                    "DOCUMENT_WRITE", "document", "WRITE", "Create and update documents");
+            Permission documentDelete = createPermissionIfNotExists(permissionRepository,
+                    "DOCUMENT_DELETE", "document", "DELETE", "Delete documents");
+            
+            // Create Permissions - Workflow
+            Permission workflowRead = createPermissionIfNotExists(permissionRepository,
+                    "WORKFLOW_READ", "workflow", "READ", "Read workflow information");
+            Permission workflowWrite = createPermissionIfNotExists(permissionRepository,
+                    "WORKFLOW_WRITE", "workflow", "WRITE", "Create and update workflows");
+            Permission workflowDelete = createPermissionIfNotExists(permissionRepository,
+                    "WORKFLOW_DELETE", "workflow", "DELETE", "Delete workflows");
+            Permission workflowApprove = createPermissionIfNotExists(permissionRepository,
+                    "WORKFLOW_APPROVE", "workflow", "APPROVE", "Approve workflows");
+            
+            // Create Permissions - Billing
+            Permission billingRead = createPermissionIfNotExists(permissionRepository,
+                    "BILLING_READ", "billing", "READ", "Read billing information");
+            Permission billingWrite = createPermissionIfNotExists(permissionRepository,
+                    "BILLING_WRITE", "billing", "WRITE", "Create and update billing");
+            Permission billingManage = createPermissionIfNotExists(permissionRepository,
+                    "BILLING_MANAGE", "billing", "MANAGE", "Manage billing and plans");
+            
+            // Create Permissions - Audit
+            Permission auditRead = createPermissionIfNotExists(permissionRepository,
+                    "AUDIT_READ", "audit", "READ", "Read audit logs");
+            Permission auditManage = createPermissionIfNotExists(permissionRepository,
+                    "AUDIT_MANAGE", "audit", "MANAGE", "Manage audit logs");
+            
+            // Create Permissions - Notification
+            Permission notificationRead = createPermissionIfNotExists(permissionRepository,
+                    "NOTIFICATION_READ", "notification", "READ", "Read notifications");
+            Permission notificationWrite = createPermissionIfNotExists(permissionRepository,
+                    "NOTIFICATION_WRITE", "notification", "WRITE", "Create and send notifications");
+            
+            // Create Permissions - Contact Messages
+            Permission contactRead = createPermissionIfNotExists(permissionRepository,
+                    "CONTACT_READ", "contact", "READ", "Read contact messages");
+            Permission contactWrite = createPermissionIfNotExists(permissionRepository,
+                    "CONTACT_WRITE", "contact", "WRITE", "Create and update contact messages");
+            Permission contactDelete = createPermissionIfNotExists(permissionRepository,
+                    "CONTACT_DELETE", "contact", "DELETE", "Delete contact messages");
+            
+            // Create Permissions - Role & Permission Management
+            Permission roleRead = createPermissionIfNotExists(permissionRepository,
+                    "ROLE_READ", "role", "READ", "Read roles and permissions");
+            Permission roleWrite = createPermissionIfNotExists(permissionRepository,
+                    "ROLE_WRITE", "role", "WRITE", "Create and update roles");
+            Permission roleDelete = createPermissionIfNotExists(permissionRepository,
+                    "ROLE_DELETE", "role", "DELETE", "Delete roles");
+            
+            // Create Permissions - Resource
+            Permission resourceRead = createPermissionIfNotExists(permissionRepository,
+                    "RESOURCE_READ", "resource", "READ", "Read resources");
+            Permission resourceWrite = createPermissionIfNotExists(permissionRepository,
+                    "RESOURCE_WRITE", "resource", "WRITE", "Create and update resources");
+            Permission resourceDelete = createPermissionIfNotExists(permissionRepository,
+                    "RESOURCE_DELETE", "resource", "DELETE", "Delete resources");
+            
+            // Create Permissions - System Admin (SaaS level)
+            Permission systemManage = createPermissionIfNotExists(permissionRepository,
+                    "SYSTEM_MANAGE", "system", "MANAGE", "Manage system-wide settings");
+            Permission fullAccess = createPermissionIfNotExists(permissionRepository,
+                    "FULL_ACCESS", "*", "*", "Full access to all resources and actions");
 
             // Create Roles
-            Role adminRole = createRoleIfNotExists(roleRepository, "ADMIN", "Administrator with full access");
+            Role superAdminRole = createRoleIfNotExists(roleRepository, "SUPER_ADMIN", 
+                    "Super Administrator with full access to all resources across all organizations (SaaS level)");
+            Role adminRole = createRoleIfNotExists(roleRepository, "ADMIN", 
+                    "Administrator with full access (SaaS level - for platform administrators)");
+            Role organizationAdminRole = createRoleIfNotExists(roleRepository, "ORGANIZATION_ADMIN", 
+                    "Organization Administrator - Full access to manage organization and all sub-organizations");
             Role userRole = createRoleIfNotExists(roleRepository, "USER", "Standard user with basic access");
             Role managerRole = createRoleIfNotExists(roleRepository, "MANAGER", "Manager with elevated access");
 
             // Assign permissions to roles
-            // ADMIN: All permissions
+            // SUPER_ADMIN: All permissions - Full access to everything
+            Set<Permission> allPermissions = Set.of(
+                    userRead, userWrite, userDelete,
+                    organizationRead, organizationWrite, organizationDelete,
+                    propertyRead, propertyWrite, propertyDelete,
+                    documentRead, documentWrite, documentDelete,
+                    workflowRead, workflowWrite, workflowDelete, workflowApprove,
+                    billingRead, billingWrite, billingManage,
+                    auditRead, auditManage,
+                    notificationRead, notificationWrite,
+                    contactRead, contactWrite, contactDelete,
+                    roleRead, roleWrite, roleDelete,
+                    resourceRead, resourceWrite, resourceDelete,
+                    systemManage, fullAccess
+            );
+            superAdminRole.getPermissions().addAll(allPermissions);
+
+            // ADMIN (SaaS level): All permissions (except system management)
             adminRole.getPermissions().addAll(Set.of(
                     userRead, userWrite, userDelete,
                     organizationRead, organizationWrite,
-                    propertyRead, propertyWrite
+                    propertyRead, propertyWrite, propertyDelete,
+                    documentRead, documentWrite, documentDelete,
+                    workflowRead, workflowWrite, workflowDelete, workflowApprove,
+                    billingRead, billingWrite,
+                    auditRead,
+                    notificationRead, notificationWrite,
+                    contactRead, contactWrite, contactDelete,
+                    roleRead, roleWrite,
+                    resourceRead, resourceWrite, resourceDelete
+            ));
+
+            // ORGANIZATION_ADMIN: Full access to manage organization and sub-organizations
+            // This role is for agency administrators who manage their organization and all sub-organizations
+            // Can manage users, organizations, roles, and all resources within their organization
+            organizationAdminRole.getPermissions().addAll(Set.of(
+                    userRead, userWrite, userDelete,  // Can manage users in their organization
+                    organizationRead, organizationWrite, organizationDelete,  // Can manage sub-organizations
+                    propertyRead, propertyWrite, propertyDelete,
+                    documentRead, documentWrite, documentDelete,
+                    workflowRead, workflowWrite, workflowDelete, workflowApprove,
+                    billingRead, billingWrite,  // Can manage billing for their organization
+                    auditRead,
+                    notificationRead, notificationWrite,
+                    contactRead, contactWrite, contactDelete,
+                    roleRead, roleWrite, roleDelete,  // Can manage roles within their organization (create, update, delete)
+                    resourceRead, resourceWrite, resourceDelete
             ));
 
             // MANAGER: Read and write permissions (no delete)
             managerRole.getPermissions().addAll(Set.of(
                     userRead, userWrite,
                     organizationRead, organizationWrite,
-                    propertyRead, propertyWrite
+                    propertyRead, propertyWrite,
+                    documentRead, documentWrite,
+                    workflowRead, workflowWrite, workflowApprove,
+                    notificationRead, notificationWrite,
+                    contactRead, contactWrite,
+                    resourceRead, resourceWrite
             ));
 
             // USER: Read permissions only
             userRole.getPermissions().addAll(Set.of(
                     userRead,
                     organizationRead,
-                    propertyRead
+                    propertyRead,
+                    documentRead,
+                    workflowRead,
+                    notificationRead,
+                    contactRead,
+                    resourceRead
             ));
 
-            roleRepository.saveAll(Set.of(adminRole, managerRole, userRole));
+            roleRepository.saveAll(Set.of(superAdminRole, adminRole, organizationAdminRole, managerRole, userRole));
+
+            // Create default super admin user if not exists
+            if (!userRepository.findByEmail("superadmin@viridial.com").isPresent()) {
+                User superAdminUser = new User();
+                superAdminUser.setEmail("superadmin@viridial.com");
+                superAdminUser.setPassword(passwordEncoder.encode("superadmin123"));
+                superAdminUser.setFirstName("Super");
+                superAdminUser.setLastName("Admin");
+                superAdminUser.setEnabled(true);
+                superAdminUser.setAccountNonExpired(true);
+                superAdminUser.setAccountNonLocked(true);
+                superAdminUser.setCredentialsNonExpired(true);
+                superAdminUser.setRoles(Set.of(superAdminRole));
+                userRepository.save(superAdminUser);
+                logger.info("Default super admin user created: superadmin@viridial.com / superadmin123");
+            }
 
             // Create default admin user if not exists
             if (!userRepository.findByEmail("admin@viridial.com").isPresent()) {

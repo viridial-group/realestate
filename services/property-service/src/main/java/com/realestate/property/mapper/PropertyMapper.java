@@ -38,6 +38,12 @@ public class PropertyMapper {
         dto.setDescription(property.getDescription());
         dto.setType(property.getType());
         dto.setStatus(property.getStatus());
+        dto.setTransactionType(property.getTransactionType());
+        dto.setSlug(property.getSlug());
+        dto.setMetaTitle(property.getMetaTitle());
+        dto.setMetaDescription(property.getMetaDescription());
+        dto.setMetaKeywords(property.getMetaKeywords());
+        dto.setOgImage(property.getOgImage());
         dto.setPrice(property.getPrice());
         dto.setCurrency(property.getCurrency());
         dto.setSurface(property.getSurface());
@@ -111,6 +117,22 @@ public class PropertyMapper {
         dto.setPricePerSquareFoot(property.getPricePerSquareFoot());
         dto.setDateOnMarket(property.getDateOnMarket());
         
+        // Zillow-inspired fields
+        dto.setPetFriendly(property.getPetFriendly());
+        dto.setSpecialOffer(property.getSpecialOffer());
+        dto.setOfficeHours(property.getOfficeHours());
+        dto.setNeighborhood(property.getNeighborhood());
+        dto.setWalkScore(property.getWalkScore());
+        dto.setTransitScore(property.getTransitScore());
+        dto.setBikeScore(property.getBikeScore());
+        dto.setBuildingName(property.getBuildingName());
+        dto.setFlooring(property.getFlooring());
+        dto.setUnitFeatures(property.getUnitFeatures());
+        dto.setBuildingAmenities(property.getBuildingAmenities());
+        dto.setAvailableUnits(property.getAvailableUnits());
+        dto.setPetPolicy(property.getPetPolicy());
+        dto.setParkingPolicy(property.getParkingPolicy());
+        
         // Load PropertyFeatures if repository is available
         if (propertyFeatureRepository != null && property.getId() != null) {
             List<PropertyFeature> features = propertyFeatureRepository.findActiveByPropertyId(property.getId());
@@ -183,6 +205,12 @@ public class PropertyMapper {
         property.setDescription(dto.getDescription());
         property.setType(dto.getType());
         property.setStatus(dto.getStatus());
+        property.setTransactionType(dto.getTransactionType());
+        property.setSlug(dto.getSlug());
+        property.setMetaTitle(dto.getMetaTitle());
+        property.setMetaDescription(dto.getMetaDescription());
+        property.setMetaKeywords(dto.getMetaKeywords());
+        property.setOgImage(dto.getOgImage());
         property.setPrice(dto.getPrice());
         property.setCurrency(dto.getCurrency());
         property.setSurface(dto.getSurface());
@@ -225,6 +253,22 @@ public class PropertyMapper {
         property.setRegion(dto.getRegion());
         property.setPricePerSquareFoot(dto.getPricePerSquareFoot());
         property.setDateOnMarket(dto.getDateOnMarket());
+        
+        // Zillow-inspired fields
+        property.setPetFriendly(dto.getPetFriendly());
+        property.setSpecialOffer(dto.getSpecialOffer());
+        property.setOfficeHours(dto.getOfficeHours());
+        property.setNeighborhood(dto.getNeighborhood());
+        property.setWalkScore(dto.getWalkScore());
+        property.setTransitScore(dto.getTransitScore());
+        property.setBikeScore(dto.getBikeScore());
+        property.setBuildingName(dto.getBuildingName());
+        property.setFlooring(dto.getFlooring());
+        property.setUnitFeatures(dto.getUnitFeatures());
+        property.setBuildingAmenities(dto.getBuildingAmenities());
+        property.setAvailableUnits(dto.getAvailableUnits());
+        property.setPetPolicy(dto.getPetPolicy());
+        property.setParkingPolicy(dto.getParkingPolicy());
         
         return property;
     }

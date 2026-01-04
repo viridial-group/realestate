@@ -30,6 +30,25 @@ public class PropertyDTO {
     @Size(max = 50)
     private String status = "DRAFT";
 
+    @Size(max = 50)
+    private String transactionType; // RENT, SALE - Type de transaction (Location ou Vente)
+
+    @Size(max = 255)
+    private String slug; // Slug SEO-friendly pour les URLs
+
+    // SEO Meta Tags
+    @Size(max = 255)
+    private String metaTitle; // Titre SEO personnalisé
+
+    @Size(max = 500)
+    private String metaDescription; // Description SEO personnalisée
+
+    @Size(max = 500)
+    private String metaKeywords; // Mots-clés SEO
+
+    @Size(max = 500)
+    private String ogImage; // Image pour Open Graph
+
     @NotNull
     private BigDecimal price;
 
@@ -102,6 +121,25 @@ public class PropertyDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Zillow-inspired fields
+    private Boolean petFriendly;
+    private String specialOffer;
+    private String officeHours; // JSON
+    private String neighborhood;
+    private Integer walkScore;
+    private Integer transitScore;
+    private Integer bikeScore;
+    private String buildingName;
+    private String flooring; // JSON array
+    private String unitFeatures; // JSON array
+    private String buildingAmenities; // JSON array
+    private String availableUnits; // JSON array
+    private String petPolicy; // JSON
+    private String parkingPolicy;
+
+    // Unread messages count (loaded asynchronously)
+    private Long unreadMessagesCount;
+
     // Constructors
     public PropertyDTO() {
     }
@@ -160,6 +198,54 @@ public class PropertyDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    public void setTransactionType(String transactionType) {
+        this.transactionType = transactionType;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getMetaTitle() {
+        return metaTitle;
+    }
+
+    public void setMetaTitle(String metaTitle) {
+        this.metaTitle = metaTitle;
+    }
+
+    public String getMetaDescription() {
+        return metaDescription;
+    }
+
+    public void setMetaDescription(String metaDescription) {
+        this.metaDescription = metaDescription;
+    }
+
+    public String getMetaKeywords() {
+        return metaKeywords;
+    }
+
+    public void setMetaKeywords(String metaKeywords) {
+        this.metaKeywords = metaKeywords;
+    }
+
+    public String getOgImage() {
+        return ogImage;
+    }
+
+    public void setOgImage(String ogImage) {
+        this.ogImage = ogImage;
     }
 
     public BigDecimal getPrice() {
@@ -512,6 +598,127 @@ public class PropertyDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Getters and Setters for Zillow-inspired fields
+    public Boolean getPetFriendly() {
+        return petFriendly;
+    }
+
+    public void setPetFriendly(Boolean petFriendly) {
+        this.petFriendly = petFriendly;
+    }
+
+    public String getSpecialOffer() {
+        return specialOffer;
+    }
+
+    public void setSpecialOffer(String specialOffer) {
+        this.specialOffer = specialOffer;
+    }
+
+    public String getOfficeHours() {
+        return officeHours;
+    }
+
+    public void setOfficeHours(String officeHours) {
+        this.officeHours = officeHours;
+    }
+
+    public String getNeighborhood() {
+        return neighborhood;
+    }
+
+    public void setNeighborhood(String neighborhood) {
+        this.neighborhood = neighborhood;
+    }
+
+    public Integer getWalkScore() {
+        return walkScore;
+    }
+
+    public void setWalkScore(Integer walkScore) {
+        this.walkScore = walkScore;
+    }
+
+    public Integer getTransitScore() {
+        return transitScore;
+    }
+
+    public void setTransitScore(Integer transitScore) {
+        this.transitScore = transitScore;
+    }
+
+    public Integer getBikeScore() {
+        return bikeScore;
+    }
+
+    public void setBikeScore(Integer bikeScore) {
+        this.bikeScore = bikeScore;
+    }
+
+    public String getBuildingName() {
+        return buildingName;
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public String getFlooring() {
+        return flooring;
+    }
+
+    public void setFlooring(String flooring) {
+        this.flooring = flooring;
+    }
+
+    public String getUnitFeatures() {
+        return unitFeatures;
+    }
+
+    public void setUnitFeatures(String unitFeatures) {
+        this.unitFeatures = unitFeatures;
+    }
+
+    public String getBuildingAmenities() {
+        return buildingAmenities;
+    }
+
+    public void setBuildingAmenities(String buildingAmenities) {
+        this.buildingAmenities = buildingAmenities;
+    }
+
+    public String getAvailableUnits() {
+        return availableUnits;
+    }
+
+    public void setAvailableUnits(String availableUnits) {
+        this.availableUnits = availableUnits;
+    }
+
+    public String getPetPolicy() {
+        return petPolicy;
+    }
+
+    public void setPetPolicy(String petPolicy) {
+        this.petPolicy = petPolicy;
+    }
+
+    public String getParkingPolicy() {
+        return parkingPolicy;
+    }
+
+    public void setParkingPolicy(String parkingPolicy) {
+        this.parkingPolicy = parkingPolicy;
+    }
+
+    public Long getUnreadMessagesCount() {
+        return unreadMessagesCount;
+    }
+
+    public void setUnreadMessagesCount(Long unreadMessagesCount) {
+        this.unreadMessagesCount = unreadMessagesCount;
     }
 }
 

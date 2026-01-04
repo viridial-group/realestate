@@ -1,0 +1,40 @@
+# robots.txt pour Viridial - Annonces Immobilières
+# Optimisé pour le SEO 2024-2025
+
+User-agent: *
+Allow: /
+Allow: /search
+Allow: /property/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /agent/
+Disallow: /_next/
+Disallow: /static/
+
+# Autoriser les crawlers principaux
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+# Bloquer les bots malveillants
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Crawl-delay: 10
+
+# Sitemap
+Sitemap: http://viridial.com/sitemap.xml
+Sitemap: http://viridial.com/sitemap-properties.xml
+

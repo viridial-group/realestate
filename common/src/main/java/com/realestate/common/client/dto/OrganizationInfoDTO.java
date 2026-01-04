@@ -14,5 +14,13 @@ public class OrganizationInfoDTO {
     private String description;
     private String domain;
     private Boolean active;
+    private String defaultOfficeHours; // JSON pour les horaires du bureau par défaut
+    private String logoUrl;
+    private String address;
+    private String city;
+    private String postalCode;
+    private String country;
+    private String phone;
+    private String email;
 }
 

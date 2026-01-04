@@ -1,6 +1,6 @@
 import { httpClient } from './http.client'
 import { API_ENDPOINTS } from '../constants/api.constants'
-import type { LoginRequest, LoginResponse, SignupRequest, SignupResponse, ForgotPasswordRequest, ResetPasswordRequest } from '../types/auth.types'
+import type { LoginRequest, LoginResponse, SignupRequest, SignupResponse, ForgotPasswordRequest, ResetPasswordRequest, SubscribeRequest, SubscribeResponse } from '../types/auth.types'
 import { tokenUtils } from '../utils/token.utils'
 
 /**
@@ -68,6 +68,22 @@ export const authService = {
     const response = await httpClient.post<LoginResponse>(API_ENDPOINTS.AUTH.REFRESH)
     if (response.data?.token) {
       tokenUtils.setToken(response.data.token)
+    }
+    return response.data
+  },
+
+  /**
+   * Inscription avec abonnement (création utilisateur + organisation + abonnement)
+   */
+  async subscribe(data: SubscribeRequest): Promise<SubscribeResponse> {
+    const response = await httpClient.post<SubscribeResponse>(API_ENDPOINTS.AUTH.SUBSCRIBE, data)
+    // Stocker les tokens d'authentification
+    const token = response.data?.auth?.accessToken || response.data?.auth?.token
+    if (token) {
+      tokenUtils.setToken(token)
+    }
+    if (response.data?.auth?.refreshToken) {
+      tokenUtils.setRefreshToken(response.data.auth.refreshToken)
     }
     return response.data
   },

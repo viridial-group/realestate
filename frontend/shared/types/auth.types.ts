@@ -38,6 +38,24 @@ export interface ResetPasswordRequest {
   confirmPassword: string
 }
 
+export interface SubscribeRequest {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  organizationName: string
+  planId: number
+  phone?: string
+}
+
+export interface SubscribeResponse {
+  auth: LoginResponse
+  organizationId: number
+  subscriptionId: number
+  organizationName: string
+  planName: string
+}
+
 export interface UserInfo {
   id: number
   email: string

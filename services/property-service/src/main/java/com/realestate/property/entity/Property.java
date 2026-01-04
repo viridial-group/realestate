@@ -50,6 +50,31 @@ public class Property {
     @Column(nullable = false)
     private String status = "DRAFT"; // DRAFT, PUBLISHED, SOLD, RENTED, ARCHIVED
 
+    @Size(max = 50)
+    @Column(name = "transaction_type")
+    private String transactionType; // RENT, SALE - Type de transaction (Location ou Vente)
+
+    @Size(max = 255)
+    @Column(name = "slug", unique = true)
+    private String slug; // Slug SEO-friendly pour les URLs (ex: appartement-paris-3-pieces-123)
+
+    // SEO Meta Tags
+    @Size(max = 255)
+    @Column(name = "meta_title")
+    private String metaTitle; // Titre SEO personnalisé (optionnel, sinon utilise title)
+
+    @Size(max = 500)
+    @Column(name = "meta_description")
+    private String metaDescription; // Description SEO personnalisée (optionnel, sinon utilise description)
+
+    @Size(max = 500)
+    @Column(name = "meta_keywords")
+    private String metaKeywords; // Mots-clés SEO séparés par des virgules
+
+    @Size(max = 500)
+    @Column(name = "og_image")
+    private String ogImage; // Image pour Open Graph (optionnel, sinon utilise première image)
+
     @NotNull
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal price;
@@ -196,6 +221,51 @@ public class Property {
     @Column(columnDefinition = "TEXT")
     private String features; // JSON pour stocker des caractéristiques spécifiques
 
+    // Zillow-inspired fields
+    @Column(name = "pet_friendly")
+    private Boolean petFriendly; // Accepte les animaux de compagnie
+
+    @Size(max = 500)
+    @Column(name = "special_offer")
+    private String specialOffer; // Offre spéciale (ex: "3 Months Free Rent")
+
+    @Column(name = "office_hours", columnDefinition = "TEXT")
+    private String officeHours; // JSON pour les horaires du bureau
+
+    @Size(max = 100)
+    private String neighborhood; // Nom du quartier (ex: "Downtown")
+
+    @Column(name = "walk_score")
+    private Integer walkScore; // Score de marche (0-100)
+
+    @Column(name = "transit_score")
+    private Integer transitScore; // Score de transport (0-100)
+
+    @Column(name = "bike_score")
+    private Integer bikeScore; // Score de vélo (0-100)
+
+    @Size(max = 200)
+    @Column(name = "building_name")
+    private String buildingName; // Nom du bâtiment (ex: "7 Dekalb")
+
+    @Column(name = "flooring", columnDefinition = "TEXT")
+    private String flooring; // JSON array: ["Hardwood", "Carpet", etc.]
+
+    @Column(name = "unit_features", columnDefinition = "TEXT")
+    private String unitFeatures; // JSON array: ["Dishwasher", "Washer/Dryer", etc.]
+
+    @Column(name = "building_amenities", columnDefinition = "TEXT")
+    private String buildingAmenities; // JSON array: ["Fitness Center", "Roof Deck", etc.]
+
+    @Column(name = "available_units", columnDefinition = "TEXT")
+    private String availableUnits; // JSON array d'unités disponibles avec prix et dates
+
+    @Column(name = "pet_policy", columnDefinition = "TEXT")
+    private String petPolicy; // JSON pour la politique des animaux (dogsAllowed, catsAllowed, restrictions)
+
+    @Column(name = "parking_policy")
+    private String parkingPolicy; // "None", "Garage", "Street", etc.
+
     // Relations
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<PropertyAccess> accesses = new HashSet<>();
@@ -270,6 +340,54 @@ public class Property {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getTransactionType() {
+        return transactionType;
+    }
+
+    public void setTransactionType(String transactionType) {
+        this.transactionType = transactionType;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getMetaTitle() {
+        return metaTitle;
+    }
+
+    public void setMetaTitle(String metaTitle) {
+        this.metaTitle = metaTitle;
+    }
+
+    public String getMetaDescription() {
+        return metaDescription;
+    }
+
+    public void setMetaDescription(String metaDescription) {
+        this.metaDescription = metaDescription;
+    }
+
+    public String getMetaKeywords() {
+        return metaKeywords;
+    }
+
+    public void setMetaKeywords(String metaKeywords) {
+        this.metaKeywords = metaKeywords;
+    }
+
+    public String getOgImage() {
+        return ogImage;
+    }
+
+    public void setOgImage(String ogImage) {
+        this.ogImage = ogImage;
     }
 
     public BigDecimal getPrice() {
@@ -646,6 +764,119 @@ public class Property {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Getters and Setters for Zillow-inspired fields
+    public Boolean getPetFriendly() {
+        return petFriendly;
+    }
+
+    public void setPetFriendly(Boolean petFriendly) {
+        this.petFriendly = petFriendly;
+    }
+
+    public String getSpecialOffer() {
+        return specialOffer;
+    }
+
+    public void setSpecialOffer(String specialOffer) {
+        this.specialOffer = specialOffer;
+    }
+
+    public String getOfficeHours() {
+        return officeHours;
+    }
+
+    public void setOfficeHours(String officeHours) {
+        this.officeHours = officeHours;
+    }
+
+    public String getNeighborhood() {
+        return neighborhood;
+    }
+
+    public void setNeighborhood(String neighborhood) {
+        this.neighborhood = neighborhood;
+    }
+
+    public Integer getWalkScore() {
+        return walkScore;
+    }
+
+    public void setWalkScore(Integer walkScore) {
+        this.walkScore = walkScore;
+    }
+
+    public Integer getTransitScore() {
+        return transitScore;
+    }
+
+    public void setTransitScore(Integer transitScore) {
+        this.transitScore = transitScore;
+    }
+
+    public Integer getBikeScore() {
+        return bikeScore;
+    }
+
+    public void setBikeScore(Integer bikeScore) {
+        this.bikeScore = bikeScore;
+    }
+
+    public String getBuildingName() {
+        return buildingName;
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public String getFlooring() {
+        return flooring;
+    }
+
+    public void setFlooring(String flooring) {
+        this.flooring = flooring;
+    }
+
+    public String getUnitFeatures() {
+        return unitFeatures;
+    }
+
+    public void setUnitFeatures(String unitFeatures) {
+        this.unitFeatures = unitFeatures;
+    }
+
+    public String getBuildingAmenities() {
+        return buildingAmenities;
+    }
+
+    public void setBuildingAmenities(String buildingAmenities) {
+        this.buildingAmenities = buildingAmenities;
+    }
+
+    public String getAvailableUnits() {
+        return availableUnits;
+    }
+
+    public void setAvailableUnits(String availableUnits) {
+        this.availableUnits = availableUnits;
+    }
+
+    public String getPetPolicy() {
+        return petPolicy;
+    }
+
+    public void setPetPolicy(String petPolicy) {
+        this.petPolicy = petPolicy;
+    }
+
+    public String getParkingPolicy() {
+        return parkingPolicy;
+    }
+
+    public void setParkingPolicy(String parkingPolicy) {
+        this.parkingPolicy = parkingPolicy;
     }
 }
 

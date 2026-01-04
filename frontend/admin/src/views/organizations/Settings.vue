@@ -144,6 +144,66 @@
         </CardContent>
       </Card>
 
+      <!-- Horaires du bureau par défaut -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Horaires du bureau par défaut</CardTitle>
+          <CardDescription>
+            Définissez les horaires par défaut qui seront automatiquement appliqués aux nouvelles propriétés.
+            Ces horaires peuvent être personnalisés pour chaque propriété si nécessaire.
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="space-y-4">
+            <div v-for="day in daysOfWeek" :key="day.key" class="flex items-center justify-between gap-4 p-3 border rounded-lg">
+              <div class="flex-1">
+                <Label :for="`hours-${day.key}`" class="font-medium">{{ day.label }}</Label>
+              </div>
+              <div class="flex-1 flex items-center gap-2">
+                <Input
+                  :id="`hours-${day.key}`"
+                  v-model="officeHoursData[day.key]"
+                  placeholder="9:00-18:00 ou closed"
+                  class="flex-1"
+                />
+                <Button
+                  v-if="officeHoursData[day.key] && officeHoursData[day.key] !== 'closed'"
+                  variant="ghost"
+                  size="icon"
+                  @click="officeHoursData[day.key] = 'closed'"
+                  title="Fermé"
+                >
+                  <X class="h-4 w-4" />
+                </Button>
+                <Button
+                  v-else-if="officeHoursData[day.key] === 'closed'"
+                  variant="ghost"
+                  size="icon"
+                  @click="officeHoursData[day.key] = '9:00-18:00'"
+                  title="Ouvrir"
+                >
+                  <Check class="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 pt-2">
+            <Button variant="outline" size="sm" @click="setDefaultHours">
+              <Clock class="mr-2 h-4 w-4" />
+              Horaires par défaut
+            </Button>
+            <Button variant="outline" size="sm" @click="copyToAllDays">
+              <Copy class="mr-2 h-4 w-4" />
+              Copier sur tous les jours
+            </Button>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            Format: "HH:mm-HH:mm" (ex: 9:00-18:00) ou "closed" pour fermé. 
+            Les nouvelles propriétés hériteront automatiquement de ces horaires.
+          </p>
+        </CardContent>
+      </Card>
+
       <!-- Quotas -->
       <Card>
         <CardHeader>
@@ -252,12 +312,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from '@/components/ui/toast'
 import { organizationService, documentService, useAuthStore, type Organization, type OrganizationSettings } from '@viridial/shared'
 import { env } from '@/config/env'
-import { ArrowLeft, Loader2, Upload, Image, Save } from 'lucide-vue-next'
+import { ArrowLeft, Loader2, Upload, Image, Save, Clock, Copy, X, Check } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -287,8 +347,41 @@ const form = ref<OrganizationSettings>({
   phone: '',
   email: '',
   customDomains: '',
-  quotas: ''
+  quotas: '',
+  defaultOfficeHours: ''
 })
+
+const daysOfWeek = [
+  { key: 'monday', label: 'Lundi' },
+  { key: 'tuesday', label: 'Mardi' },
+  { key: 'wednesday', label: 'Mercredi' },
+  { key: 'thursday', label: 'Jeudi' },
+  { key: 'friday', label: 'Vendredi' },
+  { key: 'saturday', label: 'Samedi' },
+  { key: 'sunday', label: 'Dimanche' }
+]
+
+const officeHoursData = ref<Record<string, string>>({
+  monday: '9:00-18:00',
+  tuesday: '9:00-18:00',
+  wednesday: '9:00-18:00',
+  thursday: '9:00-18:00',
+  friday: '9:00-18:00',
+  saturday: '10:00-16:00',
+  sunday: 'closed'
+})
+
+// Charger les horaires depuis les settings
+watch(() => form.value.defaultOfficeHours, (newValue) => {
+  if (newValue) {
+    try {
+      const parsed = JSON.parse(newValue)
+      officeHoursData.value = { ...officeHoursData.value, ...parsed }
+    } catch (e) {
+      console.warn('Error parsing office hours:', e)
+    }
+  }
+}, { immediate: true })
 
 const quotasData = computed({
   get: () => {
@@ -318,7 +411,18 @@ const loadOrganization = async () => {
       phone: settings.phone || '',
       email: settings.email || '',
       customDomains: settings.customDomains || '',
-      quotas: settings.quotas || '{"max_properties": null, "max_users": null, "max_storage_gb": null}'
+      quotas: settings.quotas || '{"max_properties": null, "max_users": null, "max_storage_gb": null}',
+      defaultOfficeHours: settings.defaultOfficeHours || ''
+    }
+    
+    // Charger les horaires dans officeHoursData
+    if (form.value.defaultOfficeHours) {
+      try {
+        const parsed = JSON.parse(form.value.defaultOfficeHours)
+        officeHoursData.value = { ...officeHoursData.value, ...parsed }
+      } catch (e) {
+        console.warn('Error parsing office hours:', e)
+      }
     }
   } catch (error: any) {
     toast({
@@ -329,6 +433,25 @@ const loadOrganization = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const setDefaultHours = () => {
+  officeHoursData.value = {
+    monday: '9:00-18:00',
+    tuesday: '9:00-18:00',
+    wednesday: '9:00-18:00',
+    thursday: '9:00-18:00',
+    friday: '9:00-18:00',
+    saturday: '10:00-16:00',
+    sunday: 'closed'
+  }
+}
+
+const copyToAllDays = () => {
+  const firstDayValue = officeHoursData.value.monday
+  daysOfWeek.forEach(day => {
+    officeHoursData.value[day.key] = firstDayValue
+  })
 }
 
 const saveSettings = async () => {
@@ -348,6 +471,9 @@ const saveSettings = async () => {
         return
       }
     }
+
+    // Valider et sauvegarder les horaires
+    form.value.defaultOfficeHours = JSON.stringify(officeHoursData.value)
 
     await organizationService.updateSettings(organizationId.value, form.value)
     

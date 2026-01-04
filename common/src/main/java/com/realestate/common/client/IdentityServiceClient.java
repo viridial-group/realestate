@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -169,6 +170,60 @@ public class IdentityServiceClient {
 
     private Mono<Optional<OrganizationInfoDTO>> getOrganizationByIdFallback(Long organizationId, String authToken, Exception ex) {
         logger.error("Circuit breaker opened for getOrganizationById. Organization: {}", organizationId, ex);
+        return Mono.just(Optional.empty());
+    }
+
+    /**
+     * Get all active organizations (public endpoint, no auth required)
+     */
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "getAllOrganizationsFallback")
+    @Retry(name = RETRY_NAME)
+    public Mono<List<OrganizationInfoDTO>> getAllOrganizations() {
+        return webClient.get()
+                .uri("/api/public/organizations")
+                .retrieve()
+                .bodyToFlux(OrganizationInfoDTO.class)
+                .collectList()
+                .timeout(Duration.ofSeconds(10))
+                .onErrorResume(ex -> {
+                    logger.error("Error fetching all organizations: {}", ex.getMessage());
+                    return Mono.just(new java.util.ArrayList<>());
+                });
+    }
+
+    /**
+     * Get organization by ID (public endpoint, no auth required)
+     */
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "getOrganizationByIdPublicFallback")
+    @Retry(name = RETRY_NAME)
+    public Mono<Optional<OrganizationInfoDTO>> getOrganizationByIdPublic(Long organizationId) {
+        return webClient.get()
+                .uri("/api/public/organizations/{id}", organizationId)
+                .retrieve()
+                .bodyToMono(OrganizationInfoDTO.class)
+                .map(Optional::of)
+                .timeout(Duration.ofSeconds(5))
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    if (ex.getStatusCode().value() == 404) {
+                        logger.warn("Organization not found: {}", organizationId);
+                        return Mono.just(Optional.empty());
+                    }
+                    logger.error("Error fetching organization {}: {}", organizationId, ex.getMessage());
+                    return Mono.just(Optional.empty());
+                })
+                .onErrorResume(ex -> {
+                    logger.error("Unexpected error fetching organization {}: {}", organizationId, ex.getMessage());
+                    return Mono.just(Optional.empty());
+                });
+    }
+
+    private Mono<List<OrganizationInfoDTO>> getAllOrganizationsFallback(Exception ex) {
+        logger.error("Circuit breaker opened for getAllOrganizations", ex);
+        return Mono.just(new java.util.ArrayList<>());
+    }
+
+    private Mono<Optional<OrganizationInfoDTO>> getOrganizationByIdPublicFallback(Long organizationId, Exception ex) {
+        logger.error("Circuit breaker opened for getOrganizationByIdPublic. Organization: {}", organizationId, ex);
         return Mono.just(Optional.empty());
     }
 }

@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/api/identity/auth/login',
     REGISTER: '/api/identity/auth/register',
+    SUBSCRIBE: '/api/identity/auth/subscribe',
     LOGOUT: '/api/identity/auth/logout',
     REFRESH: '/api/identity/auth/refresh',
     FORGOT_PASSWORD: '/api/identity/auth/forgot-password',
@@ -18,7 +19,40 @@ export const API_ENDPOINTS = {
     SEARCH: '/api/properties/search',
     BY_ID: (id: number) => `/api/properties/${id}`,
     FEATURES: (id: number) => `/api/properties/${id}/features`,
-    STATS: '/api/properties/stats/dashboard'
+    STATS: '/api/properties/stats/dashboard',
+    UNREAD_MESSAGES_COUNT: '/api/properties/unread-messages-count',
+    PRICE_HISTORY: (id: number) => `/api/properties/${id}/price-history`,
+    PRICE_HISTORY_STATS: (id: number) => `/api/properties/${id}/price-history/stats`,
+    PRICE_HISTORY_DELETE: (id: number) => `/api/properties/price-history/${id}`
+  },
+  // Price Alerts
+  PRICE_ALERTS: {
+    BASE: '/api/price-alerts',
+    BY_ID: (id: number) => `/api/price-alerts/${id}`,
+    MY_ALERTS: '/api/price-alerts/my-alerts',
+    BY_PROPERTY: (propertyId: number) => `/api/price-alerts/property/${propertyId}`,
+    DEACTIVATE: (id: number) => `/api/price-alerts/${id}/deactivate`
+  },
+  // Visit Appointments
+  VISITS: {
+    BASE: '/api/visits',
+    BY_ID: (id: number) => `/api/visits/${id}`,
+    BY_PROPERTY: (propertyId: number) => `/api/visits/property/${propertyId}`,
+    BY_PROPERTY_UPCOMING: (propertyId: number) => `/api/visits/property/${propertyId}/upcoming`,
+    MY_VISITS: '/api/visits/my-visits',
+    BY_AGENT: (agentId: number) => `/api/visits/agent/${agentId}`,
+    BY_AGENT_UPCOMING: (agentId: number) => `/api/visits/agent/${agentId}/upcoming`,
+    CHECK_AVAILABILITY: (agentId: number) => `/api/visits/agent/${agentId}/availability`,
+    CONFIRM: (id: number) => `/api/visits/${id}/confirm`,
+    CANCEL: (id: number) => `/api/visits/${id}/cancel`,
+    COMPLETE: (id: number) => `/api/visits/${id}/complete`,
+    EXCHANGE: (id: number) => `/api/visits/${id}/exchange`
+  },
+  // Market Data (DVF)
+  MARKET_DATA: {
+    BY_POSTAL_CODE: (codePostal: string) => `/api/market-data/postal-code/${codePostal}`,
+    BY_PROPERTY: (propertyId: number) => `/api/market-data/property/${propertyId}`,
+    SIMILAR_TRANSACTIONS: (propertyId: number) => `/api/market-data/property/${propertyId}/similar`
   },
   // Users
   USERS: {
@@ -112,6 +146,50 @@ export const API_ENDPOINTS = {
       APPROVE: (id: number) => `/api/workflows/tasks/${id}/approve`,
       REJECT: (id: number) => `/api/workflows/tasks/${id}/reject`
     }
+  },
+  // Advertisements
+  ADVERTISEMENTS: {
+    BASE: '/api/advertisements',
+    BY_ID: (id: number) => `/api/advertisements/${id}`,
+    STATUS: (id: number) => `/api/advertisements/${id}/status`,
+    STATS: (id: number) => `/api/advertisements/${id}/stats`,
+    ANALYTICS: '/api/advertisements/analytics',
+    PUBLIC: {
+      ACTIVE: '/api/advertisements/public/active',
+      IMPRESSION: (id: number) => `/api/advertisements/public/${id}/impression`,
+      CLICK: (id: number) => `/api/advertisements/public/${id}/click`
+    }
+  },
+  // Contact Messages
+  CONTACT_MESSAGES: {
+    BASE: '/api/contact-messages',
+    BY_ID: (id: number) => `/api/contact-messages/${id}`,
+    BY_PROPERTY: (propertyId: number) => `/api/contact-messages/property/${propertyId}`,
+    MARK_READ: (id: number) => `/api/contact-messages/${id}/read`,
+    MARK_REPLIED: (id: number) => `/api/contact-messages/${id}/replied`,
+    UPDATE_NOTES: (id: number) => `/api/contact-messages/${id}/notes`,
+    ARCHIVE: (id: number) => `/api/contact-messages/${id}/archive`,
+    NEW_COUNT: '/api/contact-messages/stats/new-count'
+  },
+  // Reviews
+  REVIEWS: {
+    BASE: '/api/reviews',
+    BY_ID: (id: number) => `/api/reviews/${id}`,
+    BY_PROPERTY: (propertyId: number) => `/api/reviews/property/${propertyId}`,
+    BY_PROPERTY_ALL: (propertyId: number) => `/api/reviews/property/${propertyId}/all`,
+    BY_PROPERTY_STATS: (propertyId: number) => `/api/reviews/property/${propertyId}/stats`,
+    BY_USER: (userId: number) => `/api/reviews/user/${userId}`,
+    BY_STATUS: (status: string) => `/api/reviews/status/${status}`,
+    UPDATE_STATUS: (id: number) => `/api/reviews/${id}/status`,
+    MARK_HELPFUL: (id: number) => `/api/reviews/${id}/helpful`
+  },
+  // Organization Reviews
+  ORGANIZATION_REVIEWS: {
+    SEARCH: '/api/public/organizations/search',
+    BY_ORGANIZATION: (id: number) => `/api/public/organizations/${id}/reviews`,
+    STATS: (id: number) => `/api/public/organizations/${id}/reviews/stats`,
+    CREATE: (id: number) => `/api/public/organizations/${id}/reviews`,
+    MARK_HELPFUL: (id: number) => `/api/public/organizations/reviews/${id}/helpful`
   }
 } as const
 

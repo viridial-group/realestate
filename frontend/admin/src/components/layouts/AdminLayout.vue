@@ -224,7 +224,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore, useUserStore, notificationService, type Notification } from '@viridial/shared'
+import { useAuthStore, useUserStore, notificationService, contactService, organizationContactService, type Notification } from '@viridial/shared'
 
 const { t } = useI18n()
 import { Button } from '@/components/ui/button'
@@ -257,7 +257,12 @@ import {
   Package,
   Shield,
   FileText,
-  User
+  User,
+  Mail,
+  Megaphone,
+  Star,
+  Calendar,
+  TrendingUp
 } from 'lucide-vue-next'
 import LanguageSelector from '@/components/shared/LanguageSelector.vue'
 
@@ -270,6 +275,8 @@ const isSidebarOpen = ref(false)
 const notificationCount = ref(0)
 const notifications = ref<Notification[]>([])
 const loadingNotifications = ref(false)
+const contactMessagesCount = ref(0)
+const organizationContactMessagesCount = ref(0)
 let notificationRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 const currentUser = computed(() => authStore.user || userStore.currentUser)
@@ -325,6 +332,45 @@ const navigationGroups = computed(() => {
       label: 'Documents',
       path: '/documents',
       icon: FileText
+    },
+    {
+      name: 'contacts',
+      label: 'Messages de Contact',
+      path: '/contacts',
+      icon: Mail,
+      badge: contactMessagesCount.value > 0 ? String(contactMessagesCount.value) : null
+    },
+    {
+      name: 'organization-contacts',
+      label: 'Messages Agences',
+      path: '/organization-contacts',
+      icon: Mail,
+      badge: organizationContactMessagesCount.value > 0 ? String(organizationContactMessagesCount.value) : null
+    },
+    {
+      name: 'advertisements',
+      label: 'Annonces publicitaires',
+      path: '/advertisements',
+      icon: Megaphone,
+    },
+    {
+      name: 'reviews',
+      label: 'Modération des Avis',
+      path: '/reviews',
+      icon: Star
+    },
+    {
+      name: 'visits',
+      label: 'Gestion des Visites',
+      path: '/visits',
+      icon: Calendar
+    },
+    {
+      name: 'dvf',
+      label: 'Données de Marché (DVF)',
+      path: '/dvf',
+      icon: TrendingUp,
+      requiresAdmin: true
     },
     // Utilisateurs & Accès
     {
@@ -412,7 +458,7 @@ const navigationGroups = computed(() => {
     {
       id: 'real-estate',
       label: 'Immobilier',
-      items: filteredItems.filter(item => ['properties', 'documents'].includes(item.name))
+      items: filteredItems.filter(item => ['properties', 'documents', 'contacts', 'organization-contacts', 'advertisements', 'reviews', 'visits', 'dvf'].includes(item.name))
     },
     {
       id: 'users-access',
@@ -478,6 +524,37 @@ const handleLogout = async () => {
     router.push('/login')
   } catch (error) {
     console.error('Logout error:', error)
+  }
+}
+
+const loadContactMessagesCount = async () => {
+  if (!authStore.user?.id || !authStore.isAuthenticated) {
+    contactMessagesCount.value = 0
+    return
+  }
+
+  try {
+    const userId = (authStore.user as any)?.id
+    const count = await contactService.getNewMessagesCount(undefined, userId)
+    contactMessagesCount.value = count
+  } catch (err) {
+    console.error('Error loading contact messages count:', err)
+    contactMessagesCount.value = 0
+  }
+}
+
+const loadOrganizationContactMessagesCount = async () => {
+  if (!authStore.isAuthenticated) {
+    organizationContactMessagesCount.value = 0
+    return
+  }
+
+  try {
+    const count = await organizationContactService.getNewMessagesCount()
+    organizationContactMessagesCount.value = count
+  } catch (err) {
+    console.error('Error loading organization contact messages count:', err)
+    organizationContactMessagesCount.value = 0
   }
 }
 
@@ -564,20 +641,26 @@ const formatNotificationTime = (date: string) => {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
-// Surveiller l'authentification pour charger les notifications
+// Surveiller l'authentification pour charger les notifications et messages
 watch(() => authStore.isAuthenticated, (isAuthenticated) => {
   if (isAuthenticated && authStore.user?.id) {
     loadNotifications()
+    loadContactMessagesCount()
+    loadOrganizationContactMessagesCount()
     // Rafraîchir toutes les 30 secondes
     if (notificationRefreshInterval) {
       clearInterval(notificationRefreshInterval)
     }
     notificationRefreshInterval = setInterval(() => {
       loadNotifications()
+      loadContactMessagesCount()
+      loadOrganizationContactMessagesCount()
     }, 30000)
   } else {
     notifications.value = []
     notificationCount.value = 0
+    contactMessagesCount.value = 0
+    organizationContactMessagesCount.value = 0
     if (notificationRefreshInterval) {
       clearInterval(notificationRefreshInterval)
       notificationRefreshInterval = null
@@ -591,12 +674,16 @@ onMounted(() => {
     userStore.fetchProfile()
   }
   
-  // Charger les notifications si l'utilisateur est authentifié
+  // Charger les notifications et messages si l'utilisateur est authentifié
   if (authStore.isAuthenticated && authStore.user?.id) {
     loadNotifications()
+    loadContactMessagesCount()
+    loadOrganizationContactMessagesCount()
     // Rafraîchir toutes les 30 secondes
     notificationRefreshInterval = setInterval(() => {
       loadNotifications()
+      loadContactMessagesCount()
+      loadOrganizationContactMessagesCount()
     }, 30000)
   }
 })

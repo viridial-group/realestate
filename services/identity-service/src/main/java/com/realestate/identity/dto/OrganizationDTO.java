@@ -31,6 +31,7 @@ public class OrganizationDTO {
     private String email;
     private String customDomains; // JSON array
     private String quotas; // JSON object
+    private String defaultOfficeHours; // JSON pour les horaires du bureau par défaut
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -180,6 +181,14 @@ public class OrganizationDTO {
 
     public void setQuotas(String quotas) {
         this.quotas = quotas;
+    }
+
+    public String getDefaultOfficeHours() {
+        return defaultOfficeHours;
+    }
+
+    public void setDefaultOfficeHours(String defaultOfficeHours) {
+        this.defaultOfficeHours = defaultOfficeHours;
     }
 }
 

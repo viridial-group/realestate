@@ -11,6 +11,7 @@ export const propertySchema = z.object({
   propertyType: z.nativeEnum(PropertyType, {
     errorMap: () => ({ message: 'Le type de propriété est requis' })
   }),
+  transactionType: z.enum(['RENT', 'SALE']).optional().nullable(), // RENT = Location, SALE = Vente
   bedrooms: z.number().int().min(0).optional().nullable(),
   bathrooms: z.number().min(0).optional().nullable(),
   area: z.number().min(0).optional().nullable(),
@@ -40,7 +41,22 @@ export const propertySchema = z.object({
   region: z.string().optional().nullable(),
   pricePerSquareFoot: z.number().min(0).optional().nullable(),
   dateOnMarket: z.string().optional().nullable(),
-  images: z.array(z.string()).optional()
+  images: z.array(z.string()).optional(),
+  // Zillow-inspired fields
+  petFriendly: z.boolean().optional().nullable(),
+  specialOffer: z.string().max(500).optional().nullable(),
+  officeHours: z.string().optional().nullable(), // JSON string
+  neighborhood: z.string().max(100).optional().nullable(),
+  walkScore: z.number().int().min(0).max(100).optional().nullable(),
+  transitScore: z.number().int().min(0).max(100).optional().nullable(),
+  bikeScore: z.number().int().min(0).max(100).optional().nullable(),
+  buildingName: z.string().max(200).optional().nullable(),
+  flooring: z.string().optional().nullable(), // JSON array string
+  unitFeatures: z.string().optional().nullable(), // JSON array string
+  buildingAmenities: z.string().optional().nullable(), // JSON array string
+  availableUnits: z.string().optional().nullable(), // JSON array string
+  petPolicy: z.string().optional().nullable(), // JSON string
+  parkingPolicy: z.string().max(100).optional().nullable()
 })
 
 export type PropertyFormData = z.infer<typeof propertySchema>

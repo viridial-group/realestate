@@ -129,6 +129,11 @@ public class RolePermissionFilter extends OncePerRequestFilter {
                 .map(auth -> auth.startsWith("ROLE_") ? auth.substring(5) : auth)
                 .collect(Collectors.toSet());
 
+        // SUPER_ADMIN bypass all role checks
+        if (userRoles.contains("SUPER_ADMIN")) {
+            return true;
+        }
+
         for (String requiredRole : requiredRoles) {
             if (userRoles.contains(requiredRole)) {
                 return true;
@@ -145,9 +150,23 @@ public class RolePermissionFilter extends OncePerRequestFilter {
         }
 
         Set<Role> roles = user.getRoles();
+        
+        // Check if user has SUPER_ADMIN role - bypass all permission checks
+        for (Role role : roles) {
+            if ("SUPER_ADMIN".equals(role.getName())) {
+                return true;
+            }
+        }
+
+        // Check for FULL_ACCESS permission (resource: "*", action: "*")
         for (Role role : roles) {
             Set<Permission> permissions = role.getPermissions();
             for (Permission permission : permissions) {
+                // Check for full access permission
+                if ("*".equals(permission.getResource()) && "*".equals(permission.getAction())) {
+                    return true;
+                }
+                // Check for specific permission
                 if (permission.getResource().equals(resource) && 
                     permission.getAction().equals(action)) {
                     return true;

@@ -77,6 +77,9 @@ export function usePublicProperties() {
       mappedStatus = 'Vendu'
     }
     
+    // Utiliser transactionType de l'API si disponible, sinon déduire du statut
+    // Le transactionType sera utilisé pour le filtrage et l'affichage
+    
     // Gérer les coordonnées (latitude/longitude de l'API -> lat/lng pour les composants)
     const lat = property.latitude != null ? Number(property.latitude) : null
     const lng = property.longitude != null ? Number(property.longitude) : null
@@ -85,12 +88,37 @@ export function usePublicProperties() {
     // Mais on filtre ces propriétés pour ne pas les afficher sur la map
     const hasCoordinates = lat != null && lng != null && lat !== 0 && lng !== 0
     
+    // Mapper transactionType de l'API (RENT/SALE) vers le format frontend (Location/Vente)
+    let transactionType: 'Location' | 'Vente' | null = null
+    if (property.transactionType) {
+      const apiTransactionType = property.transactionType.toUpperCase()
+      if (apiTransactionType === 'RENT') {
+        transactionType = 'Location'
+      } else if (apiTransactionType === 'SALE') {
+        transactionType = 'Vente'
+      }
+    }
+    
+    // Si transactionType n'est pas défini dans l'API, déduire du status
+    if (!transactionType) {
+      if (mappedStatus === 'Loué') {
+        transactionType = 'Location'
+      } else if (mappedStatus === 'Vendu') {
+        transactionType = 'Vente'
+      } else {
+        // Par défaut pour les propriétés disponibles, on considère que c'est en vente
+        // (mais cela devrait être défini dans l'API)
+        transactionType = 'Vente'
+      }
+    }
+    
     return {
       id: property.id,
       title: property.title,
       city: property.city || 'Non spécifié',
       type: property.type,
       status: mappedStatus,
+      transactionType, // Ajouter le type de transaction
       price: property.price ? Number(property.price) : 0,
       surface: property.surface ? Number(property.surface) : 0,
       lat: hasCoordinates ? lat! : 48.8566, // Fallback Paris si pas de coordonnées

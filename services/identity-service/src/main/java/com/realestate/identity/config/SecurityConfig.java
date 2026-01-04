@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/identity/auth/**").permitAll()
                         .requestMatchers("/api/identity/utils/**").permitAll() // Password hash generation utility
+                        .requestMatchers("/api/public/organizations/**").permitAll() // Public organizations endpoint
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()

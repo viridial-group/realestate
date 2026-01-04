@@ -10,15 +10,21 @@ export const planService = {
    * Récupérer tous les plans
    */
   async getAll(activeOnly?: boolean): Promise<Plan[]> {
-    const response = await httpClient.get<Plan[]>(API_ENDPOINTS.BILLING.PLANS.BASE)
-    let plans = response.data || []
-    
-    // Filtrer par actif si demandé
-    if (activeOnly) {
-      plans = plans.filter(plan => plan.active)
+    try {
+      const response = await httpClient.get<Plan[]>(API_ENDPOINTS.BILLING.PLANS.BASE)
+      let plans = response.data || []
+      
+      // Filtrer par actif si demandé
+      if (activeOnly) {
+        plans = plans.filter(plan => plan.active)
+      }
+      
+      return plans
+    } catch (error: any) {
+      console.error('Error fetching plans:', error)
+      // Retourner une liste vide plutôt que de throw pour permettre au composant de gérer l'erreur
+      return []
     }
-    
-    return plans
   },
 
   /**

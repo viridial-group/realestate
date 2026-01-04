@@ -35,6 +35,9 @@ public class OrganizationSettingsDTO {
     // Quotas (JSON object string)
     private String quotas;
 
+    // Horaires du bureau par défaut (JSON string)
+    private String defaultOfficeHours; // JSON pour les horaires du bureau par défaut
+
     // Getters and Setters
     public String getLogoUrl() {
         return logoUrl;
@@ -106,6 +109,14 @@ public class OrganizationSettingsDTO {
 
     public void setQuotas(String quotas) {
         this.quotas = quotas;
+    }
+
+    public String getDefaultOfficeHours() {
+        return defaultOfficeHours;
+    }
+
+    public void setDefaultOfficeHours(String defaultOfficeHours) {
+        this.defaultOfficeHours = defaultOfficeHours;
     }
 }
 

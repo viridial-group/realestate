@@ -18,6 +18,7 @@ export interface Organization {
   email?: string
   customDomains?: string // JSON array
   quotas?: string // JSON object
+  defaultOfficeHours?: string // JSON pour les horaires du bureau par défaut
   createdAt: string
   updatedAt?: string
 }
@@ -32,6 +33,7 @@ export interface OrganizationSettings {
   email?: string
   customDomains?: string
   quotas?: string
+  defaultOfficeHours?: string // JSON pour les horaires du bureau par défaut
 }
 
 export interface OrganizationCreate {

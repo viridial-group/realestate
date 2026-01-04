@@ -1,9 +1,9 @@
 <template>
-  <div id="property-map-container" class="w-full h-full"></div>
+  <div ref="mapContainer" class="w-full h-full min-h-[400px]"></div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, onBeforeUnmount, watch, nextTick, ref } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -20,16 +20,17 @@ const props = defineProps<{
   hideSidebar?: boolean
 }>()
 
-// Vérifier que property est défini
-if (!props.property) {
-  console.error('PropertyMap: property prop is required')
-}
-
+const mapContainer = ref<HTMLElement | null>(null)
 let map: L.Map | null = null
 let marker: L.Marker | null = null
 
-onMounted(() => {
-  initMap()
+onMounted(async () => {
+  // Attendre que le DOM soit complètement monté
+  await nextTick()
+  // Attendre un peu plus pour s'assurer que le conteneur est rendu
+  setTimeout(() => {
+    initMap()
+  }, 100)
 })
 
 watch(() => [props.property?.latitude, props.property?.longitude], () => {
@@ -39,12 +40,21 @@ watch(() => [props.property?.latitude, props.property?.longitude], () => {
 })
 
 function initMap() {
-  if (!props.property) return
+  if (!props.property || !mapContainer.value) {
+    console.error('PropertyMap: property or container not available')
+    return
+  }
+  
+  // Vérifier si la carte existe déjà et la détruire
+  if (map) {
+    map.remove()
+    map = null
+  }
   
   const lat = props.property.latitude ? Number(props.property.latitude) : 48.8566
   const lng = props.property.longitude ? Number(props.property.longitude) : 2.3522
 
-  map = L.map('property-map-container').setView([lat, lng], 15)
+  map = L.map(mapContainer.value).setView([lat, lng], 15)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
@@ -112,5 +122,16 @@ function updateMarker() {
   // Centrer la map sur le marker
   map.setView([lat, lng], 15, { animate: true })
 }
+
+// Nettoyer la carte lors du démontage
+onBeforeUnmount(() => {
+  if (map) {
+    map.remove()
+    map = null
+  }
+  if (marker) {
+    marker = null
+  }
+})
 </script>
 

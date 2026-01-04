@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -56,12 +58,18 @@ public class Organization {
     private String email;
 
     // Domaines personnalisés (JSON array)
-    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "custom_domains", columnDefinition = "jsonb", nullable = true)
     private String customDomains; // JSON array de domaines personnalisés
 
     // Quotas (JSON object)
-    @Column(columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "quotas", columnDefinition = "jsonb", nullable = true)
     private String quotas; // JSON: {"max_properties": 100, "max_users": 10, "max_storage_gb": 50}
+
+    // Horaires du bureau par défaut (JSON)
+    @Column(name = "default_office_hours", columnDefinition = "TEXT")
+    private String defaultOfficeHours; // JSON pour les horaires du bureau par défaut de l'organisation
 
     @Column(nullable = false)
     private Boolean active = true;
@@ -267,5 +275,13 @@ public class Organization {
 
     public void setQuotas(String quotas) {
         this.quotas = quotas;
+    }
+
+    public String getDefaultOfficeHours() {
+        return defaultOfficeHours;
+    }
+
+    public void setDefaultOfficeHours(String defaultOfficeHours) {
+        this.defaultOfficeHours = defaultOfficeHours;
     }
 }

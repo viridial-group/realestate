@@ -23,16 +23,19 @@ public class OrganizationUserService {
     private final OrganizationRepository organizationRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final RoleService roleService;
 
     public OrganizationUserService(
             OrganizationUserRepository organizationUserRepository,
             OrganizationRepository organizationRepository,
             TeamRepository teamRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            RoleService roleService) {
         this.organizationUserRepository = organizationUserRepository;
         this.organizationRepository = organizationRepository;
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
+        this.roleService = roleService;
     }
 
     @Transactional
@@ -58,6 +61,16 @@ public class OrganizationUserService {
                 }
             });
             organizationUser.setIsPrimary(true);
+            
+            // Assigner automatiquement le rôle ORGANIZATION_ADMIN au créateur de l'organisation
+            // Ce rôle donne les permissions pour gérer l'organisation et toutes ses sous-organisations
+            try {
+                roleService.assignRoleToUserByName(userId, "ORGANIZATION_ADMIN");
+            } catch (Exception e) {
+                // Log l'erreur mais ne bloque pas l'ajout de l'utilisateur à l'organisation
+                // Le rôle pourra être assigné manuellement plus tard
+                System.err.println("Warning: Could not assign ORGANIZATION_ADMIN role to user " + userId + ": " + e.getMessage());
+            }
         } else {
             organizationUser.setIsPrimary(false);
         }

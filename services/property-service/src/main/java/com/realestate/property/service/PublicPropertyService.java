@@ -2,6 +2,7 @@ package com.realestate.property.service;
 
 import com.realestate.property.dto.PagedPropertyResponse;
 import com.realestate.property.dto.PropertyDTO;
+import com.realestate.property.dto.SearchSuggestionsDTO;
 import com.realestate.property.entity.Property;
 import com.realestate.property.mapper.PropertyMapper;
 import com.realestate.property.repository.PropertyRepository;
@@ -57,9 +58,10 @@ public class PublicPropertyService {
      * - Sinon → utilise PostgreSQL avec JPA Specifications (plus rapide pour filtres simples)
      * - Cache Redis avec PagedPropertyResponse (sérialisable)
      */
-    @Cacheable(value = "publicProperties", key = "#root.method.name + '_' + #type + '_' + #city + '_' + #minPrice + '_' + #maxPrice + '_' + #page + '_' + #size + '_' + #search + '_' + #sortBy + '_' + (#createdAfter != null ? #createdAfter : 'null')")
+    @Cacheable(value = "publicProperties", key = "#root.method.name + '_' + (#organizationId != null ? #organizationId : 'null') + '_' + #type + '_' + #city + '_' + #minPrice + '_' + #maxPrice + '_' + #page + '_' + #size + '_' + #search + '_' + #sortBy + '_' + #transactionType + '_' + (#createdAfter != null ? #createdAfter : 'null')")
     @Transactional(readOnly = true)
     public PagedPropertyResponse getPublishedProperties(
+            Long organizationId,
             String type,
             String city,
             String country,
@@ -71,6 +73,7 @@ public class PublicPropertyService {
             Integer bathrooms,
             String search,
             String sortBy,
+            String transactionType,
             String createdAfter,
             int page,
             int size) {
@@ -82,15 +85,15 @@ public class PublicPropertyService {
                 if (search != null && !search.trim().isEmpty() && propertySearchService != null) {
                     logger.debug("Using Elasticsearch for text search: {}", search);
                     return getPropertiesFromElasticsearch(
-                            type, city, country, minPrice, maxPrice, minSurface, maxSurface,
-                            bedrooms, bathrooms, search, sortBy, createdAfter, page, size);
+                            organizationId, type, city, country, minPrice, maxPrice, minSurface, maxSurface,
+                            bedrooms, bathrooms, search, sortBy, transactionType, createdAfter, page, size);
                 }
 
                 // Stratégie 2 : PostgreSQL avec JPA Specifications (plus rapide pour filtres simples)
                 logger.debug("Using PostgreSQL with JPA Specifications");
                 return getPropertiesFromDatabase(
-                        type, city, country, minPrice, maxPrice, minSurface, maxSurface,
-                        bedrooms, bathrooms, search, sortBy, createdAfter, page, size);
+                        organizationId, type, city, country, minPrice, maxPrice, minSurface, maxSurface,
+                        bedrooms, bathrooms, search, sortBy, transactionType, createdAfter, page, size);
                     
         } finally {
             long duration = System.currentTimeMillis() - startTime;
@@ -102,29 +105,31 @@ public class PublicPropertyService {
          * Récupère depuis Elasticsearch (si disponible)
          */
         private PagedPropertyResponse getPropertiesFromElasticsearch(
+                Long organizationId,
                 String type, String city, String country,
                 BigDecimal minPrice, BigDecimal maxPrice,
                 BigDecimal minSurface, BigDecimal maxSurface,
                 Integer bedrooms, Integer bathrooms,
-                String search, String sortBy, String createdAfter, int page, int size) {
+                String search, String sortBy, String transactionType, String createdAfter, int page, int size) {
 
             // TODO: Implémenter la recherche Elasticsearch avec tous les filtres
             // Pour l'instant, fallback sur PostgreSQL
             logger.warn("Elasticsearch search not fully implemented, falling back to PostgreSQL");
             return getPropertiesFromDatabase(
-                    type, city, country, minPrice, maxPrice, minSurface, maxSurface,
-                    bedrooms, bathrooms, search, sortBy, createdAfter, page, size);
+                    organizationId, type, city, country, minPrice, maxPrice, minSurface, maxSurface,
+                    bedrooms, bathrooms, search, sortBy, transactionType, createdAfter, page, size);
         }
 
     /**
      * Récupère depuis PostgreSQL avec JPA Specifications (optimisé)
      */
     private PagedPropertyResponse getPropertiesFromDatabase(
+            Long organizationId,
             String type, String city, String country,
             BigDecimal minPrice, BigDecimal maxPrice,
             BigDecimal minSurface, BigDecimal maxSurface,
             Integer bedrooms, Integer bathrooms,
-            String search, String sortBy, String createdAfter, int page, int size) {
+            String search, String sortBy, String transactionType, String createdAfter, int page, int size) {
         
         // Construire la spécification avec tous les filtres
         Specification<Property> spec = Specification.where(
@@ -132,8 +137,25 @@ public class PublicPropertyService {
                         .or(PropertySpecification.hasStatus("AVAILABLE"))
         );
         
+        // Filtre par organisation
+        if (organizationId != null) {
+            spec = spec.and(PropertySpecification.hasOrganization(organizationId));
+        }
+        
         if (type != null && !type.isEmpty()) {
             spec = spec.and(PropertySpecification.hasType(type));
+        }
+        
+        // Filtre par type de transaction (RENT, SALE)
+        if (transactionType != null && !transactionType.isEmpty()) {
+            // Convertir Location/Vente en RENT/SALE
+            String transactionTypeValue = transactionType.toUpperCase();
+            if ("LOCATION".equals(transactionTypeValue)) {
+                transactionTypeValue = "RENT";
+            } else if ("VENTE".equals(transactionTypeValue)) {
+                transactionTypeValue = "SALE";
+            }
+            spec = spec.and(PropertySpecification.hasTransactionType(transactionTypeValue));
         }
         
         if (city != null && !city.isEmpty()) {
@@ -285,6 +307,284 @@ public class PublicPropertyService {
             return cities.stream().limit(50).collect(java.util.stream.Collectors.toList());
         }
     }
+
+    /**
+     * Récupère des suggestions complètes de recherche basées sur la requête
+     * Inclut villes, types, adresses, titres et recherches populaires
+     */
+    @Cacheable(value = "searchSuggestions", key = "#search != null ? #search : 'empty'")
+    @Transactional(readOnly = true)
+    public SearchSuggestionsDTO getSearchSuggestions(String search) {
+        String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim().toLowerCase() : null;
+        
+        List<String> cities = List.of();
+        List<String> types = List.of();
+        List<String> addresses = List.of();
+        List<String> titles = List.of();
+        List<String> popularSearches = List.of();
+
+        if (searchTerm != null && searchTerm.length() >= 2) {
+            // Extraire les mots significatifs de la requête (ignorer "a", "à", "de", etc.)
+            String[] words = searchTerm.split("\\s+");
+            List<String> significantWords = new java.util.ArrayList<>();
+            for (String word : words) {
+                if (word.length() >= 3 && !isStopWord(word)) {
+                    significantWords.add(word);
+                }
+            }
+            
+            // Récupérer les villes correspondantes (chercher avec chaque mot significatif)
+            cities = new java.util.ArrayList<>();
+            for (String word : significantWords) {
+                List<String> foundCities = propertyRepository.findDistinctCitiesForPublishedPropertiesContaining(word)
+                        .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                for (String city : foundCities) {
+                    if (!cities.contains(city)) {
+                        cities.add(city);
+                    }
+                }
+            }
+            // Chercher aussi avec la requête complète (pour gérer "a paris", "à paris", etc.)
+            List<String> foundCitiesFromFullQuery = propertyRepository.findDistinctCitiesForPublishedPropertiesContaining(searchTerm)
+                    .stream().limit(10).collect(java.util.stream.Collectors.toList());
+            for (String city : foundCitiesFromFullQuery) {
+                if (!cities.contains(city)) {
+                    cities.add(city);
+                }
+            }
+            // Chercher aussi avec des patterns comme "a paris", "à paris"
+            if (searchTerm.contains(" a ") || searchTerm.contains(" à ")) {
+                String[] parts = searchTerm.split("\\s+(a|à)\\s+");
+                if (parts.length > 1) {
+                    String potentialCity = parts[parts.length - 1].trim();
+                    if (potentialCity.length() >= 3) {
+                        List<String> foundCities = propertyRepository.findDistinctCitiesForPublishedPropertiesContaining(potentialCity)
+                                .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                        for (String city : foundCities) {
+                            if (!cities.contains(city)) {
+                                cities.add(city);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Récupérer les types correspondants
+            types = new java.util.ArrayList<>();
+            for (String word : significantWords) {
+                List<String> foundTypes = propertyRepository.findDistinctTypesForPublishedPropertiesContaining(word)
+                        .stream().limit(10).collect(java.util.stream.Collectors.toList());
+                for (String type : foundTypes) {
+                    if (!types.contains(type)) {
+                        types.add(type);
+                    }
+                }
+            }
+            // Si aucun type trouvé, essayer avec la requête complète
+            if (types.isEmpty()) {
+                types = propertyRepository.findDistinctTypesForPublishedPropertiesContaining(searchTerm)
+                        .stream().limit(10).collect(java.util.stream.Collectors.toList());
+            }
+
+            // Récupérer les adresses correspondantes
+            addresses = propertyRepository.findDistinctAddressesForPublishedPropertiesContaining(searchTerm)
+                    .stream().limit(10).collect(java.util.stream.Collectors.toList());
+
+            // Récupérer les titres correspondants
+            titles = propertyRepository.findDistinctTitlesForPublishedPropertiesContaining(searchTerm)
+                    .stream().limit(10).collect(java.util.stream.Collectors.toList());
+
+            // Générer des recherches populaires basées sur les combinaisons
+            popularSearches = generatePopularSearches(searchTerm, cities, types);
+        } else {
+            // Si pas de recherche, retourner les recherches populaires par défaut
+            popularSearches = getDefaultPopularSearches();
+        }
+
+        return new SearchSuggestionsDTO(cities, types, addresses, titles, popularSearches);
+    }
+
+    /**
+     * Génère des recherches populaires basées sur les villes et types trouvés
+     * Prend en compte les mots-clés de recherche comme "location", "vente", etc.
+     */
+    private List<String> generatePopularSearches(String searchTerm, List<String> cities, List<String> types) {
+        List<String> suggestions = new java.util.ArrayList<>();
+        
+        // Mots-clés de recherche courants en immobilier
+        List<String> keywords = extractSearchKeywords(searchTerm);
+        
+        // Normaliser les types (APARTMENT -> Appartement, etc.)
+        List<String> normalizedTypes = normalizeTypes(types);
+        if (normalizedTypes.isEmpty()) {
+            normalizedTypes = normalizeTypes(propertyRepository.findDistinctTypesForPublishedProperties()
+                    .stream().limit(5).collect(java.util.stream.Collectors.toList()));
+        }
+        
+        // Normaliser les villes
+        List<String> normalizedCities = cities;
+        if (normalizedCities.isEmpty() && searchTerm.length() >= 2) {
+            // Si aucune ville trouvée mais la recherche contient "paris", "lyon", etc.
+            normalizedCities = propertyRepository.findDistinctCitiesForPublishedProperties()
+                    .stream()
+                    .filter(city -> searchTerm.contains(city.toLowerCase()) || city.toLowerCase().contains(searchTerm))
+                    .limit(5)
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        if (normalizedCities.isEmpty()) {
+            normalizedCities = propertyRepository.findDistinctCitiesForPublishedProperties()
+                    .stream().limit(5).collect(java.util.stream.Collectors.toList());
+        }
+
+        // Générer des suggestions avec mots-clés + type + ville
+        for (String keyword : keywords) {
+            for (String type : normalizedTypes.stream().limit(3).collect(java.util.stream.Collectors.toList())) {
+                for (String city : normalizedCities.stream().limit(3).collect(java.util.stream.Collectors.toList())) {
+                    String suggestion = keyword + " " + type + " " + city;
+                    if (!suggestions.contains(suggestion)) {
+                        suggestions.add(suggestion);
+                    }
+                }
+            }
+        }
+
+        // Si pas de mots-clés détectés, générer des suggestions simples type + ville
+        if (keywords.isEmpty()) {
+            for (String type : normalizedTypes.stream().limit(3).collect(java.util.stream.Collectors.toList())) {
+                for (String city : normalizedCities.stream().limit(3).collect(java.util.stream.Collectors.toList())) {
+                    String suggestion = type + " " + city;
+                    if (!suggestions.contains(suggestion)) {
+                        suggestions.add(suggestion);
+                    }
+                }
+            }
+        }
+
+        // Ajouter aussi des suggestions avec "à" ou "a" si pertinent
+        // Détecter si la requête contient "a" ou "à" suivi d'une ville
+        boolean hasCityWithPreposition = searchTerm.contains(" a ") || searchTerm.contains(" à ") || 
+                                         searchTerm.contains("paris") || searchTerm.contains("lyon") || 
+                                         searchTerm.contains("marseille") || searchTerm.contains("bordeaux");
+        
+        if (hasCityWithPreposition || !normalizedCities.isEmpty()) {
+            for (String keyword : keywords.isEmpty() ? List.of("location", "vente") : keywords) {
+                for (String type : normalizedTypes.stream().limit(3).collect(java.util.stream.Collectors.toList())) {
+                    for (String city : normalizedCities.stream().limit(3).collect(java.util.stream.Collectors.toList())) {
+                        // Suggestion avec "à"
+                        String suggestionWithA = keyword + " " + type + " à " + city;
+                        if (!suggestions.contains(suggestionWithA)) {
+                            suggestions.add(suggestionWithA);
+                        }
+                        // Suggestion avec "a" (sans accent)
+                        String suggestionWithA2 = keyword + " " + type + " a " + city;
+                        if (!suggestions.contains(suggestionWithA2)) {
+                            suggestions.add(suggestionWithA2);
+                        }
+                    }
+                }
+            }
+        }
+
+        return suggestions.stream().limit(10).collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Extrait les mots-clés de recherche de la requête
+     */
+    private List<String> extractSearchKeywords(String searchTerm) {
+        List<String> keywords = new java.util.ArrayList<>();
+        String[] commonKeywords = {"location", "vente", "achat", "louer", "vendre", "acheter", "recherche", "loué", "vendu"};
+        
+        // Extraire les mots de la requête
+        String[] words = searchTerm.split("\\s+");
+        
+        for (String word : words) {
+            for (String keyword : commonKeywords) {
+                if (word.equalsIgnoreCase(keyword) || word.toLowerCase().contains(keyword)) {
+                    if (!keywords.contains(keyword)) {
+                        keywords.add(keyword);
+                    }
+                }
+            }
+        }
+        
+        // Si aucun mot-clé trouvé mais la recherche commence par un mot commun, l'ajouter
+        if (keywords.isEmpty() && words.length > 0) {
+            String firstWord = words[0].toLowerCase();
+            for (String keyword : commonKeywords) {
+                if (firstWord.startsWith(keyword) || keyword.startsWith(firstWord)) {
+                    keywords.add(keyword);
+                    break;
+                }
+            }
+        }
+        
+        // Par défaut, ajouter "location" si aucun mot-clé trouvé (c'est le plus courant)
+        if (keywords.isEmpty()) {
+            keywords.add("location");
+        }
+        
+        return keywords;
+    }
+
+    /**
+     * Normalise les types de propriétés (APARTMENT -> Appartement, etc.)
+     */
+    private List<String> normalizeTypes(List<String> types) {
+        return types.stream()
+                .map(type -> {
+                    String normalized = type.toLowerCase();
+                    if (normalized.contains("apartment") || normalized.contains("appartement")) {
+                        return "Appartement";
+                    } else if (normalized.contains("house") || normalized.contains("maison")) {
+                        return "Maison";
+                    } else if (normalized.contains("villa")) {
+                        return "Villa";
+                    } else if (normalized.contains("studio")) {
+                        return "Studio";
+                    } else if (normalized.contains("land") || normalized.contains("terrain")) {
+                        return "Terrain";
+                    } else if (normalized.contains("commercial") || normalized.contains("bureau")) {
+                        return "Bureau";
+                    }
+                    // Capitaliser la première lettre
+                    return type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
+                })
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Retourne les recherches populaires par défaut
+     */
+    private List<String> getDefaultPopularSearches() {
+        List<String> allCities = propertyRepository.findDistinctCitiesForPublishedProperties()
+                .stream().limit(5).collect(java.util.stream.Collectors.toList());
+        List<String> allTypes = propertyRepository.findDistinctTypesForPublishedProperties()
+                .stream().limit(5).collect(java.util.stream.Collectors.toList());
+
+        List<String> suggestions = new java.util.ArrayList<>();
+        for (String type : allTypes) {
+            for (String city : allCities) {
+                suggestions.add(type + " " + city);
+            }
+        }
+
+        return suggestions.stream().limit(10).collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Vérifie si un mot est un mot vide (stop word)
+     */
+    private boolean isStopWord(String word) {
+        String[] stopWords = {"a", "à", "de", "du", "le", "la", "les", "un", "une", "des", "et", "ou", "pour", "avec", "sans", "sur", "dans"};
+        for (String stopWord : stopWords) {
+            if (word.equalsIgnoreCase(stopWord)) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     /**
      * Récupère une propriété publiée par ID (avec cache)
@@ -319,5 +619,24 @@ public class PublicPropertyService {
         
         return propertyMapper.toDTO(property);
     }
+
+    /**
+     * Récupère une propriété publiée par son slug SEO-friendly
+     * Utilisé pour les URLs optimisées pour le SEO
+     */
+    @Cacheable(value = "publicPropertyBySlug", key = "#slug")
+    @Transactional(readOnly = true)
+    public PropertyDTO getPublishedPropertyBySlug(String slug) {
+        Property property = propertyRepository.findBySlug(slug)
+                .orElseThrow(() -> new com.realestate.common.exception.ResourceNotFoundException("Property", slug));
+        
+        // Vérifier que la propriété est publiée
+        if (!"PUBLISHED".equals(property.getStatus()) && !"AVAILABLE".equals(property.getStatus())) {
+            throw new com.realestate.common.exception.ResourceNotFoundException("Property", slug);
+        }
+        
+        return propertyMapper.toDTO(property);
+    }
 }
+
 

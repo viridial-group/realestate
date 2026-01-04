@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-50">
+  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-50 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
@@ -34,6 +34,20 @@
             active-class="text-blue-600 dark:text-blue-400"
           >
             À propos
+          </router-link>
+          <router-link
+            to="/agencies"
+            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            active-class="text-blue-600 dark:text-blue-400"
+          >
+            Agences
+          </router-link>
+          <router-link
+            to="/subscribe"
+            class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            active-class="text-blue-600 dark:text-blue-400"
+          >
+            S'abonner
           </router-link>
         </nav>
 

@@ -1,10 +1,22 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { publicPropertyService, type SearchSuggestions } from '@/api/public-property.service'
 
 /**
  * Composable pour générer des suggestions de recherche intelligentes
  */
 export function useSearchSuggestions() {
-  const popularSearches = ref([
+  const suggestions = ref<SearchSuggestions>({
+    cities: [],
+    types: [],
+    addresses: [],
+    titles: [],
+    popularSearches: []
+  })
+
+  const isLoading = ref(false)
+
+  // Suggestions statiques de fallback
+  const fallbackPopularSearches = [
     'Appartement Paris',
     'Villa Côte d\'Azur',
     'Studio étudiant',
@@ -15,9 +27,9 @@ export function useSearchSuggestions() {
     'Maison familiale',
     'Appartement centre-ville',
     'Villa vue mer',
-  ])
+  ]
 
-  const citySuggestions = ref([
+  const fallbackCitySuggestions = [
     'Paris',
     'Lyon',
     'Marseille',
@@ -28,87 +40,130 @@ export function useSearchSuggestions() {
     'Strasbourg',
     'Montpellier',
     'Lille',
-  ])
+  ]
 
-  const typeSuggestions = ref([
+  const fallbackTypeSuggestions = [
     'Appartement',
     'Villa',
     'Studio',
     'Maison',
     'Terrain',
     'Bureau',
-  ])
+  ]
+
+  /**
+   * Charge les suggestions depuis l'API
+   */
+  async function loadSuggestions(query?: string) {
+    if (isLoading.value) return
+
+    isLoading.value = true
+    try {
+      const data = await publicPropertyService.getSearchSuggestions(query)
+      suggestions.value = data
+    } catch (error) {
+      console.error('Error loading suggestions:', error)
+      // Utiliser les suggestions de fallback en cas d'erreur
+      suggestions.value = {
+        cities: fallbackCitySuggestions,
+        types: fallbackTypeSuggestions,
+        addresses: [],
+        titles: [],
+        popularSearches: fallbackPopularSearches
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   /**
    * Génère des suggestions basées sur la requête actuelle
+   * Combine les données de l'API avec des suggestions intelligentes
    */
   function generateSuggestions(query: string): string[] {
-    if (!query || query.trim().length === 0) {
-      return popularSearches.value.slice(0, 5)
+    const queryLower = query.toLowerCase().trim()
+    const result: string[] = []
+
+    // Si pas de requête, retourner les recherches populaires
+    if (!query || queryLower.length === 0) {
+      return suggestions.value.popularSearches.length > 0 
+        ? suggestions.value.popularSearches.slice(0, 5)
+        : fallbackPopularSearches.slice(0, 5)
     }
 
-    const queryLower = query.toLowerCase().trim()
-    const suggestions: string[] = []
-
-    // 1. Suggestions de villes qui commencent par la requête
-    citySuggestions.value.forEach(city => {
-      if (city.toLowerCase().startsWith(queryLower)) {
-        suggestions.push(city)
+    // 1. Villes qui correspondent
+    suggestions.value.cities.forEach(city => {
+      if (city.toLowerCase().includes(queryLower) && !result.includes(city)) {
+        result.push(city)
       }
     })
 
-    // 2. Suggestions de types qui commencent par la requête
-    typeSuggestions.value.forEach(type => {
-      if (type.toLowerCase().startsWith(queryLower)) {
-        suggestions.push(type)
+    // 2. Types qui correspondent
+    suggestions.value.types.forEach(type => {
+      if (type.toLowerCase().includes(queryLower) && !result.includes(type)) {
+        result.push(type)
       }
     })
 
-    // 3. Recherches populaires qui contiennent la requête
-    popularSearches.value.forEach(popular => {
-      if (popular.toLowerCase().includes(queryLower) && !suggestions.includes(popular)) {
-        suggestions.push(popular)
+    // 3. Adresses qui correspondent
+    suggestions.value.addresses.forEach(address => {
+      if (address.toLowerCase().includes(queryLower) && !result.includes(address)) {
+        result.push(address)
       }
     })
 
-    // 4. Combinaisons intelligentes
+    // 4. Titres qui correspondent
+    suggestions.value.titles.forEach(title => {
+      if (title.toLowerCase().includes(queryLower) && !result.includes(title)) {
+        result.push(title)
+      }
+    })
+
+    // 5. Recherches populaires qui contiennent la requête
+    suggestions.value.popularSearches.forEach(popular => {
+      if (popular.toLowerCase().includes(queryLower) && !result.includes(popular)) {
+        result.push(popular)
+      }
+    })
+
+    // 6. Combinaisons intelligentes basées sur les données réelles
     if (queryLower.length >= 2) {
       // Si la requête ressemble à une ville, suggérer des types avec cette ville
-      const matchingCity = citySuggestions.value.find(city => 
+      const matchingCity = suggestions.value.cities.find(city => 
         city.toLowerCase().startsWith(queryLower) || queryLower.includes(city.toLowerCase())
       )
       
       if (matchingCity) {
-        typeSuggestions.value.forEach(type => {
+        suggestions.value.types.forEach(type => {
           const suggestion = `${type} ${matchingCity}`
-          if (!suggestions.includes(suggestion)) {
-            suggestions.push(suggestion)
+          if (!result.includes(suggestion)) {
+            result.push(suggestion)
           }
         })
       }
 
       // Si la requête ressemble à un type, suggérer des villes avec ce type
-      const matchingType = typeSuggestions.value.find(type => 
+      const matchingType = suggestions.value.types.find(type => 
         type.toLowerCase().startsWith(queryLower) || queryLower.includes(type.toLowerCase())
       )
       
       if (matchingType) {
-        citySuggestions.value.forEach(city => {
+        suggestions.value.cities.forEach(city => {
           const suggestion = `${matchingType} ${city}`
-          if (!suggestions.includes(suggestion)) {
-            suggestions.push(suggestion)
+          if (!result.includes(suggestion)) {
+            result.push(suggestion)
           }
         })
       }
     }
 
-    // 5. Suggestions avec guillemets pour recherche exacte
+    // 7. Suggestions avec guillemets pour recherche exacte
     if (queryLower.length >= 3 && !queryLower.startsWith('"')) {
-      suggestions.push(`"${query}"`)
+      result.push(`"${query}"`)
     }
 
-    // Limiter à 8 suggestions
-    return suggestions.slice(0, 8)
+    // Limiter à 10 suggestions
+    return result.slice(0, 10)
   }
 
   /**
@@ -124,9 +179,9 @@ export function useSearchSuggestions() {
   }
 
   return {
-    popularSearches,
-    citySuggestions,
-    typeSuggestions,
+    suggestions,
+    isLoading,
+    loadSuggestions,
     generateSuggestions,
     getAdvancedSearchTips,
   }

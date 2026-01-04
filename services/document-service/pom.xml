@@ -88,6 +88,17 @@
             <version>0.4.20</version>
         </dependency>
 
+        <!-- Sejda Commons - Latest version (1.1.7) -->
+        <dependency>
+            <groupId>org.sejda</groupId>
+            <artifactId>sejda-commons</artifactId>
+            <version>1.1.7</version>
+        </dependency>
+
+        <!-- WebP Support - Utilisation native via ImageIO avec fallback JPEG -->
+        <!-- Note: Pour un support WebP complet, considérer l'utilisation d'une bibliothèque native -->
+        <!-- ou d'un service externe pour la conversion WebP -->
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

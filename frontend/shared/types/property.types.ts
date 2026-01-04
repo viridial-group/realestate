@@ -13,6 +13,7 @@ export interface Property {
   propertyType?: PropertyType
   type?: string // API returns 'type' field
   status: PropertyStatus
+  transactionType?: string // RENT, SALE - Type de transaction
   bedrooms?: number
   bathrooms?: number
   area?: number
@@ -58,6 +59,29 @@ export interface Property {
   currency?: string
   rooms?: number
   metadata?: string // JSON string
+  slug?: string // Slug SEO-friendly
+  // SEO Meta Tags
+  metaTitle?: string // Titre SEO personnalisé
+  metaDescription?: string // Description SEO personnalisée
+  metaKeywords?: string // Mots-clés SEO
+  ogImage?: string // Image pour Open Graph
+  // Zillow-inspired fields
+  petFriendly?: boolean
+  specialOffer?: string
+  officeHours?: string // JSON string
+  neighborhood?: string
+  walkScore?: number
+  transitScore?: number
+  bikeScore?: number
+  buildingName?: string
+  flooring?: string // JSON array string
+  unitFeatures?: string // JSON array string
+  buildingAmenities?: string // JSON array string
+  availableUnits?: string // JSON array string
+  petPolicy?: string // JSON string
+  parkingPolicy?: string
+  // Unread messages count (loaded asynchronously)
+  unreadMessagesCount?: number
 }
 
 export interface PropertyCreate {
@@ -68,10 +92,26 @@ export interface PropertyCreate {
   city: string
   country: string
   propertyType: PropertyType
+  transactionType?: string // RENT, SALE - Type de transaction
   bedrooms?: number
   bathrooms?: number
   area?: number
   images?: string[]
+  // Zillow-inspired fields (optional)
+  petFriendly?: boolean
+  specialOffer?: string
+  officeHours?: string
+  neighborhood?: string
+  walkScore?: number
+  transitScore?: number
+  bikeScore?: number
+  buildingName?: string
+  flooring?: string
+  unitFeatures?: string
+  buildingAmenities?: string
+  availableUnits?: string
+  petPolicy?: string
+  parkingPolicy?: string
 }
 
 export interface PropertyUpdate extends Partial<PropertyCreate> {

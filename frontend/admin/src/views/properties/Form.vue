@@ -55,6 +55,21 @@
                 </Select>
                 <p v-if="errors.propertyType" class="text-sm text-destructive">{{ errors.propertyType }}</p>
               </div>
+
+              <div class="space-y-2">
+                <Label for="transactionType">Type de transaction</Label>
+                <Select v-model="transactionType" v-bind="transactionTypeAttrs">
+                  <SelectTrigger>
+                    <SelectValue :placeholder="transactionType ? undefined : 'Sélectionnez un type'" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="undefined">Non spécifié</SelectItem>
+                    <SelectItem value="RENT">📍 Location</SelectItem>
+                    <SelectItem value="SALE">💰 Vente</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p v-if="errors.transactionType" class="text-sm text-destructive">{{ errors.transactionType }}</p>
+              </div>
             </div>
 
             <div class="space-y-2">
@@ -533,6 +548,38 @@
             </div>
           </div>
 
+          <!-- Horaires du bureau -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Horaires du bureau</h2>
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                <Info class="h-4 w-4 text-muted-foreground" />
+                <p class="text-sm text-muted-foreground">
+                  <span v-if="!officeHours || officeHours.trim() === ''">
+                    Les horaires seront automatiquement hérités de l'organisation lors de la création.
+                  </span>
+                  <span v-else>
+                    Horaires personnalisés pour cette propriété. Vous pouvez les modifier ci-dessous.
+                  </span>
+                </p>
+              </div>
+              <div class="space-y-2">
+                <Label for="officeHours">Horaires (JSON)</Label>
+                <Textarea
+                  id="officeHours"
+                  v-model="officeHours"
+                  v-bind="officeHoursAttrs"
+                  placeholder='{"monday": "9:00-18:00", "tuesday": "9:00-18:00", "wednesday": "9:00-18:00", "thursday": "9:00-18:00", "friday": "9:00-18:00", "saturday": "10:00-16:00", "sunday": "closed"}'
+                  rows="4"
+                  class="font-mono text-sm"
+                />
+                <p class="text-xs text-muted-foreground">
+                  Format JSON: {"jour": "HH:mm-HH:mm" ou "closed"}. Laissez vide pour utiliser les horaires par défaut de l'organisation.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Actions -->
           <div class="flex justify-end gap-4 pt-4 border-t">
             <Button type="button" variant="outline" @click="goBack">
@@ -559,8 +606,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, Loader2 } from 'lucide-vue-next'
+import { ArrowLeft, Loader2, Info } from 'lucide-vue-next'
 import { propertyService, documentService, type PropertyCreate, type PropertyUpdate, PropertyType, PropertyStatus } from '@viridial/shared'
 import ImageUpload from '@/components/properties/ImageUpload.vue'
 import { propertySchema, type PropertyFormData } from '@/schemas/property.schema'
@@ -588,6 +636,7 @@ const { handleSubmit, defineField, errors, setValues, values } = useForm<Propert
     city: '',
     country: '',
     propertyType: PropertyType.APARTMENT,
+    transactionType: undefined,
     bedrooms: undefined,
     bathrooms: undefined,
     area: undefined,
@@ -617,7 +666,22 @@ const { handleSubmit, defineField, errors, setValues, values } = useForm<Propert
     hoaFeeFrequency: undefined,
     region: undefined,
     pricePerSquareFoot: undefined,
-    dateOnMarket: undefined
+    dateOnMarket: undefined,
+    // Zillow-inspired fields
+    petFriendly: false,
+    specialOffer: undefined,
+    officeHours: undefined,
+    neighborhood: undefined,
+    walkScore: undefined,
+    transitScore: undefined,
+    bikeScore: undefined,
+    buildingName: undefined,
+    flooring: undefined,
+    unitFeatures: undefined,
+    buildingAmenities: undefined,
+    availableUnits: undefined,
+    petPolicy: undefined,
+    parkingPolicy: undefined
   }
 })
 
@@ -658,6 +722,22 @@ const [hoaFeeFrequency, hoaFeeFrequencyAttrs] = defineField('hoaFeeFrequency')
 const [region, regionAttrs] = defineField('region')
 const [pricePerSquareFoot, pricePerSquareFootAttrs] = defineField('pricePerSquareFoot')
 const [dateOnMarket, dateOnMarketAttrs] = defineField('dateOnMarket')
+const [transactionType, transactionTypeAttrs] = defineField('transactionType')
+// Zillow-inspired fields
+const [petFriendly, petFriendlyAttrs] = defineField('petFriendly')
+const [specialOffer, specialOfferAttrs] = defineField('specialOffer')
+const [officeHours, officeHoursAttrs] = defineField('officeHours')
+const [neighborhood, neighborhoodAttrs] = defineField('neighborhood')
+const [walkScore, walkScoreAttrs] = defineField('walkScore')
+const [transitScore, transitScoreAttrs] = defineField('transitScore')
+const [bikeScore, bikeScoreAttrs] = defineField('bikeScore')
+const [buildingName, buildingNameAttrs] = defineField('buildingName')
+const [flooring, flooringAttrs] = defineField('flooring')
+const [unitFeatures, unitFeaturesAttrs] = defineField('unitFeatures')
+const [buildingAmenities, buildingAmenitiesAttrs] = defineField('buildingAmenities')
+const [availableUnits, availableUnitsAttrs] = defineField('availableUnits')
+const [petPolicy, petPolicyAttrs] = defineField('petPolicy')
+const [parkingPolicy, parkingPolicyAttrs] = defineField('parkingPolicy')
 
 // Keep form as computed for backward compatibility with template
 const form = computed(() => values)
@@ -697,6 +777,7 @@ const loadProperty = async () => {
       city: property.city || '',
       country: property.country || '',
       propertyType: property.propertyType || PropertyType.APARTMENT,
+      transactionType: (property as any).transactionType || undefined,
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       area: property.area,
@@ -726,7 +807,22 @@ const loadProperty = async () => {
       hoaFeeFrequency: (property as any).hoaFeeFrequency,
       region: (property as any).region,
       pricePerSquareFoot: (property as any).pricePerSquareFoot,
-      dateOnMarket: (property as any).dateOnMarket ? new Date((property as any).dateOnMarket).toISOString().split('T')[0] : undefined
+      dateOnMarket: (property as any).dateOnMarket ? new Date((property as any).dateOnMarket).toISOString().split('T')[0] : undefined,
+      // Zillow-inspired fields
+      petFriendly: (property as any).petFriendly || false,
+      specialOffer: (property as any).specialOffer,
+      officeHours: (property as any).officeHours,
+      neighborhood: (property as any).neighborhood,
+      walkScore: (property as any).walkScore,
+      transitScore: (property as any).transitScore,
+      bikeScore: (property as any).bikeScore,
+      buildingName: (property as any).buildingName,
+      flooring: (property as any).flooring,
+      unitFeatures: (property as any).unitFeatures,
+      buildingAmenities: (property as any).buildingAmenities,
+      availableUnits: (property as any).availableUnits,
+      petPolicy: (property as any).petPolicy,
+      parkingPolicy: (property as any).parkingPolicy
     })
   } catch (error: any) {
     toast({
@@ -753,6 +849,7 @@ const onSubmit = handleSubmit(async (formData) => {
         city: formData.city,
         country: formData.country,
         propertyType: formData.propertyType,
+        transactionType: formData.transactionType,
         bedrooms: formData.bedrooms,
         bathrooms: formData.bathrooms,
         area: formData.area,
@@ -782,7 +879,22 @@ const onSubmit = handleSubmit(async (formData) => {
         hoaFeeFrequency: formData.hoaFeeFrequency,
         region: formData.region,
         pricePerSquareFoot: formData.pricePerSquareFoot,
-        dateOnMarket: formData.dateOnMarket
+        dateOnMarket: formData.dateOnMarket,
+        // Zillow-inspired fields
+        petFriendly: formData.petFriendly,
+        specialOffer: formData.specialOffer,
+        officeHours: formData.officeHours,
+        neighborhood: formData.neighborhood,
+        walkScore: formData.walkScore,
+        transitScore: formData.transitScore,
+        bikeScore: formData.bikeScore,
+        buildingName: formData.buildingName,
+        flooring: formData.flooring,
+        unitFeatures: formData.unitFeatures,
+        buildingAmenities: formData.buildingAmenities,
+        availableUnits: formData.availableUnits,
+        petPolicy: formData.petPolicy,
+        parkingPolicy: formData.parkingPolicy
       }
       await propertyService.update(propertyId.value, updateData)
       toast({
@@ -799,6 +911,7 @@ const onSubmit = handleSubmit(async (formData) => {
         city: formData.city,
         country: formData.country,
         propertyType: formData.propertyType,
+        transactionType: formData.transactionType,
         bedrooms: formData.bedrooms,
         bathrooms: formData.bathrooms,
         area: formData.area,
@@ -827,7 +940,22 @@ const onSubmit = handleSubmit(async (formData) => {
         hoaFeeFrequency: formData.hoaFeeFrequency,
         region: formData.region,
         pricePerSquareFoot: formData.pricePerSquareFoot,
-        dateOnMarket: formData.dateOnMarket
+        dateOnMarket: formData.dateOnMarket,
+        // Zillow-inspired fields
+        petFriendly: formData.petFriendly,
+        specialOffer: formData.specialOffer,
+        officeHours: formData.officeHours,
+        neighborhood: formData.neighborhood,
+        walkScore: formData.walkScore,
+        transitScore: formData.transitScore,
+        bikeScore: formData.bikeScore,
+        buildingName: formData.buildingName,
+        flooring: formData.flooring,
+        unitFeatures: formData.unitFeatures,
+        buildingAmenities: formData.buildingAmenities,
+        availableUnits: formData.availableUnits,
+        petPolicy: formData.petPolicy,
+        parkingPolicy: formData.parkingPolicy
       }
       const newProperty = await propertyService.create(createData)
       

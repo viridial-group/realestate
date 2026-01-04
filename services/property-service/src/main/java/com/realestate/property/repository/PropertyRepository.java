@@ -16,6 +16,8 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     Optional<Property> findByReference(String reference);
 
+    Optional<Property> findBySlug(String slug);
+
     List<Property> findByOrganizationId(Long organizationId);
 
     @Query("SELECT p FROM Property p WHERE p.organizationId = :organizationId AND p.active = true")
@@ -66,5 +68,50 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
      */
     @Query("SELECT DISTINCT p.city FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.city IS NOT NULL AND p.city != '' AND LOWER(p.city) LIKE LOWER(CONCAT('%', :search, '%')) ORDER BY p.city")
     List<String> findDistinctCitiesForPublishedPropertiesContaining(@Param("search") String search);
+
+    /**
+     * Récupère les types distincts avec des propriétés publiées/disponibles
+     */
+    @Query("SELECT DISTINCT p.type FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.type IS NOT NULL AND p.type != '' ORDER BY p.type")
+    List<String> findDistinctTypesForPublishedProperties();
+
+    /**
+     * Récupère les types distincts avec filtre de recherche
+     */
+    @Query("SELECT DISTINCT p.type FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.type IS NOT NULL AND p.type != '' AND LOWER(p.type) LIKE LOWER(CONCAT('%', :search, '%')) ORDER BY p.type")
+    List<String> findDistinctTypesForPublishedPropertiesContaining(@Param("search") String search);
+
+    /**
+     * Récupère les quartiers/adresses distincts avec filtre de recherche
+     */
+    @Query("SELECT DISTINCT p.address FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.address IS NOT NULL AND p.address != '' AND LOWER(p.address) LIKE LOWER(CONCAT('%', :search, '%')) ORDER BY p.address")
+    List<String> findDistinctAddressesForPublishedPropertiesContaining(@Param("search") String search);
+
+    /**
+     * Récupère les titres de propriétés correspondant à la recherche
+     */
+    @Query("SELECT DISTINCT p.title FROM Property p WHERE (p.status = 'PUBLISHED' OR p.status = 'AVAILABLE') AND p.active = true AND p.title IS NOT NULL AND p.title != '' AND LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%')) ORDER BY p.title")
+    List<String> findDistinctTitlesForPublishedPropertiesContaining(@Param("search") String search);
+
+    /**
+     * Récupère les propriétés par statuts (pour sitemap)
+     */
+    @Query("SELECT p FROM Property p WHERE p.status IN :statuses AND p.active = true")
+    org.springframework.data.domain.Page<Property> findByStatusIn(
+            @Param("statuses") List<String> statuses,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    /**
+     * Compte les propriétés par statuts (pour sitemap)
+     */
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.status IN :statuses AND p.active = true")
+    long countByStatusIn(@Param("statuses") List<String> statuses);
+
+    /**
+     * Compte les propriétés actives d'une organisation
+     */
+    @Query("SELECT COUNT(p) FROM Property p WHERE p.organizationId = :organizationId AND p.active = true")
+    Long countByOrganizationId(@Param("organizationId") Long organizationId);
 }
 

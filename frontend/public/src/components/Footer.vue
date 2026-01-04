@@ -8,11 +8,11 @@
             <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
               <span class="text-lg">🏠</span>
             </div>
-            <span class="text-lg font-semibold text-gray-900 dark:text-white">RealEstate</span>
+            <span class="text-lg font-semibold text-gray-900 dark:text-white">Viridial</span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400 max-w-md">
-            La plateforme immobilière moderne pour trouver votre propriété idéale. 
-            Des milliers d'annonces vérifiées à votre disposition.
+            Votre plateforme immobilière moderne pour trouver votre bien idéal en France. 
+            Recherche avancée, données de marché DVF, plus de 10 000 annonces vérifiées.
           </p>
         </div>
 
@@ -21,24 +21,29 @@
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Liens rapides</h3>
           <ul class="space-y-2">
             <li>
-              <a href="#" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                Rechercher
-              </a>
+              <router-link to="/search" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Rechercher un bien
+              </router-link>
             </li>
             <li>
-              <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <router-link to="/publish" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Publier une annonce
-              </a>
+              </router-link>
             </li>
             <li>
-              <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Comment ça marche
-              </a>
+              <router-link to="/guide-achat" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Guide d'achat
+              </router-link>
             </li>
             <li>
-              <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Tarifs
-              </a>
+              <router-link to="/about" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                À propos
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/agencies" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Recherche d'agences
+              </router-link>
             </li>
           </ul>
         </div>
@@ -48,34 +53,43 @@
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Support</h3>
           <ul class="space-y-2">
             <li>
-              <a href="#" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                Aide & FAQ
-              </a>
+              <router-link to="/faq" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                FAQ
+              </router-link>
             </li>
             <li>
-              <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <router-link to="/contact" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Contact
-              </a>
+              </router-link>
             </li>
             <li>
-              <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="#" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Confidentialité
               </a>
             </li>
             <li>
-              <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                Conditions d'utilisation
+              <a href="#" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Mentions légales
               </a>
             </li>
           </ul>
         </div>
       </div>
 
+      <!-- Annonces publicitaires -->
+      <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
+        <AdvertisementSlot
+          ad-type="BANNER"
+          position="FOOTER"
+          page-type="FOOTER"
+        />
+      </div>
+
       <!-- Copyright -->
       <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            © {{ currentYear }} RealEstate. Tous droits réservés.
+            © {{ currentYear }} Viridial. Tous droits réservés.
           </p>
           <div class="flex items-center gap-6">
             <a href="#" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
@@ -93,6 +107,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import AdvertisementSlot from './AdvertisementSlot.vue'
 
 const currentYear = computed(() => new Date().getFullYear())
 </script>

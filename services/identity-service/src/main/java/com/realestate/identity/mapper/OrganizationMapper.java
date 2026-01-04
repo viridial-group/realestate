@@ -28,6 +28,7 @@ public class OrganizationMapper {
         dto.setEmail(organization.getEmail());
         dto.setCustomDomains(organization.getCustomDomains());
         dto.setQuotas(organization.getQuotas());
+        dto.setDefaultOfficeHours(organization.getDefaultOfficeHours());
         
         // Mapper seulement l'ID du parent (évite lazy loading)
         if (organization.getParent() != null) {
@@ -60,6 +61,7 @@ public class OrganizationMapper {
         organization.setEmail(dto.getEmail());
         organization.setCustomDomains(dto.getCustomDomains());
         organization.setQuotas(dto.getQuotas());
+        organization.setDefaultOfficeHours(dto.getDefaultOfficeHours());
         
         // Note: parent doit être géré séparément
         return organization;

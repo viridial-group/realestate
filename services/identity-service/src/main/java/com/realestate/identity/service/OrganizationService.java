@@ -134,6 +134,9 @@ public class OrganizationService {
         if (settingsDTO.getQuotas() != null) {
             organization.setQuotas(settingsDTO.getQuotas());
         }
+        if (settingsDTO.getDefaultOfficeHours() != null) {
+            organization.setDefaultOfficeHours(settingsDTO.getDefaultOfficeHours());
+        }
 
         return organizationRepository.save(organization);
     }
@@ -153,6 +156,7 @@ public class OrganizationService {
         settingsDTO.setEmail(organization.getEmail());
         settingsDTO.setCustomDomains(organization.getCustomDomains());
         settingsDTO.setQuotas(organization.getQuotas());
+        settingsDTO.setDefaultOfficeHours(organization.getDefaultOfficeHours());
 
         return settingsDTO;
     }

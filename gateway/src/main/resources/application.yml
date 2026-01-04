@@ -24,6 +24,98 @@ spring:
           predicates:
             - Path=/api/public/properties/**
         
+        - id: advertisements-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/advertisements/**
+        
+        # Property service routes for organization reviews (search, reviews, etc.)
+        # These routes have higher priority (order: 1) to match specific paths first
+        - id: public-organizations-service-search
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/public/organizations/search
+          order: 1
+        
+        - id: public-organizations-service-reviews-stats
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/public/organizations/*/reviews/stats
+          order: 1
+        
+        - id: public-organizations-service-reviews
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/public/organizations/*/reviews
+          order: 1
+        
+        - id: public-organizations-service-reviews-helpful
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/public/organizations/reviews/**
+          order: 1
+        
+        - id: public-organizations-service-performance
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/public/organizations/*/performance
+          order: 1
+        
+        # Property service route for organization with reviews (by ID)
+        # This route handles GET /api/public/organizations/{id} to return organization with review stats
+        - id: public-organizations-service-by-id
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/public/organizations/{id}
+            - Method=GET
+          order: 1
+        
+        # Identity service route for organization contact messages
+        - id: public-organizations-identity-contact
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/public/organizations/*/contact
+            - Method=POST
+          order: 1
+
+        # Identity service route for basic organization list (exact path only, no ID)
+        # This route has lower priority (default order) to match only the base path
+        - id: identity-service-public-organizations
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/public/organizations
+            - Method=GET
+        
+        - id: contact-messages-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/contact-messages/**
+        
+        - id: reviews-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/reviews/**
+        
+        - id: price-alerts-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/price-alerts/**
+        
+        - id: visits-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/visits/**
+        
+        - id: market-data-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/market-data/**
+        
+        - id: dvf-admin-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/admin/dvf/**
+        
         - id: resource-service
           uri: http://localhost:8084
           predicates:

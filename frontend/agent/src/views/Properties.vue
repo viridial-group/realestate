@@ -159,6 +159,24 @@
               <span class="text-sm text-muted-foreground">{{ t('common.total') }}</span>
               <span class="text-lg font-bold text-primary">{{ formatPrice(property.price) }}</span>
             </div>
+            <div v-if="loadingUnreadCounts || property.unreadMessagesCount !== undefined" class="flex items-center justify-between pt-2 border-t">
+              <span class="text-sm text-muted-foreground">Messages</span>
+              <div v-if="loadingUnreadCounts" class="flex items-center gap-1 text-muted-foreground">
+                <Loader2 class="h-3 w-3 animate-spin" />
+              </div>
+              <router-link
+                v-else-if="property.unreadMessagesCount && property.unreadMessagesCount > 0"
+                :to="`/contacts?propertyId=${property.id}`"
+                @click.stop
+                class="inline-flex items-center"
+              >
+                <Badge variant="default" class="bg-blue-500 text-white hover:bg-blue-600 cursor-pointer">
+                  <Mail class="h-3 w-3 mr-1" />
+                  {{ property.unreadMessagesCount }} non lu{{ property.unreadMessagesCount > 1 ? 's' : '' }}
+                </Badge>
+              </router-link>
+              <span v-else class="text-xs text-muted-foreground">Aucun</span>
+            </div>
           </div>
         </CardContent>
         <CardFooter class="flex justify-between gap-2">
@@ -203,7 +221,8 @@ import {
   Trash2,
   Key,
   Clock,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -211,6 +230,7 @@ const router = useRouter()
 const { toast } = useToast()
 
 const loading = ref(false)
+const loadingUnreadCounts = ref(false)
 const searchQuery = ref('')
 const selectedStatus = ref<string | null>(null)
 const selectedType = ref<string | null>(null)
@@ -266,6 +286,9 @@ const loadProperties = async () => {
 
     const result = await propertyService.search(params)
     properties.value = result.content || []
+
+    // Charger les comptes de messages non lus de façon asynchrone
+    await loadUnreadMessagesCounts()
   } catch (error) {
     console.error('Error loading properties:', error)
     toast({
@@ -275,6 +298,28 @@ const loadProperties = async () => {
     })
   } finally {
     loading.value = false
+  }
+}
+
+const loadUnreadMessagesCounts = async () => {
+  if (properties.value.length === 0) return
+  
+  loadingUnreadCounts.value = true
+  try {
+    const propertyIds = properties.value.map(p => Number(p.id))
+    const counts = await propertyService.getUnreadMessagesCount(propertyIds)
+    
+    // Mettre à jour les propriétés avec les comptes
+    properties.value = properties.value.map(property => ({
+      ...property,
+      unreadMessagesCount: counts[Number(property.id)] || 0
+    }))
+  } catch (error: any) {
+    console.error('Error loading unread messages counts:', error)
+    // Ne pas afficher d'erreur toast pour ne pas perturber l'utilisateur
+    // Les comptes sont optionnels
+  } finally {
+    loadingUnreadCounts.value = false
   }
 }
 

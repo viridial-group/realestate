@@ -74,6 +74,18 @@ public class PropertySpecification {
     }
 
     /**
+     * Filtre par type de transaction (RENT, SALE)
+     */
+    public static Specification<Property> hasTransactionType(String transactionType) {
+        return (root, query, cb) -> {
+            if (transactionType == null || transactionType.isEmpty()) {
+                return cb.conjunction();
+            }
+            return cb.equal(cb.lower(root.get("transactionType")), transactionType.toLowerCase());
+        };
+    }
+
+    /**
      * Filtre par ville
      */
     public static Specification<Property> hasCity(String city) {

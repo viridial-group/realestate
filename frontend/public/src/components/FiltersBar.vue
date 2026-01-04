@@ -1,5 +1,5 @@
     <template>
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-5 space-y-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 p-4 sm:p-5 space-y-4">
         <!-- Search avec autocomplete -->
         <div class="relative">
           <SearchAutocomplete
@@ -16,8 +16,20 @@
           </button>
         </div>
 
-    <!-- Filters Row 1: Type, Status, Sort -->
+    <!-- Filters Row 1: Type de transaction/Status combiné, Type, Sort -->
     <div class="flex gap-3 flex-wrap">
+      <select
+        class="px-4 py-2 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        :value="getCombinedFilterValue()"
+        @change="handleCombinedFilterChange"
+      >
+        <option value="all">Tous</option>
+        <option value="location-available">📍 Location disponible</option>
+        <option value="location-rented">📍 Location louée</option>
+        <option value="sale-available">💰 Vente disponible</option>
+        <option value="sale-sold">💰 Vente vendue</option>
+      </select>
+
       <select
         class="px-4 py-2 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         :value="props.type"
@@ -27,17 +39,6 @@
         <option>Appartement</option>
         <option>Villa</option>
         <option>Studio</option>
-      </select>
-
-      <select
-        class="px-4 py-2 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        :value="props.status"
-        @change="handleStatusChange"
-      >
-        <option>Tous</option>
-        <option>Disponible</option>
-        <option>Loué</option>
-        <option>Vendu</option>
       </select>
 
       <select
@@ -143,6 +144,7 @@ import SearchAutocomplete from './SearchAutocomplete.vue'
 
 const props = defineProps<{
   query?: string
+  transactionType?: string
   type?: string
   status?: string
   sortBy?: string
@@ -156,6 +158,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:query': [value: string]
+  'update:transactionType': [value: string]
   'update:type': [value: string]
   'update:status': [value: string]
   'update:sortBy': [value: string]
@@ -168,10 +171,11 @@ const emit = defineEmits<{
 }>()
 
 const hasActiveFilters = computed(() => {
+  const hasCombinedFilter = getCombinedFilterValue() !== 'all'
   return !!(props.maxPrice || props.minSurface || props.bedrooms || props.bathrooms || 
            (props.query && props.query.trim()) || 
+           hasCombinedFilter ||
            (props.type && props.type !== 'Tous') || 
-           (props.status && props.status !== 'Tous') ||
            (props.sortBy && props.sortBy !== 'default'))
 })
 
@@ -184,14 +188,58 @@ function handleQueryInput(value: string) {
   emit('update:query', value)
 }
 
+function getCombinedFilterValue(): string {
+  // Déterminer la valeur combinée basée sur transactionType et status
+  if (!props.transactionType || props.transactionType === 'Tous') {
+    if (!props.status || props.status === 'Tous') {
+      return 'all'
+    }
+    // Si seulement status est défini
+    if (props.status === 'Loué') return 'location-rented'
+    if (props.status === 'Vendu') return 'sale-sold'
+    if (props.status === 'Disponible') {
+      // Par défaut, on considère que "Disponible" sans transactionType = Location
+      return 'location-available'
+    }
+  } else {
+    // Si transactionType est défini
+    if (props.transactionType === 'Location') {
+      if (props.status === 'Loué') return 'location-rented'
+      return 'location-available'
+    } else if (props.transactionType === 'Vente') {
+      if (props.status === 'Vendu') return 'sale-sold'
+      return 'sale-available'
+    }
+  }
+  return 'all'
+}
+
+function handleCombinedFilterChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  const value = target.value
+  
+  // Décomposer la valeur combinée en transactionType et status
+  if (value === 'all') {
+    emit('update:transactionType', 'Tous')
+    emit('update:status', 'Tous')
+  } else if (value === 'location-available') {
+    emit('update:transactionType', 'Location')
+    emit('update:status', 'Disponible')
+  } else if (value === 'location-rented') {
+    emit('update:transactionType', 'Location')
+    emit('update:status', 'Loué')
+  } else if (value === 'sale-available') {
+    emit('update:transactionType', 'Vente')
+    emit('update:status', 'Disponible')
+  } else if (value === 'sale-sold') {
+    emit('update:transactionType', 'Vente')
+    emit('update:status', 'Vendu')
+  }
+}
+
 function handleTypeChange(event: Event) {
   const target = event.target as HTMLSelectElement
   emit('update:type', target.value)
-}
-
-function handleStatusChange(event: Event) {
-  const target = event.target as HTMLSelectElement
-  emit('update:status', target.value)
 }
 
 function handleSortByChange(event: Event) {
