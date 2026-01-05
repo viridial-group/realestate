@@ -3,7 +3,7 @@
 # Script pour démarrer toutes les APIs et les frontends
 # Usage: ./scripts/start-all.sh
 
-# Ne pas arrêter le script en cas d'erreur pour permettre de démarrer tous les services
+# Arrêter le script en cas d'erreur de compilation, mais continuer pour les démarrages
 set +e
 
 # Couleurs pour les messages
@@ -23,6 +23,90 @@ mkdir -p "$LOGS_DIR"
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Démarrage de tous les services${NC}"
 echo -e "${GREEN}========================================${NC}"
+
+# Étape 1: Compilation de tous les JARs
+echo -e "\n${GREEN}--- Compilation des JARs ---${NC}"
+echo -e "${YELLOW}⏳ Compilation en cours... (cela peut prendre plusieurs minutes)${NC}"
+
+# Compiler le common d'abord (dépendance des autres services)
+if [ -d "$PROJECT_ROOT/common" ]; then
+    echo -e "${GREEN}📦 Compilation du module common...${NC}"
+    cd "$PROJECT_ROOT/common"
+    mvn clean install -DskipTests > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Common compilé avec succès${NC}"
+    else
+        echo -e "${RED}❌ Erreur lors de la compilation du common${NC}"
+        exit 1
+    fi
+    cd "$PROJECT_ROOT"
+fi
+
+# Compiler le gateway
+if [ -d "$PROJECT_ROOT/gateway" ]; then
+    echo -e "${GREEN}📦 Compilation du gateway...${NC}"
+    cd "$PROJECT_ROOT/gateway"
+    mvn clean package -DskipTests > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Gateway compilé avec succès${NC}"
+    else
+        echo -e "${RED}❌ Erreur lors de la compilation du gateway${NC}"
+        exit 1
+    fi
+    cd "$PROJECT_ROOT"
+fi
+
+# Compiler tous les services en parallèle
+echo -e "${GREEN}📦 Compilation des services backend...${NC}"
+
+SERVICES=(
+    "identity-service"
+    "property-service"
+    "resource-service"
+    "document-service"
+    "workflow-service"
+    "notification-service"
+    "emailing-service"
+    "audit-service"
+    "billing-service"
+)
+
+# Compiler les services en parallèle
+COMPILATION_ERRORS=0
+PIDS=()
+
+for service in "${SERVICES[@]}"; do
+    (
+        service_dir="$PROJECT_ROOT/services/$service"
+        if [ -d "$service_dir" ]; then
+            cd "$service_dir"
+            if mvn clean package -DskipTests > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ $service compilé avec succès${NC}"
+            else
+                echo -e "${RED}❌ Erreur lors de la compilation de $service${NC}"
+                echo -e "${YELLOW}💡 Exécutez 'cd $service_dir && mvn clean package' pour voir les détails${NC}"
+                exit 1
+            fi
+        else
+            echo -e "${YELLOW}⚠️  Répertoire $service_dir introuvable${NC}"
+        fi
+    ) &
+    PIDS+=($!)
+done
+
+# Attendre que toutes les compilations se terminent et vérifier les erreurs
+for pid in "${PIDS[@]}"; do
+    if ! wait $pid; then
+        COMPILATION_ERRORS=1
+    fi
+done
+
+if [ $COMPILATION_ERRORS -ne 0 ]; then
+    echo -e "\n${RED}❌ Des erreurs de compilation ont été détectées. Veuillez les corriger avant de continuer.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Tous les JARs sont compilés${NC}"
 
 # Fonction pour vérifier si un port est utilisé
 check_port() {
@@ -59,10 +143,8 @@ start_service() {
     fi
 
     if [ ! -f "$jar_file" ]; then
-        echo -e "${YELLOW}⚠️  JAR non trouvé pour $service_name. Compilation en cours...${NC}"
-        cd "$service_dir"
-        mvn clean package -DskipTests > /dev/null 2>&1
-        cd "$PROJECT_ROOT"
+        echo -e "${RED}❌ JAR non trouvé pour $service_name après compilation. Vérifiez les erreurs de compilation.${NC}"
+        return 1
     fi
 
     echo -e "${GREEN}🚀 Démarrage de $service_name sur le port $port...${NC}"
