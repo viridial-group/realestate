@@ -87,7 +87,8 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <Checkbox
-                v-model:checked="loginForm.rememberMe"
+                :checked="loginForm.rememberMe"
+                @update:checked="loginForm.rememberMe = $event"
                 id="remember"
               />
               <Label for="remember" class="text-sm font-normal cursor-pointer">
@@ -194,7 +195,8 @@
 
           <div class="flex items-start space-x-2">
             <Checkbox
-              v-model:checked="registerForm.acceptTerms"
+              :checked="registerForm.acceptTerms"
+              @update:checked="registerForm.acceptTerms = $event"
               id="terms"
               required
             />

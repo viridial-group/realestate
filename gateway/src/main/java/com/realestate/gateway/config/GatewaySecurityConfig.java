@@ -27,7 +27,11 @@ public class GatewaySecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         // Désactiver complètement la sécurité par défaut
         http
-            .csrf(csrf -> csrf.disable())
+            // Désactiver CSRF de manière explicite - CRITIQUE pour éviter les erreurs CSRF
+            // Important: même avec HTTPS, CSRF doit être désactivé pour les APIs stateless
+            .csrf(csrf -> csrf
+                .disable()
+            )
             .cors(cors -> cors.disable()) // CORS géré par GatewayCorsConfig
             .authorizeExchange(exchanges -> exchanges
                 // Actuator endpoints publics
