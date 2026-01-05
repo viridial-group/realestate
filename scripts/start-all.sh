@@ -24,6 +24,46 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Démarrage de tous les services${NC}"
 echo -e "${GREEN}========================================${NC}"
 
+# Étape 0: Démarrage des services d'infrastructure
+echo -e "\n${GREEN}--- Services d'Infrastructure ---${NC}"
+
+# Fonction pour démarrer un service d'infrastructure
+start_infrastructure() {
+    local service_name=$1
+    local script_path="$PROJECT_ROOT/scripts/start-${service_name}.sh"
+    
+    if [ -f "$script_path" ]; then
+        echo -e "${GREEN}🚀 Démarrage de $service_name...${NC}"
+        bash "$script_path" > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ $service_name démarré${NC}"
+        else
+            echo -e "${YELLOW}⚠️  $service_name pourrait déjà être démarré ou nécessite une configuration${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Script de démarrage pour $service_name introuvable${NC}"
+    fi
+}
+
+# Démarrer les services d'infrastructure dans l'ordre
+start_infrastructure "redis"
+start_infrastructure "kafka"
+start_infrastructure "elasticsearch"
+
+# Vérifier PostgreSQL (généralement géré par systemd)
+echo -e "${GREEN}🔍 Vérification de PostgreSQL...${NC}"
+if command -v psql &> /dev/null; then
+    if psql -h localhost -U postgres -d realestate_db -c "SELECT 1;" &> /dev/null 2>&1; then
+        echo -e "${GREEN}✅ PostgreSQL est accessible${NC}"
+    else
+        echo -e "${YELLOW}⚠️  PostgreSQL n'est pas accessible. Vérifiez qu'il est démarré:${NC}"
+        echo -e "${YELLOW}   macOS: brew services start postgresql${NC}"
+        echo -e "${YELLOW}   Linux: sudo systemctl start postgresql${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  psql n'est pas installé. PostgreSQL pourrait être sur un serveur distant.${NC}"
+fi
+
 # Étape 1: Compilation de tous les JARs
 echo -e "\n${GREEN}--- Compilation des JARs ---${NC}"
 echo -e "${YELLOW}⏳ Compilation en cours... (cela peut prendre plusieurs minutes)${NC}"
@@ -264,6 +304,11 @@ echo -e "  Billing:        http://localhost:8090"
 echo -e "\n  Frontend Public: http://localhost:3003"
 echo -e "  Frontend Admin:  http://localhost:3001"
 echo -e "  Frontend Agent:  http://localhost:3002"
+echo -e "\n${YELLOW}Services d'infrastructure:${NC}"
+echo -e "  Redis:        localhost:6379"
+echo -e "  PostgreSQL:   localhost:5432"
+echo -e "  Kafka:        localhost:9092"
+echo -e "  Elasticsearch: localhost:9200"
 echo -e "\n${YELLOW}Logs disponibles dans: $LOGS_DIR${NC}"
 echo -e "${YELLOW}Pour arrêter tous les services: ./scripts/stop-all.sh${NC}"
 

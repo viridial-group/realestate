@@ -23,6 +23,24 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Arrêt de tous les services${NC}"
 echo -e "${GREEN}========================================${NC}"
 
+# Fonction pour arrêter un service d'infrastructure
+stop_infrastructure() {
+    local service_name=$1
+    local script_path="$PROJECT_ROOT/scripts/stop-${service_name}.sh"
+    
+    if [ -f "$script_path" ]; then
+        echo -e "${GREEN}🛑 Arrêt de $service_name...${NC}"
+        bash "$script_path" > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ $service_name arrêté${NC}"
+        else
+            echo -e "${YELLOW}⚠️  $service_name pourrait ne pas être démarré${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Script d'arrêt pour $service_name introuvable${NC}"
+    fi
+}
+
 # Fonction pour arrêter un service
 stop_service() {
     local service_name=$1
@@ -145,6 +163,25 @@ stop_by_port 8084 "resource-service"
 stop_by_port 8083 "property-service"
 stop_by_port 8080 "gateway"
 stop_by_port 8081 "identity-service"
+
+echo -e "\n${GREEN}--- Arrêt des Services d'Infrastructure ---${NC}"
+
+# Arrêter les services d'infrastructure dans l'ordre inverse
+stop_infrastructure "elasticsearch"
+stop_infrastructure "kafka"
+# Redis n'a pas de script stop, on l'arrête manuellement
+if redis-cli ping &> /dev/null 2>&1; then
+    echo -e "${GREEN}🛑 Arrêt de Redis...${NC}"
+    if pgrep -x redis-server > /dev/null; then
+        pkill redis-server 2>/dev/null || true
+        echo -e "${GREEN}✅ Redis arrêté${NC}"
+    elif docker ps | grep -q "redis"; then
+        docker stop redis 2>/dev/null || true
+        echo -e "${GREEN}✅ Redis (Docker) arrêté${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Redis n'est pas en cours d'exécution${NC}"
+    fi
+fi
 
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}✅ Tous les services sont arrêtés${NC}"
