@@ -46,6 +46,7 @@ const router = useRouter()
     
     const emit = defineEmits<{
       'listing-click': [id: number]
+      'center-on-listing': [id: number]
       'page-change': [page: number]
       'next-page': []
       'prev-page': []

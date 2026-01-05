@@ -123,5 +123,33 @@ public class InvoiceService {
         // Créer la facture
         return createInvoice(subscriptionId, amount, taxAmount);
     }
+
+    /**
+     * Récupérer les factures avec filtres et permissions (pour les utilisateurs non-admin)
+     */
+    @Transactional(readOnly = true)
+    public Page<Invoice> getInvoicesWithPermissions(
+            Set<Long> accessibleOrgIds,
+            Long organizationId,
+            String status,
+            Pageable pageable) {
+
+        Specification<Invoice> spec = Specification.where(null);
+
+        // Appliquer les filtres de permissions
+        if (accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+            spec = spec.and(InvoiceSpecification.hasAnyOrganization(accessibleOrgIds));
+        }
+
+        // Appliquer les autres filtres
+        if (organizationId != null) {
+            spec = spec.and(InvoiceSpecification.hasOrganization(organizationId));
+        }
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(InvoiceSpecification.hasStatus(status));
+        }
+
+        return invoiceRepository.findAll(spec, pageable);
+    }
 }
 

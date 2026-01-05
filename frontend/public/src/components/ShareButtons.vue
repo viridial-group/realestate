@@ -190,12 +190,12 @@ function trackShare(platform: string) {
   
   // Envoyer au backend pour les statistiques (si propertyId fourni)
   if (props.propertyId) {
-    trackShare(props.propertyId, platform)
+    trackShareToBackend(props.propertyId, platform)
   }
 }
 
-// Fonction pour tracker les partages
-async function trackShare(propertyId: number, platform: string) {
+// Fonction pour tracker les partages au backend
+async function trackShareToBackend(propertyId: number, platform: string) {
   try {
     // Import dynamique pour éviter les erreurs si le service n'est pas disponible
     const { userPropertyService } = await import('@/api/user-property.service')

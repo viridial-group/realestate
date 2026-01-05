@@ -140,5 +140,30 @@ public class SubscriptionService {
         }
         return subscriptionRepository.findAll();
     }
+
+    /**
+     * Récupérer les abonnements avec filtres et permissions (pour les utilisateurs non-admin)
+     */
+    @Transactional(readOnly = true)
+    public List<Subscription> getSubscriptionsWithPermissions(
+            Set<Long> accessibleOrgIds,
+            String status) {
+
+        Specification<Subscription> spec = Specification.where(null);
+
+        // Appliquer les filtres de permissions
+        if (accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+            spec = spec.and(SubscriptionSpecification.hasAnyOrganization(accessibleOrgIds));
+        }
+
+        // Appliquer les autres filtres
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(SubscriptionSpecification.hasStatus(status));
+        }
+
+        spec = spec.and(SubscriptionSpecification.isActive(true));
+
+        return subscriptionRepository.findAll(spec);
+    }
 }
 

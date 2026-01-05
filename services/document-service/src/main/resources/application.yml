@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: document-service
+  main:
+    allow-bean-definition-overriding: true
   
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/realestate_db}
@@ -89,4 +91,9 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+
+# Services URLs
+services:
+  identity:
+    url: ${IDENTITY_SERVICE_URL:http://localhost:8081}
 

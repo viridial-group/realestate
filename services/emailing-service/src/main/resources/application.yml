@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: emailing-service
+  main:
+    allow-bean-definition-overriding: true
   
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/realestate_db}

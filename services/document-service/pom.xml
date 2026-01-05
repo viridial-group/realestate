@@ -81,6 +81,12 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
+        <!-- Spring WebFlux (for WebClient) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- Image Processing - Thumbnailator for image optimization -->
         <dependency>
             <groupId>net.coobird</groupId>
