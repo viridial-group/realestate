@@ -50,6 +50,14 @@ else
     exit 1
 fi
 
+if [ -f "$PROJECT_DIR/config/nginx/viridial.com.conf" ]; then
+    cp "$PROJECT_DIR/config/nginx/viridial.com.conf" "$NGINX_SITES_AVAILABLE/"
+    echo "✅ viridial.com.conf copié"
+else
+    echo "❌ Erreur: $PROJECT_DIR/config/nginx/viridial.com.conf n'existe pas"
+    exit 1
+fi
+
 # ========================
 # Suppression des anciens liens (si existants)
 # ========================
@@ -75,6 +83,16 @@ if [ -L "$NGINX_SITES_ENABLED/app.viridial.com.conf" ]; then
     echo "✅ Ancien lien app.viridial.com.conf supprimé"
 fi
 
+if [ -L "$NGINX_SITES_ENABLED/viridial.com" ]; then
+    rm "$NGINX_SITES_ENABLED/viridial.com"
+    echo "✅ Ancien lien viridial.com supprimé"
+fi
+
+if [ -L "$NGINX_SITES_ENABLED/viridial.com.conf" ]; then
+    rm "$NGINX_SITES_ENABLED/viridial.com.conf"
+    echo "✅ Ancien lien viridial.com.conf supprimé"
+fi
+
 # ========================
 # Création des liens symboliques (avec .conf)
 # ========================
@@ -93,6 +111,14 @@ if [ -f "$NGINX_SITES_AVAILABLE/app.viridial.com.conf" ]; then
     echo "✅ Lien app.viridial.com.conf créé"
 else
     echo "❌ Erreur: $NGINX_SITES_AVAILABLE/app.viridial.com.conf n'existe pas"
+    exit 1
+fi
+
+if [ -f "$NGINX_SITES_AVAILABLE/viridial.com.conf" ]; then
+    ln -s "$NGINX_SITES_AVAILABLE/viridial.com.conf" "$NGINX_SITES_ENABLED/viridial.com.conf"
+    echo "✅ Lien viridial.com.conf créé"
+else
+    echo "❌ Erreur: $NGINX_SITES_AVAILABLE/viridial.com.conf n'existe pas"
     exit 1
 fi
 
@@ -132,6 +158,8 @@ echo "✅ Configuration Nginx terminée avec succès!"
 echo ""
 echo "📝 Prochaines étapes:"
 echo "1. Vérifier que les DNS pointent vers ce serveur"
-echo "2. Exécuter: certbot --nginx -d api.viridial.com -d app.viridial.com"
+echo "2. Exécuter: certbot --nginx -d viridial.com -d www.viridial.com -d api.viridial.com -d app.viridial.com"
 echo "3. Vérifier que les services Spring Boot sont démarrés sur les ports 8080, 8081, etc."
+echo "4. Construire le frontend public: cd frontend/public && npm run build"
+echo "5. Copier les fichiers build vers /var/www/viridial-public/dist"
 
