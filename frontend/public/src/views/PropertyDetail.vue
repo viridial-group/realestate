@@ -518,7 +518,7 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, computed, onMounted, watch } from 'vue'
+    import { ref, computed, watch } from 'vue'
     import { useRoute, useRouter } from 'vue-router'
 import { publicPropertyService, type PublicProperty } from '@/api/public-property.service'
 import { documentService, type Document } from '@/api/document.service'
@@ -529,8 +529,7 @@ import { documentService, type Document } from '@/api/document.service'
     import FavoriteButton from '@/components/FavoriteButton.vue'
     import { useSEO } from '@/composables/useSEO'
     import CompareButton from '@/components/CompareButton.vue'
-    import { getPlaceholderImage } from '@/utils/imageOptimization'
-    import { Clock, ArrowLeft, MapPin, Euro, Square, Home, Bed, Bath, Calendar, CheckCircle2, Gift } from 'lucide-vue-next'
+    import { Clock, ArrowLeft, MapPin, Euro, Square, Bed, Bath, Calendar, CheckCircle2, Gift } from 'lucide-vue-next'
     import ReviewList from '@/components/ReviewList.vue'
     import ReviewForm from '@/components/ReviewForm.vue'
     import ContactForm from '@/components/ContactForm.vue'
@@ -555,7 +554,7 @@ const propertyId = ref<number | null>(null)
     const images = ref<Document[]>([])
     const loading = ref(false)
     const error = ref<string | null>(null)
-    const selectedImage = ref<Document | null>(null)
+    // const selectedImage = ref<Document | null>(null)
     const reviewListRef = ref<InstanceType<typeof ReviewList> | null>(null)
     const shareUrl = computed(() => {
       if (typeof window !== 'undefined') {
@@ -639,14 +638,26 @@ async function loadPropertyImages() {
 }
 
 // Initialiser le SEO au setup (synchrone) avec une config réactive
-const seoConfig = ref({
+interface SEOConfig {
+  title?: string
+  description?: string
+  keywords?: string[]
+  image?: string
+  url?: string
+  type?: 'website' | 'article' | 'product'
+  property?: any
+  noindex?: boolean
+  canonical?: string
+}
+
+const seoConfig = ref<SEOConfig>({
   title: 'Viridial - Annonces Immobilières',
   description: 'Découvrez des milliers d\'annonces immobilières',
-  type: 'website' as const
+  type: 'website'
 })
 
 // Initialiser useSEO au setup avec la ref (pour que les changements soient détectés)
-const { updateSEO } = useSEO(seoConfig)
+const { updateSEO } = useSEO(seoConfig.value)
 
 // Fonction pour mettre à jour le SEO après le chargement de la propriété
 function updateSEOForProperty() {
@@ -663,12 +674,12 @@ function updateSEOForProperty() {
     : (typeof window !== 'undefined' ? window.location.href : undefined)
   
   // Utiliser meta_title et meta_description si disponibles, sinon générer automatiquement
-  const seoTitle = property.value.metaTitle || `${property.value.title} - ${property.value.city} | ${transactionType}`
-  const seoDescription = property.value.metaDescription || property.value.description || `${transactionType} ${property.value.type.toLowerCase()} ${property.value.city} - ${priceText}. ${property.value.surface} m²${property.value.bedrooms ? `, ${property.value.bedrooms} chambre${property.value.bedrooms > 1 ? 's' : ''}` : ''}.`
+  const seoTitle = (property.value as any).metaTitle || `${property.value.title} - ${property.value.city} | ${transactionType}`
+  const seoDescription = (property.value as any).metaDescription || property.value.description || `${transactionType} ${property.value.type.toLowerCase()} ${property.value.city} - ${priceText}. ${property.value.surface} m²${property.value.bedrooms ? `, ${property.value.bedrooms} chambre${property.value.bedrooms > 1 ? 's' : ''}` : ''}.`
   
   // Utiliser meta_keywords si disponible, sinon générer automatiquement
-  const seoKeywords = property.value.metaKeywords 
-    ? property.value.metaKeywords.split(',').map(k => k.trim())
+  const seoKeywords = (property.value as any).metaKeywords 
+    ? (property.value as any).metaKeywords.split(',').map((k: string) => k.trim())
     : [
         transactionType.toLowerCase(),
         property.value.type.toLowerCase(),
@@ -679,7 +690,7 @@ function updateSEOForProperty() {
       ].filter((k): k is string => Boolean(k))
   
   // Utiliser og_image si disponible, sinon première image
-  const seoImage = property.value.ogImage || (property.value.images && property.value.images.length > 0 ? property.value.images[0] : undefined)
+  const seoImage = (property.value as any).ogImage || (images.value && images.value.length > 0 ? documentService.getViewUrl(images.value[0].id) : undefined)
   
   // Mettre à jour la config réactive
   seoConfig.value = {
@@ -758,15 +769,15 @@ function getTransactionType(): string {
   return 'Vente'
 }
 
-function getTransactionTypeColor(): string {
-  const transactionType = getTransactionType()
-  if (transactionType === 'Location') {
-    return '#1a73e8' // Bleu pour location
-  } else if (transactionType === 'Vente') {
-    return '#ea4335' // Rouge pour vente
-  }
-  return '#1a73e8' // Par défaut bleu (location)
-}
+// function getTransactionTypeColor(): string {
+//   const transactionType = getTransactionType()
+//   if (transactionType === 'Location') {
+//     return '#1a73e8' // Bleu pour location
+//   } else if (transactionType === 'Vente') {
+//     return '#ea4335' // Rouge pour vente
+//   }
+//   return '#1a73e8' // Par défaut bleu (location)
+// }
 
 // Parsing JSON fields
 const buildingAmenitiesByCategory = computed(() => {

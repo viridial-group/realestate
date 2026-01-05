@@ -116,7 +116,6 @@ const copied = ref(false)
 
 const encodedUrl = encodeURIComponent(props.url)
 const encodedTitle = encodeURIComponent(props.title)
-const encodedDescription = encodeURIComponent(props.description || '')
 const encodedImage = props.imageUrl ? encodeURIComponent(props.imageUrl) : ''
 
 const whatsappUrl = computed(() => {

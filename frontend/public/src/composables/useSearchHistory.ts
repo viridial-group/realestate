@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 const MAX_HISTORY_ITEMS = 10
 const STORAGE_KEY = 'realestate_search_history'

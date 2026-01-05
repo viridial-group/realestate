@@ -8,7 +8,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useComparison } from '@/composables/useComparison'
 
 const { comparisonCount } = useComparison()

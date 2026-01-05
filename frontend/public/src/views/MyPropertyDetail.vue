@@ -306,7 +306,7 @@
             <div class="space-y-3 text-sm">
               <div class="flex justify-between">
                 <span class="text-gray-600">Type</span>
-                <span class="font-medium text-gray-900">{{ getPropertyTypeLabel(property.type || property.propertyType) }}</span>
+                <span class="font-medium text-gray-900">{{ getPropertyTypeLabel(property.type || property.propertyType || '') }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Transaction</span>
@@ -430,6 +430,7 @@ import { ArrowLeft, Edit, AlertCircle, Eye, Mail, Heart, Share2, MapPin, X } fro
 import { userPropertyService, type PropertyStats } from '@/api/user-property.service'
 import { documentService, contactService, type ContactMessage } from '@viridial/shared'
 import type { Property } from '@viridial/shared'
+import { PropertyStatus } from '@viridial/shared'
 import { useToast } from '@/composables/useToast'
 import { exportPropertyToPDF } from '@/utils/pdfExport'
 import ShareButtons from '@/components/ShareButtons.vue'
@@ -495,10 +496,10 @@ async function loadProperty() {
     await loadStats()
     
     // Charger les messages
-    await loadMessages()
+    await loadMessages(propertyId)
   } catch (err: any) {
     error.value = err.response?.data?.message || err.message || 'Erreur lors du chargement de l\'annonce'
-    showToast(error.value, 'error')
+    showToast(error.value || 'Erreur lors du chargement', 'error')
   } finally {
     loading.value = false
   }
@@ -517,6 +518,32 @@ async function loadStats() {
     console.warn('Could not load stats:', err)
   } finally {
     loadingStats.value = false
+  }
+}
+
+async function loadMessages(propertyId: number) {
+  if (!propertyId) return
+  
+  loadingMessages.value = true
+  try {
+    // Charger les messages de contact pour cette propriété
+    const messages = await contactService.getByProperty(propertyId)
+    propertyMessages.value = messages || []
+  } catch (err) {
+    console.warn('Could not load messages:', err)
+    propertyMessages.value = []
+  } finally {
+    loadingMessages.value = false
+  }
+}
+
+function openMessage(message: ContactMessage) {
+  selectedMessage.value = message
+  // Marquer comme lu si nécessaire
+  if (!message.readAt && message.id) {
+    contactService.markAsRead(message.id).catch(err => {
+      console.warn('Could not mark message as read:', err)
+    })
   }
 }
 
@@ -604,7 +631,7 @@ async function toggleStatus() {
       status: newStatus as any,
     })
     
-    property.value.status = newStatus
+    property.value.status = newStatus as PropertyStatus
     showToast(
       newStatus === 'AVAILABLE' ? 'Annonce publiée' : 'Annonce désactivée',
       'success'

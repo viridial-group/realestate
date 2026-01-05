@@ -1,5 +1,6 @@
 package com.realestate.property.service;
 
+import com.realestate.common.client.EmailServiceClient;
 import com.realestate.common.client.IdentityServiceClient;
 import com.realestate.common.client.ResourceServiceClient;
 import com.realestate.common.event.PropertyCreatedEvent;
@@ -16,6 +17,7 @@ import com.realestate.property.dto.PriceHistoryCreateDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -42,6 +46,11 @@ public class PropertyService {
     private final SlugGenerator slugGenerator;
     @Autowired(required = false)
     private PriceHistoryService priceHistoryService;
+    @Autowired(required = false)
+    private EmailServiceClient emailServiceClient;
+    
+    @Value("${app.frontend.url:http://localhost:3003}")
+    private String frontendUrl;
 
     public PropertyService(
             PropertyRepository propertyRepository,
@@ -180,7 +189,56 @@ public class PropertyService {
             eventProducer.publishPropertyCreated(event);
         }
         
+        // Envoyer un email de notification si la propriété est publiée
+        if (saved.getStatus() != null && saved.getStatus().equals("PUBLISHED")) {
+            sendPropertyPublishedEmail(saved, authToken);
+        }
+        
         return saved;
+    }
+    
+    /**
+     * Envoie un email de notification de publication de propriété
+     */
+    private void sendPropertyPublishedEmail(Property property, String authToken) {
+        if (emailServiceClient == null || property.getCreatedBy() == null) {
+            return;
+        }
+        
+        try {
+            // Récupérer les informations de l'utilisateur
+            Optional<com.realestate.common.client.dto.UserInfoDTO> userInfo = identityServiceClient
+                    .getUserById(property.getCreatedBy(), authToken)
+                    .block();
+            
+            if (userInfo.isEmpty()) {
+                logger.warn("Cannot send property published email: user {} not found", property.getCreatedBy());
+                return;
+            }
+            
+            com.realestate.common.client.dto.UserInfoDTO user = userInfo.get();
+            
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("firstName", user.getFirstName() != null ? user.getFirstName() : "Utilisateur");
+            variables.put("propertyTitle", property.getTitle());
+            variables.put("propertyAddress", property.getAddress() != null ? property.getAddress() : "");
+            variables.put("propertyCity", property.getCity() != null ? property.getCity() : "");
+            variables.put("propertyPrice", property.getPrice() != null ? property.getPrice().toString() : "N/A");
+            variables.put("propertyArea", property.getSurface() != null ? property.getSurface().toString() : "N/A");
+            variables.put("propertyUrl", frontendUrl + "/properties/" + property.getId());
+            
+            // Envoyer de manière asynchrone
+            emailServiceClient.sendEmailFromTemplateAsync(
+                    "property_published",
+                    user.getEmail(),
+                    user.getId(),
+                    property.getOrganizationId(),
+                    variables,
+                    authToken
+            );
+        } catch (Exception e) {
+            logger.warn("Failed to send property published email for property {}: {}", property.getId(), e.getMessage());
+        }
     }
 
     /**

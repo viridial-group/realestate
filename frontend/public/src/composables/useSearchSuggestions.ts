@@ -29,27 +29,27 @@ export function useSearchSuggestions() {
     'Villa vue mer',
   ]
 
-  const fallbackCitySuggestions = [
-    'Paris',
-    'Lyon',
-    'Marseille',
-    'Bordeaux',
-    'Nice',
-    'Toulouse',
-    'Nantes',
-    'Strasbourg',
-    'Montpellier',
-    'Lille',
-  ]
+  // const fallbackCitySuggestions = [
+  //   'Paris',
+  //   'Lyon',
+  //   'Marseille',
+  //   'Bordeaux',
+  //   'Nice',
+  //   'Toulouse',
+  //   'Nantes',
+  //   'Strasbourg',
+  //   'Montpellier',
+  //   'Lille',
+  // ]
 
-  const fallbackTypeSuggestions = [
-    'Appartement',
-    'Villa',
-    'Studio',
-    'Maison',
-    'Terrain',
-    'Bureau',
-  ]
+  // const fallbackTypeSuggestions = [
+  //   'Appartement',
+  //   'Villa',
+  //   'Studio',
+  //   'Maison',
+  //   'Terrain',
+  //   'Bureau',
+  // ]
 
   /**
    * Charge les suggestions depuis l'API avec améliorations

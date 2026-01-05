@@ -168,7 +168,7 @@ function handleLoad(event: Event) {
   emit('load', event)
 }
 
-function handleError(event: Event) {
+function handleError(_event: Event) {
   hasError.value = true
   const error = new Error(`Failed to load image: ${props.src}`)
   emit('error', error)

@@ -234,7 +234,7 @@
                     </div>
                     <div class="space-y-1.5">
                       <div
-                        v-for="(count, index) in [
+                        v-for="(count) in [
                           { stars: 5, count: agency.reviewStats.ratingDistribution.fiveStars, label: '5 étoiles' },
                           { stars: 4, count: agency.reviewStats.ratingDistribution.fourStars, label: '4 étoiles' },
                           { stars: 3, count: agency.reviewStats.ratingDistribution.threeStars, label: '3 étoiles' }

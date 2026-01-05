@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { BarChart3, AlertCircle } from 'lucide-vue-next'
 
 export interface ChartDataPoint {
@@ -268,7 +268,7 @@ const xLabels = computed(() => {
   const step = Math.max(1, Math.floor(allDates.value.length / 6))
   return allDates.value
     .filter((_, index) => index % step === 0 || index === allDates.value.length - 1)
-    .map((date, index) => {
+    .map((date) => {
       const x = padding.left + ((allDates.value.indexOf(date)) / (allDates.value.length - 1 || 1)) * (chartWidth - padding.left - padding.right)
       return { date, x }
     })

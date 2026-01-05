@@ -808,7 +808,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { organizationReviewService, type OrganizationWithReviews, type OrganizationReview, type OrganizationPerformanceStats } from '@viridial/shared'
 import { useSEO } from '@/composables/useSEO'
 import OrganizationReviewForm from '@/components/OrganizationReviewForm.vue'
-import ContactAgencyForm from '@/components/ContactAgencyForm.vue'
+// import ContactAgencyForm from '@/components/ContactAgencyForm.vue'
 import { publicPropertyService, type PublicProperty } from '@/api/public-property.service'
 
 const route = useRoute()
@@ -993,10 +993,10 @@ function handleReviewSubmitted() {
   loadAgency()
 }
 
-function handleContactSuccess() {
-  // Optionnel : afficher une notification ou recharger les données
-  console.log('Contact message sent successfully')
-}
+// function handleContactSuccess() {
+//   // Optionnel : afficher une notification ou recharger les données
+//   console.log('Contact message sent successfully')
+// }
 
 function formatRating(rating?: number): string {
   if (rating === undefined || rating === null) return 'N/A'

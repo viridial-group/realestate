@@ -96,7 +96,7 @@
       <!-- Vue grille -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PropertyCard
-          v-for="property in favoriteProperties"
+          v-for="property in favoritePropertiesListings"
           :key="property.id"
           :item="property"
           @details="goToDetails"
@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFavorites } from '@/composables/useFavorites'
 import { publicPropertyService, type PublicProperty } from '@/api/public-property.service'
@@ -119,11 +119,74 @@ import ViewToggle from '@/components/ViewToggle.vue'
 import { getPlaceholderImage } from '@/utils/imageOptimization'
 import { exportFavoritesToPDF } from '@/utils/pdfExport'
 
+type Listing = {
+  id: number
+  title: string
+  city: string
+  type: string
+  status: 'Disponible' | 'Vendu' | 'Loué'
+  transactionType?: 'Location' | 'Vente' | null
+  price: number
+  surface: number
+  bedrooms?: number
+  bathrooms?: number
+  lat: number
+  lng: number
+  description: string
+  rating?: number
+  reviews?: number
+  createdAt?: string
+  slug?: string
+}
+
 const router = useRouter()
 const { favorites, favoritesCount, clearFavorites } = useFavorites()
 const favoriteProperties = ref<PublicProperty[]>([])
 const viewMode = ref<'list' | 'grid'>('grid')
 const propertyImages = ref<Record<number, any[]>>({})
+
+function convertToListing(property: PublicProperty): Listing {
+  const status = formatStatus(property.status)
+  const transactionType = property.transactionType === 'RENT' || property.transactionType === 'Location' 
+    ? 'Location' 
+    : property.transactionType === 'SALE' || property.transactionType === 'Vente'
+    ? 'Vente'
+    : null
+
+  return {
+    id: property.id,
+    title: property.title,
+    city: property.city || 'Non spécifié',
+    type: property.type || 'Non spécifié',
+    status,
+    transactionType,
+    price: property.price || 0,
+    surface: property.surface || 0,
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    lat: property.latitude || 48.8566,
+    lng: property.longitude || 2.3522,
+    description: property.description || '',
+    rating: undefined,
+    reviews: undefined,
+    createdAt: property.createdAt,
+    slug: property.slug,
+  }
+}
+
+function formatStatus(status: string): 'Disponible' | 'Vendu' | 'Loué' {
+  const apiStatus = status?.toUpperCase()
+  if (apiStatus === 'PUBLISHED' || apiStatus === 'AVAILABLE') {
+    return 'Disponible'
+  } else if (apiStatus === 'RENTED' || apiStatus === 'LOUÉ') {
+    return 'Loué'
+  } else if (apiStatus === 'SOLD' || apiStatus === 'VENDU') {
+    return 'Vendu'
+  }
+  return 'Disponible'
+}
+
+const favoritePropertiesListings = computed(() => favoriteProperties.value.map(convertToListing))
 
 onMounted(async () => {
   await loadFavoriteProperties()

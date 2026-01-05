@@ -59,7 +59,7 @@
           <!-- Steps indicators -->
           <div class="flex items-center justify-center gap-2 mb-6">
             <div
-              v-for="(step, index) in steps"
+              v-for="(_, index) in steps"
               :key="index"
               :class="[
                 'w-2 h-2 rounded-full transition-all',
@@ -111,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { X, Home, FileText, Image, Eye, BarChart3, MessageSquare } from 'lucide-vue-next'
+import { X } from 'lucide-vue-next'
 
 export interface OnboardingStep {
   title: string

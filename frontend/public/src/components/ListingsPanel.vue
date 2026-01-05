@@ -10,8 +10,7 @@ import ContactForm from './ContactForm.vue'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { MapPin, Home, Euro, Square, Star, MessageSquare, Eye, ExternalLink } from 'lucide-vue-next'
+import { MapPin, Home, Euro, Square, Star, Eye, ExternalLink } from 'lucide-vue-next'
 
 const router = useRouter()
     
@@ -111,10 +110,6 @@ const router = useRouter()
       router.push(`/property/${item.id}`)
     }
     
-    function handleContact(item: Listing) {
-      // Le ContactForm est maintenant géré directement dans le template
-      // Cette fonction peut être supprimée ou utilisée pour ouvrir un modal si nécessaire
-    }
     
     function handleVisualiser(item: Listing) {
       emit('listing-click', item.id)
@@ -158,15 +153,6 @@ const router = useRouter()
       return 'Vente'
     }
 
-    function getTransactionTypeColor(item: Listing): string {
-      const transactionType = getTransactionType(item)
-      if (transactionType === 'Location') {
-        return '#1a73e8' // Bleu pour location
-      } else if (transactionType === 'Vente') {
-        return '#ea4335' // Rouge pour vente
-      }
-      return '#1a73e8' // Par défaut bleu (location)
-    }
     
     // Images
     const propertyImages = ref<Record<number, Document[]>>({})

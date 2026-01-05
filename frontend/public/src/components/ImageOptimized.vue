@@ -34,7 +34,7 @@ interface Props {
   width?: number
   height?: number
   sizes?: string
-  loading?: 'lazy' | 'eager' | 'auto'
+  loading?: 'lazy' | 'eager'
   decoding?: 'async' | 'auto' | 'sync'
   imgClass?: string
   imgStyle?: string | Record<string, string>

@@ -130,7 +130,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { usePublicProperties, type PublicProperty } from '@/composables/usePublicProperties'
+import { usePublicProperties } from '@/composables/usePublicProperties'
 import { useSEO } from '@/composables/useSEO'
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import PropertyCard from '@/components/PropertyCard.vue'
@@ -180,8 +180,17 @@ onMounted(async () => {
   
   // Calculer les stats
   stats.value.total = formattedProperties.value.length
-  stats.value.vente = formattedProperties.value.filter(p => p.transactionType === 'SALE').length
-  stats.value.location = formattedProperties.value.filter(p => p.transactionType === 'RENT').length
+  // Les propriétés formatées ont transactionType comme 'Location' | 'Vente', mais on doit vérifier la propriété source
+  stats.value.vente = formattedProperties.value.filter(p => {
+    // Vérifier si c'est une vente (peut être 'Vente' ou 'SALE' selon le format)
+    const tt = p.transactionType?.toUpperCase()
+    return tt === 'VENTE' || tt === 'SALE'
+  }).length
+  stats.value.location = formattedProperties.value.filter(p => {
+    // Vérifier si c'est une location (peut être 'Location' ou 'RENT' selon le format)
+    const tt = p.transactionType?.toUpperCase()
+    return tt === 'LOCATION' || tt === 'RENT'
+  }).length
   
   const prices = formattedProperties.value.map(p => p.price).filter(p => p > 0)
   if (prices.length > 0) {

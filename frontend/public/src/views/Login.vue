@@ -356,8 +356,7 @@ async function handleRegister() {
 
   try {
     await authService.signup({
-      firstName: registerForm.value.firstName,
-      lastName: registerForm.value.lastName,
+      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
       email: registerForm.value.email,
       password: registerForm.value.password,
     })

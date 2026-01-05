@@ -85,7 +85,14 @@ services:
   resource:
     url: ${RESOURCE_SERVICE_URL:http://localhost:8084}
   notification:
-    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+  emailing:
+    url: ${EMAILING_SERVICE_URL:http://localhost:8088}
+
+# Application URLs
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3003}
 
 # Resilience4j Configuration
 resilience4j:

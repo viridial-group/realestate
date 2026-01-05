@@ -708,7 +708,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, AlertCircle, X } from 'lucide-vue-next'
 import { userPropertyService } from '@/api/user-property.service'
 import { documentService, useAuthStore } from '@viridial/shared'
-import type { PropertyCreate, PropertyUpdate } from '@viridial/shared'
+import type { PropertyCreate, PropertyUpdate, PropertyType } from '@viridial/shared'
 import { useToast } from '@/composables/useToast'
 import ImageUpload from '@/components/ImageUpload.vue'
 import PropertyPreview from '@/components/PropertyPreview.vue'
@@ -756,7 +756,7 @@ const form = ref<PropertyCreate & {
   address: '',
   city: '',
   country: 'France',
-  propertyType: 'APARTMENT',
+  propertyType: 'APARTMENT' as PropertyType,
   transactionType: 'SALE',
   bedrooms: undefined,
   bathrooms: undefined,

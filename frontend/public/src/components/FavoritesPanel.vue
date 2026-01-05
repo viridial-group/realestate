@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Star, ChevronDown, X } from 'lucide-vue-next'
 import { useFavorites } from '@/composables/useFavorites'

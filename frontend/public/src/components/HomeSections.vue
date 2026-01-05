@@ -16,7 +16,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PropertyCard
-          v-for="property in newProperties"
+          v-for="property in newPropertiesListings"
           :key="property.id"
           :item="property"
           @details="goToDetails"
@@ -41,7 +41,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PropertyCard
-          v-for="property in popularProperties"
+          v-for="property in popularPropertiesListings"
           :key="property.id"
           :item="property"
           @details="goToDetails"
@@ -66,7 +66,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PropertyCard
-          v-for="property in recommendedProperties"
+          v-for="property in recommendedPropertiesListings"
           :key="property.id"
           :item="property"
           @details="goToDetails"
@@ -91,7 +91,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PropertyCard
-          v-for="property in trendingProperties"
+          v-for="property in trendingPropertiesListings"
           :key="property.id"
           :item="property"
           @details="goToDetails"
@@ -103,19 +103,85 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PropertyCard from '@/components/PropertyCard.vue'
 import { publicPropertyService, type PublicProperty } from '@/api/public-property.service'
 import { useSearchHistory } from '@/composables/useSearchHistory'
 
+type Listing = {
+  id: number
+  title: string
+  city: string
+  type: string
+  status: 'Disponible' | 'Vendu' | 'Loué'
+  transactionType?: 'Location' | 'Vente' | null
+  price: number
+  surface: number
+  bedrooms?: number
+  bathrooms?: number
+  lat: number
+  lng: number
+  description: string
+  rating?: number
+  reviews?: number
+  createdAt?: string
+  slug?: string
+}
+
 const router = useRouter()
-const { getRecentSearches, getFrequentSearches } = useSearchHistory()
+const { getFrequentSearches } = useSearchHistory()
 
 const newProperties = ref<PublicProperty[]>([])
 const popularProperties = ref<PublicProperty[]>([])
 const recommendedProperties = ref<PublicProperty[]>([])
 const trendingProperties = ref<PublicProperty[]>([])
+
+function convertToListing(property: PublicProperty): Listing {
+  const status = formatStatus(property.status)
+  const transactionType = property.transactionType === 'RENT' || property.transactionType === 'Location' 
+    ? 'Location' 
+    : property.transactionType === 'SALE' || property.transactionType === 'Vente'
+    ? 'Vente'
+    : null
+
+  return {
+    id: property.id,
+    title: property.title,
+    city: property.city || 'Non spécifié',
+    type: property.type || 'Non spécifié',
+    status,
+    transactionType,
+    price: property.price || 0,
+    surface: property.surface || 0,
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    lat: property.latitude || 48.8566,
+    lng: property.longitude || 2.3522,
+    description: property.description || '',
+    rating: undefined,
+    reviews: undefined,
+    createdAt: property.createdAt,
+    slug: property.slug,
+  }
+}
+
+function formatStatus(status: string): 'Disponible' | 'Vendu' | 'Loué' {
+  const apiStatus = status?.toUpperCase()
+  if (apiStatus === 'PUBLISHED' || apiStatus === 'AVAILABLE') {
+    return 'Disponible'
+  } else if (apiStatus === 'RENTED' || apiStatus === 'LOUÉ') {
+    return 'Loué'
+  } else if (apiStatus === 'SOLD' || apiStatus === 'VENDU') {
+    return 'Vendu'
+  }
+  return 'Disponible'
+}
+
+const newPropertiesListings = computed(() => newProperties.value.map(convertToListing))
+const popularPropertiesListings = computed(() => popularProperties.value.map(convertToListing))
+const recommendedPropertiesListings = computed(() => recommendedProperties.value.map(convertToListing))
+const trendingPropertiesListings = computed(() => trendingProperties.value.map(convertToListing))
 
 onMounted(async () => {
   await loadSections()

@@ -113,7 +113,7 @@ async function handleSubmit() {
     showToast('Email de réinitialisation envoyé', 'success')
   } catch (err: any) {
     error.value = err.response?.data?.message || err.message || 'Erreur lors de l\'envoi de l\'email'
-    showToast(error.value, 'error')
+    showToast(error.value || 'Erreur lors de l\'envoi de l\'email', 'error')
   } finally {
     submitting.value = false
   }

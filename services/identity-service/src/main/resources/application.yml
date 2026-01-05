@@ -72,4 +72,11 @@ springdoc:
 services:
   billing:
     url: ${BILLING_SERVICE_URL:http://localhost:8090}
+  emailing:
+    url: ${EMAILING_SERVICE_URL:http://localhost:8088}
+
+# Application URLs
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3003}
 

@@ -1,5 +1,6 @@
 package com.realestate.identity.service;
 
+import com.realestate.common.client.EmailServiceClient;
 import com.realestate.common.exception.BadRequestException;
 import com.realestate.common.exception.ResourceNotFoundException;
 import com.realestate.identity.dto.AuthResponse;
@@ -13,12 +14,17 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -36,6 +42,12 @@ public class SubscribeService {
     private final JwtService jwtService;
     private final OrganizationUserService organizationUserService;
     private final EntityManager entityManager;
+    
+    @Autowired(required = false)
+    private EmailServiceClient emailServiceClient;
+    
+    @Value("${app.frontend.url:http://localhost:3003}")
+    private String frontendUrl;
 
     public SubscribeService(
             UserRepository userRepository,
@@ -177,6 +189,9 @@ public class SubscribeService {
         }
 
         logger.info("Subscription process completed successfully for user: {}", user.getEmail());
+        
+        // Envoyer l'email de confirmation de manière asynchrone
+        sendRegistrationConfirmationEmail(user, organization);
 
         return new SubscribeResponse(
                 authResponse,
@@ -354,6 +369,36 @@ public class SubscribeService {
             logger.error("Error creating subscription for organization {} and plan {}: {}", 
                     organizationId, planId, e.getMessage(), e);
             throw new BadRequestException("Erreur lors de la création de l'abonnement: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Envoie un email de confirmation d'inscription
+     */
+    private void sendRegistrationConfirmationEmail(User user, Organization organization) {
+        if (emailServiceClient == null) {
+            return; // Service emailing non disponible
+        }
+        
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("firstName", user.getFirstName() != null ? user.getFirstName() : "Utilisateur");
+            variables.put("email", user.getEmail());
+            variables.put("registrationDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
+            variables.put("loginUrl", frontendUrl + "/login");
+            
+            // Envoyer de manière asynchrone (fire and forget)
+            emailServiceClient.sendEmailFromTemplateAsync(
+                    "registration_confirmation",
+                    user.getEmail(),
+                    user.getId(),
+                    organization.getId(),
+                    variables,
+                    null // Pas besoin de token pour l'envoi d'email
+            );
+        } catch (Exception e) {
+            // Ne pas faire échouer l'inscription si l'email échoue
+            logger.warn("Failed to send registration confirmation email to {}: {}", user.getEmail(), e.getMessage());
         }
     }
 

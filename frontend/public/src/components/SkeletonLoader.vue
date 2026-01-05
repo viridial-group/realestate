@@ -54,6 +54,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 const props = withDefaults(defineProps<{
   type?: 'property-card' | 'property-list' | 'property-detail' | 'generic'
   lines?: number

@@ -16,7 +16,7 @@
             <label class="text-sm font-medium text-gray-700">Propriété:</label>
             <select
               v-model="propertyFilter"
-              @change="loadMessages"
+              @change="() => loadMessages()"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Toutes</option>
@@ -34,7 +34,7 @@
             <label class="text-sm font-medium text-gray-700">Statut:</label>
             <select
               v-model="statusFilter"
-              @change="loadMessages"
+              @change="() => loadMessages()"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous</option>
@@ -82,7 +82,7 @@
       <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
         <p class="text-red-800">{{ error }}</p>
         <button
-          @click="loadMessages"
+          @click="() => loadMessages()"
           class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
         >
           Réessayer
@@ -349,7 +349,7 @@ async function loadMessages(page = 0) {
     pagination.value.totalElements = filtered.length
   } catch (err: any) {
     error.value = err.response?.data?.message || err.message || 'Erreur lors du chargement des messages'
-    showToast(error.value, 'error')
+    showToast(error.value || 'Erreur lors du chargement', 'error')
   } finally {
     loading.value = false
   }

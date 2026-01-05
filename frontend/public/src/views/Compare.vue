@@ -234,10 +234,10 @@
                 :key="property.id"
                 class="px-4 py-3 text-center text-sm"
               >
-                <div v-if="property.rating" class="flex items-center justify-center gap-1">
+                <div v-if="(property as any).rating" class="flex items-center justify-center gap-1">
                   <span class="text-yellow-500">⭐</span>
-                  <span class="text-gray-600">{{ property.rating.toFixed(1) }}</span>
-                  <span class="text-gray-400 text-xs">({{ property.reviews || 0 }})</span>
+                  <span class="text-gray-600">{{ ((property as any).rating as number).toFixed(1) }}</span>
+                  <span class="text-gray-400 text-xs">({{ (property as any).reviews || 0 }})</span>
                 </div>
                 <span v-else class="text-gray-400">N/A</span>
               </td>
@@ -293,9 +293,9 @@ const { comparison, comparisonCount, removeFromComparison, clearComparison } = u
 const properties = ref<PublicProperty[]>([])
 const propertyImages = ref<Record<number, any[]>>({})
 
-const hasRating = computed(() => {
-  return properties.value.some(p => (p as any).rating)
-})
+// const hasRating = computed(() => {
+//   return properties.value.some(p => (p as any).rating)
+// })
 
 const hasYearBuilt = computed(() => {
   return properties.value.some(p => (p as any).yearBuilt)

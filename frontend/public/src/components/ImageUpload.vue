@@ -34,7 +34,7 @@
             Glissez-déposez vos images ici ou
             <button
               type="button"
-              @click="$refs.fileInput.click()"
+              @click="fileInput?.click()"
               class="text-blue-600 hover:text-blue-700 underline"
             >
               cliquez pour sélectionner
@@ -46,7 +46,7 @@
           {{ images.length }} image(s) sélectionnée(s)
           <button
             type="button"
-            @click="$refs.fileInput.click()"
+            @click="fileInput?.click()"
             class="text-blue-600 hover:text-blue-700 underline ml-2"
           >
             Ajouter plus

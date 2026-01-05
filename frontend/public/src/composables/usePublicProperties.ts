@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { publicPropertyService, type PublicProperty, type PublicPropertySearchParams, type PagedResponse } from '@/api/public-property.service'
+import { publicPropertyService, type PublicProperty, type PublicPropertySearchParams } from '@/api/public-property.service'
 
 /**
  * Composable pour gérer les propriétés publiques avec l'API

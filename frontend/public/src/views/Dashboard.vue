@@ -326,7 +326,7 @@ async function generateChartData(properties: Property[]) {
   }
 }
 
-function generateSimulatedChartData(properties: Property[]) {
+function generateSimulatedChartData(_properties: Property[]) {
   // Générer des données pour les 7 derniers jours
   const days = 7
   const today = new Date()

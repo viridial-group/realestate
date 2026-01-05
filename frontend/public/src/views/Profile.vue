@@ -123,11 +123,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useAuthStore, userService } from '@viridial/shared'
+import { userService } from '@viridial/shared'
 import { useToast } from '@/composables/useToast'
 import { userPropertyService } from '@/api/user-property.service'
 
-const authStore = useAuthStore()
+// const authStore = useAuthStore()
 const { showToast } = useToast()
 
 const loading = ref(false)
@@ -166,7 +166,7 @@ async function loadProfile() {
       lastName: profile.lastName || '',
       email: profile.email || '',
       createdAt: profile.createdAt || '',
-      lastLogin: profile.lastLogin || '',
+      lastLogin: profile.lastLoginAt || '',
     }
   } catch (err: any) {
     showToast('Erreur lors du chargement du profil', 'error')

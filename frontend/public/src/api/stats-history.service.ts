@@ -109,8 +109,10 @@ export const statsHistoryService = {
     const history: StatsHistoryPoint[] = []
     
     // Générer des données avec une tendance réaliste
-    let baseViews = 10
-    let baseContacts = 2
+    // Utiliser propertyId pour rendre les données spécifiques à la propriété
+    const propertySeed = propertyId % 100
+    let baseViews = 10 + propertySeed * 0.5
+    let baseContacts = 2 + propertySeed * 0.1
     
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today)

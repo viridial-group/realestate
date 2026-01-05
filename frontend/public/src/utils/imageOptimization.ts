@@ -9,9 +9,9 @@
  * @param height Hauteur souhaitée (optionnel)
  * @returns URL optimisée
  */
-export function getOptimizedImageUrl(imageUrl: string, width: number, height?: number): string {
+export function getOptimizedImageUrl(imageUrl: string, _width: number, _height?: number): string {
   // Si l'URL contient déjà des paramètres, les préserver
-  const url = new URL(imageUrl, window.location.origin)
+  // const url = new URL(imageUrl, window.location.origin)
   
   // Ajouter des paramètres de taille si l'API le supporte
   // Pour l'instant, on retourne l'URL originale

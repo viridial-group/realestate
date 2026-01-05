@@ -38,7 +38,7 @@
         <div
           v-for="(item, idx) in history"
           :key="idx"
-          @click="selectSuggestion(item)"
+          @click="selectSuggestion(typeof item === 'string' ? item : item.query)"
           class="w-full text-left px-4 py-2.5 hover:bg-gray-100 active:bg-gray-200 flex items-center justify-between group cursor-pointer rounded-md transition-colors duration-150"
         >
           <div class="flex items-center gap-3">
@@ -49,7 +49,7 @@
             </span>
           </div>
           <button
-            @click.stop="removeFromHistory(item)"
+            @click.stop="removeFromHistory(typeof item === 'string' ? item : item.query)"
             class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition-opacity"
             type="button"
           >
@@ -157,7 +157,7 @@ const emit = defineEmits<{
 const inputRef = ref<HTMLInputElement | null>(null)
 const showSuggestions = ref(false)
 const selectedIndex = ref(-1)
-const { history, addToHistory, removeFromHistory } = useSearchHistory()
+const { history, removeFromHistory } = useSearchHistory()
 const { suggestions: suggestionsData, isLoading: isLoadingSuggestions, loadSuggestions, generateSuggestions } = useSearchSuggestions()
 
 // Charger les suggestions par défaut au montage

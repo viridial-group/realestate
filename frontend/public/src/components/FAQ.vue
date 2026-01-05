@@ -45,7 +45,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { useSEO } from '@/composables/useSEO'
 
 interface FAQItem {
   question: string

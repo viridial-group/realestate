@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { blogService, type BlogPost } from '@/api/blog.service'
 import Breadcrumbs from '@/components/Breadcrumbs.vue'
 import ImageOptimized from '@/components/ImageOptimized.vue'
@@ -77,7 +77,7 @@ import RelatedPosts from '@/components/RelatedPosts.vue'
 import { useSEO } from '@/composables/useSEO'
 
 const route = useRoute()
-const router = useRouter()
+// const router = useRouter()
 
 const post = ref<BlogPost | null>(null)
 const loading = ref(false)

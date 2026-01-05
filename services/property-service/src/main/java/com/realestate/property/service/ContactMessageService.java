@@ -1,5 +1,7 @@
 package com.realestate.property.service;
 
+import com.realestate.common.client.EmailServiceClient;
+import com.realestate.common.client.IdentityServiceClient;
 import com.realestate.property.entity.ContactMessage;
 import com.realestate.property.entity.Property;
 import com.realestate.property.repository.ContactMessageRepository;
@@ -33,8 +35,17 @@ public class ContactMessageService {
     private final PropertyRepository propertyRepository;
     private final RestTemplate restTemplate;
     
+    @Autowired(required = false)
+    private EmailServiceClient emailServiceClient;
+    
+    @Autowired(required = false)
+    private IdentityServiceClient identityServiceClient;
+    
     @Value("${services.notification.url:http://localhost:8085}")
     private String notificationServiceUrl;
+    
+    @Value("${app.frontend.url:http://localhost:3003}")
+    private String frontendUrl;
 
     public ContactMessageService(
             ContactMessageRepository contactMessageRepository,
@@ -74,9 +85,56 @@ public class ContactMessageService {
         // Envoyer une notification à l'utilisateur assigné à la propriété
         if (assignedUserId != null && property != null) {
             sendNotificationToAssignedUser(saved, property, assignedUserId);
+            // Envoyer un email au propriétaire de l'annonce
+            sendContactMessageEmail(saved, property, assignedUserId);
         }
         
         return saved;
+    }
+    
+    /**
+     * Envoie un email de notification de nouveau message de contact
+     */
+    private void sendContactMessageEmail(ContactMessage message, Property property, Long recipientUserId) {
+        if (emailServiceClient == null || identityServiceClient == null || recipientUserId == null) {
+            return;
+        }
+        
+        try {
+            // Récupérer les informations du destinataire
+            Optional<com.realestate.common.client.dto.UserInfoDTO> recipientInfo = identityServiceClient
+                    .getUserById(recipientUserId, null)
+                    .block();
+            
+            if (recipientInfo.isEmpty()) {
+                logger.warn("Cannot send contact message email: recipient user {} not found", recipientUserId);
+                return;
+            }
+            
+            com.realestate.common.client.dto.UserInfoDTO recipient = recipientInfo.get();
+            
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("recipientName", recipient.getFirstName() != null ? recipient.getFirstName() : "Utilisateur");
+            variables.put("senderName", message.getName() != null ? message.getName() : "Anonyme");
+            variables.put("senderEmail", message.getEmail() != null ? message.getEmail() : "");
+            variables.put("senderPhone", message.getPhone() != null ? "📞 " + message.getPhone() : "");
+            variables.put("message", message.getMessage() != null ? message.getMessage() : "");
+            variables.put("propertyTitle", property.getTitle());
+            variables.put("propertyAddress", property.getAddress() != null ? property.getAddress() : "");
+            variables.put("messageUrl", frontendUrl + "/messages/" + message.getId());
+            
+            // Envoyer de manière asynchrone
+            emailServiceClient.sendEmailFromTemplateAsync(
+                    "contact_message",
+                    recipient.getEmail(),
+                    recipient.getId(),
+                    property.getOrganizationId(),
+                    variables,
+                    null
+            );
+        } catch (Exception e) {
+            logger.warn("Failed to send contact message email for message {}: {}", message.getId(), e.getMessage());
+        }
     }
     
     /**

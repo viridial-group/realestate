@@ -1,5 +1,6 @@
 package com.realestate.identity.service;
 
+import com.realestate.common.client.EmailServiceClient;
 import com.realestate.identity.dto.AuthResponse;
 import com.realestate.identity.dto.LoginRequest;
 import com.realestate.identity.dto.RefreshTokenRequest;
@@ -8,6 +9,8 @@ import com.realestate.identity.entity.User;
 import com.realestate.identity.entity.Role;
 import com.realestate.identity.repository.UserRepository;
 import com.realestate.identity.repository.RoleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -17,7 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -28,6 +34,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    
+    @Autowired(required = false)
+    private EmailServiceClient emailServiceClient;
+    
+    @Value("${app.frontend.url:http://localhost:3003}")
+    private String frontendUrl;
 
     public AuthService(
             UserRepository userRepository,
@@ -72,7 +84,42 @@ public class AuthService {
         String accessToken = jwtService.generateToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
+        // Envoyer l'email de bienvenue de manière asynchrone
+        sendWelcomeEmail(user);
+
         return new AuthResponse(accessToken, refreshToken, jwtService.getExpiration());
+    }
+    
+    /**
+     * Envoie un email de bienvenue à l'utilisateur
+     */
+    private void sendWelcomeEmail(User user) {
+        if (emailServiceClient == null) {
+            return; // Service emailing non disponible
+        }
+        
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("firstName", user.getFirstName() != null ? user.getFirstName() : "Utilisateur");
+            variables.put("appUrl", frontendUrl);
+            
+            // Récupérer l'organizationId depuis OrganizationUser (peut être null pour les particuliers)
+            Long organizationId = null;
+            // Note: Pour les particuliers, organizationId sera null, ce qui est correct
+            
+            // Envoyer de manière asynchrone (fire and forget)
+            emailServiceClient.sendEmailFromTemplateAsync(
+                    "welcome_email",
+                    user.getEmail(),
+                    user.getId(),
+                    organizationId, // null pour les particuliers
+                    variables,
+                    null // Pas besoin de token pour l'envoi d'email
+            );
+        } catch (Exception e) {
+            // Ne pas faire échouer l'inscription si l'email échoue
+            // Log l'erreur mais continue
+        }
     }
 
     public AuthResponse login(LoginRequest request) {

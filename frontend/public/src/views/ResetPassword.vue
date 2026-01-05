@@ -166,7 +166,8 @@ async function handleSubmit() {
   try {
     await authService.resetPassword({
       token: token.value,
-      newPassword: form.value.password,
+      password: form.value.password,
+      confirmPassword: form.value.confirmPassword,
     })
     
     success.value = true
@@ -178,7 +179,7 @@ async function handleSubmit() {
     }, 3000)
   } catch (err: any) {
     error.value = err.response?.data?.message || err.message || 'Erreur lors de la réinitialisation'
-    showToast(error.value, 'error')
+    showToast(error.value || 'Erreur lors de la réinitialisation', 'error')
   } finally {
     submitting.value = false
   }

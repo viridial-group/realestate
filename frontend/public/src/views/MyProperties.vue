@@ -45,7 +45,7 @@
             <label class="text-sm font-medium text-gray-700">Statut:</label>
             <select
               v-model="statusFilter"
-              @change="loadProperties"
+              @change="() => loadProperties()"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous</option>
@@ -61,7 +61,7 @@
             <label class="text-sm font-medium text-gray-700">Type:</label>
             <select
               v-model="typeFilter"
-              @change="loadProperties"
+              @change="() => loadProperties()"
               class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous</option>
@@ -102,7 +102,7 @@
       <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
         <p class="text-red-800">{{ error }}</p>
         <button
-          @click="loadProperties"
+          @click="() => loadProperties()"
           class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
         >
           Réessayer

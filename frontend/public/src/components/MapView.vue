@@ -46,10 +46,10 @@
     
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
-      }).addTo(map.value)
+      }).addTo(map.value! as any)
     
-      markersLayer = L.layerGroup().addTo(map.value as L.Map)
-      poiLayer = L.layerGroup().addTo(map.value as L.Map)
+      markersLayer = L.layerGroup().addTo(map.value! as any)
+      poiLayer = L.layerGroup().addTo(map.value! as any)
       renderMarkers()
       renderPOIs()
       
@@ -163,7 +163,7 @@
             </span>
           </div>
         `)
-        .addTo(map.value)
+        .addTo(map.value! as any)
       
       // Centrer et zoomer sur la position de l'utilisateur (niveau ville)
       if (map.value) {
@@ -408,7 +408,7 @@
           setTimeout(() => {
             const popup = marker.getPopup()
             if (popup && popup.getElement()) {
-              const button = popup.getElement()?.querySelector(`button[data-listing-id="${item.id}"]`)
+              const button = popup.getElement()?.querySelector(`button[data-listing-id="${item.id}"]`) as HTMLButtonElement
               if (button) {
                 button.onclick = () => {
                   emit('marker-click', item.id)
