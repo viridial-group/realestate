@@ -235,6 +235,7 @@ public class DocumentService {
     /**
      * Récupérer les documents avec filtres et permissions utilisateur
      * Filtre automatiquement selon les organisations accessibles (incluant sous-organisations)
+     * Pour les super admin/admin (accessibleOrganizationIds null ou vide), retourne tous les documents
      */
     @Transactional(readOnly = true)
     public List<Document> getDocumentsWithPermissions(
@@ -246,12 +247,17 @@ public class DocumentService {
         
         Specification<Document> spec = Specification.where(null);
 
-        // Si l'utilisateur n'est pas super admin, appliquer les filtres de permissions
+        // Appliquer les filtres de permissions uniquement si l'utilisateur n'est pas super admin/admin
+        // (accessibleOrganizationIds null ou vide signifie super admin/admin qui voit tout)
         if (userId != null && accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
-            // Filtrer selon les permissions : documents créés par l'utilisateur OU dans ses organisations
+            // Utilisateur normal : filtrer selon les permissions
+            // Documents créés par l'utilisateur OU dans ses organisations accessibles (incluant sous-organisations)
             spec = spec.and(DocumentSpecification.accessibleByUser(userId, accessibleOrganizationIds));
+        } else if (userId != null && (accessibleOrganizationIds == null || accessibleOrganizationIds.isEmpty())) {
+            // Super admin/admin : pas de filtre de permissions, voir tous les documents
+            // On ne met pas de filtre accessibleByUser
         } else if (userId != null) {
-            // Si pas d'organisations, seulement les documents créés par l'utilisateur
+            // Utilisateur individuel sans organisation : seulement ses propres documents
             spec = spec.and(DocumentSpecification.hasCreatedBy(userId));
         }
 

@@ -48,7 +48,7 @@ if [ ! -d "node_modules" ]; then
     npm install
 else
     echo "   Dépendances déjà installées, mise à jour..."
-    npm install
+    #npm install
 fi
 
 # ========================

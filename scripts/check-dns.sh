@@ -3,81 +3,71 @@
 # ========================
 # Script de Vérification DNS
 # ========================
-# Ce script vérifie que les DNS sont correctement configurés
+# Ce script vérifie la configuration DNS pour les domaines Viridial
 
 set -e
 
-echo "🌐 Vérification de la configuration DNS"
-
-# ========================
-# Variables
-# ========================
-DOMAINS=("api.viridial.com" "app.viridial.com")
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s ifconfig.co 2>/dev/null || echo "UNKNOWN")
-
-echo "📍 IP du serveur: $SERVER_IP"
+echo "🔍 Vérification de la configuration DNS pour Viridial"
 echo ""
 
-# ========================
-# Vérification de chaque domaine
-# ========================
-ALL_OK=true
+DOMAINS=(
+    "viridial.com"
+    "www.viridial.com"
+    "api.viridial.com"
+    "app.viridial.com"
+    "admin.viridial.com"
+    "www.admin.viridial.com"
+)
+
+# Obtenir l'IP du serveur actuel
+CURRENT_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || echo "N/A")
+
+echo "📍 IP du serveur actuel: $CURRENT_IP"
+echo ""
 
 for domain in "${DOMAINS[@]}"; do
     echo "🔍 Vérification de $domain..."
     
     # Résolution DNS
-    DNS_IP=$(dig +short $domain @8.8.8.8 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
-    DNS_IPV6=$(dig +short $domain AAAA @8.8.8.8 | head -n1)
+    DNS_IP=$(dig +short $domain @8.8.8.8 2>/dev/null | head -n 1 || echo "N/A")
     
-    if [ -z "$DNS_IP" ]; then
-        echo "   ❌ Aucun enregistrement A trouvé pour $domain"
-        echo "   💡 Action requise: Créer un enregistrement DNS A pointant vers $SERVER_IP"
-        ALL_OK=false
+    if [ "$DNS_IP" = "N/A" ] || [ -z "$DNS_IP" ]; then
+        echo "   ❌ DNS non configuré ou domaine introuvable"
+    elif [ "$DNS_IP" = "$CURRENT_IP" ]; then
+        echo "   ✅ DNS configuré correctement (pointe vers $DNS_IP)"
     else
-        echo "   ✅ Enregistrement A trouvé: $DNS_IP"
-        
-        if [ "$DNS_IP" != "$SERVER_IP" ]; then
-            echo "   ⚠️  Attention: L'IP DNS ($DNS_IP) ne correspond pas à l'IP du serveur ($SERVER_IP)"
-            echo "   💡 Vérifiez que l'enregistrement DNS pointe vers la bonne IP"
-        else
-            echo "   ✅ L'IP DNS correspond à l'IP du serveur"
-        fi
+        echo "   ⚠️  DNS pointe vers $DNS_IP (attendu: $CURRENT_IP)"
     fi
     
-    if [ -n "$DNS_IPV6" ]; then
-        echo "   ℹ️  Enregistrement AAAA trouvé: $DNS_IPV6"
+    # Vérification HTTP
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://$domain" 2>/dev/null || echo "000")
+    
+    if [ "$HTTP_STATUS" = "000" ]; then
+        echo "   ⚠️  HTTP: Site inaccessible ou timeout"
+    elif [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ]; then
+        echo "   ✅ HTTP: Site accessible (status: $HTTP_STATUS)"
+    else
+        echo "   ⚠️  HTTP: Status $HTTP_STATUS"
     fi
     
     echo ""
 done
 
-# ========================
-# Résumé
-# ========================
-if [ "$ALL_OK" = true ]; then
-    echo "✅ Tous les DNS sont correctement configurés!"
-    echo ""
-    echo "📝 Vous pouvez maintenant exécuter:"
-    echo "   ./scripts/setup-ssl.sh"
-else
-    echo "❌ Certains DNS ne sont pas configurés correctement"
-    echo ""
-    echo "📝 Instructions pour configurer les DNS:"
-    echo ""
-    echo "1. Connectez-vous à votre panneau de gestion DNS (hébergeur de domaine)"
-    echo "2. Créez les enregistrements suivants:"
-    echo ""
-    for domain in "${DOMAINS[@]}"; do
-        echo "   Type: A"
-        echo "   Nom: $domain"
-        echo "   Valeur: $SERVER_IP"
-        echo "   TTL: 3600 (ou par défaut)"
-        echo ""
-    done
-    echo "3. Attendez la propagation DNS (5-30 minutes)"
-    echo "4. Vérifiez avec: ./scripts/check-dns.sh"
-    echo "5. Puis exécutez: ./scripts/setup-ssl.sh"
-    exit 1
-fi
-
+echo "📝 Instructions pour configurer le DNS:"
+echo ""
+echo "1. Connectez-vous à votre fournisseur de domaine (registrar)"
+echo "2. Ajoutez les enregistrements A suivants:"
+echo ""
+echo "   Type  | Name              | Value"
+echo "   ------|-------------------|-------------------"
+echo "   A     | @                 | $CURRENT_IP"
+echo "   A     | www               | $CURRENT_IP"
+echo "   A     | api               | $CURRENT_IP"
+echo "   A     | app               | $CURRENT_IP"
+echo "   A     | admin             | $CURRENT_IP"
+echo "   A     | www.admin         | $CURRENT_IP"
+echo ""
+echo "3. Attendez la propagation DNS (peut prendre jusqu'à 48h, généralement quelques minutes)"
+echo "4. Vérifiez avec: dig +short admin.viridial.com"
+echo ""
+echo "💡 Note: Si vous utilisez Cloudflare ou un autre CDN, configurez-le pour pointer vers $CURRENT_IP"

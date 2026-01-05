@@ -49,6 +49,7 @@ public class DocumentController {
     @PostMapping("/upload")
     @Operation(summary = "Upload document", description = "Uploads a new document or media file")
     public ResponseEntity<DocumentDTO> uploadDocument(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam("file") MultipartFile file,
             @RequestParam("organizationId") Long organizationId,
             @RequestParam("createdBy") Long createdBy,
@@ -56,6 +57,34 @@ public class DocumentController {
             @RequestParam(required = false) Long resourceId,
             @RequestParam(required = false) String description) {
         try {
+            // Vérifier les permissions si un token est fourni
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                try {
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        
+                        // Pour les non-super-admin/admin, vérifier les permissions
+                        if (!permissionContext.isSuperAdmin() && !permissionContext.isAdmin()) {
+                            // Vérifier que l'utilisateur peut uploader pour cette organisation
+                            if (!permissionContext.getAccessibleOrganizationIds().contains(organizationId)) {
+                                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                            }
+                            // Vérifier que createdBy correspond à l'utilisateur connecté
+                            if (!permissionContext.getUserId().equals(createdBy)) {
+                                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Si on ne peut pas récupérer le contexte, refuser l'accès
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
+            }
+            
             Document document = documentService.uploadDocument(
                     file, organizationId, createdBy, propertyId, resourceId, description);
             return ResponseEntity.status(HttpStatus.CREATED).body(documentMapper.toDTO(document));
@@ -71,9 +100,48 @@ public class DocumentController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get document by ID", description = "Returns document metadata for a specific document ID")
-    public ResponseEntity<DocumentDTO> getDocumentById(@PathVariable Long id) {
+    public ResponseEntity<DocumentDTO> getDocumentById(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         Document document = documentService.getDocumentById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document", id));
+        
+        // Vérifier les permissions si un token est fourni
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            try {
+                java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                        identityServiceClient.getPermissionContext(token).block();
+                
+                if (permissionContextOpt.isPresent()) {
+                    com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                    
+                    // Pour les non-super-admin/admin, vérifier les permissions
+                    if (!permissionContext.isSuperAdmin() && !permissionContext.isAdmin()) {
+                        // Vérifier que l'utilisateur peut voir ce document
+                        boolean canAccess = false;
+                        
+                        // Vérifier si l'utilisateur a créé le document
+                        if (document.getCreatedBy() != null && document.getCreatedBy().equals(permissionContext.getUserId())) {
+                            canAccess = true;
+                        }
+                        
+                        // Vérifier si le document appartient à une organisation accessible
+                        if (!canAccess && document.getOrganizationId() != null) {
+                            canAccess = permissionContext.getAccessibleOrganizationIds().contains(document.getOrganizationId());
+                        }
+                        
+                        if (!canAccess) {
+                            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Si on ne peut pas récupérer le contexte, refuser l'accès
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        }
+        
         return ResponseEntity.ok(documentMapper.toDTO(document));
     }
 
@@ -81,10 +149,50 @@ public class DocumentController {
     @Operation(summary = "Download document", description = "Downloads the actual file for a specific document ID")
     public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             HttpServletResponse response) {
         try {
             Document document = documentService.getDocumentById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Document", id));
+            
+            // Vérifier les permissions si un token est fourni
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                try {
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        
+                        // Pour les non-super-admin/admin, vérifier les permissions
+                        if (!permissionContext.isSuperAdmin() && !permissionContext.isAdmin()) {
+                            // Vérifier que l'utilisateur peut télécharger ce document
+                            boolean canAccess = false;
+                            
+                            // Vérifier si l'utilisateur a créé le document
+                            if (document.getCreatedBy() != null && document.getCreatedBy().equals(permissionContext.getUserId())) {
+                                canAccess = true;
+                            }
+                            
+                            // Vérifier si le document appartient à une organisation accessible
+                            if (!canAccess && document.getOrganizationId() != null) {
+                                canAccess = permissionContext.getAccessibleOrganizationIds().contains(document.getOrganizationId());
+                            }
+                            
+                            if (!canAccess) {
+                                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Si on ne peut pas récupérer le contexte, refuser l'accès
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
+            } else {
+                // Pas de token, refuser l'accès
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
 
             Path filePath = documentService.getDocumentPath(document);
             Resource resource = new FileSystemResource(filePath);
@@ -143,29 +251,21 @@ public class DocumentController {
             
             List<Document> documents;
             
-            // Si l'utilisateur n'est pas super admin/admin, filtrer selon ses permissions
-            if (!isSuperAdmin && !isAdmin && userId != null) {
-                // Si un organizationId est spécifié, vérifier qu'il est accessible
-                if (organizationId != null && accessibleOrgIds != null && !accessibleOrgIds.contains(organizationId)) {
-                    // L'utilisateur n'a pas accès à cette organisation
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-                }
-                
-                // Utiliser le filtrage avec permissions
-                documents = documentService.getDocumentsWithPermissions(
-                        userId, accessibleOrgIds, organizationId, propertyId, resourceId);
-            } else {
-                // Super admin ou admin : voir tous les documents (comportement original)
-                if (propertyId != null) {
-                    documents = documentService.getDocumentsByPropertyId(propertyId);
-                } else if (resourceId != null) {
-                    documents = documentService.getDocumentsByResourceId(resourceId);
-                } else if (organizationId != null) {
-                    documents = documentService.getDocumentsByOrganizationId(organizationId);
-                } else {
-                    return ResponseEntity.badRequest().build();
-                }
+            // Si aucun token n'est fourni, refuser l'accès
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+            
+            // Si un organizationId est spécifié et que l'utilisateur n'est pas super admin/admin, vérifier qu'il est accessible
+            if (organizationId != null && !isSuperAdmin && !isAdmin && accessibleOrgIds != null && !accessibleOrgIds.contains(organizationId)) {
+                // L'utilisateur n'a pas accès à cette organisation
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
+            // Utiliser le filtrage avec permissions pour tous les utilisateurs
+            // Pour les super admin/admin, accessibleOrgIds sera null ou vide, donc pas de filtre de permissions
+            documents = documentService.getDocumentsWithPermissions(
+                    userId, accessibleOrgIds, organizationId, propertyId, resourceId);
 
             List<DocumentDTO> documentDTOs = documents.stream()
                     .map(documentMapper::toDTO)
@@ -180,7 +280,49 @@ public class DocumentController {
     @Operation(summary = "Update document", description = "Updates document metadata for a specific document ID")
     public ResponseEntity<DocumentDTO> updateDocument(
             @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody DocumentDTO documentDTO) {
+        // Vérifier les permissions si un token est fourni
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            try {
+                Document existingDocument = documentService.getDocumentById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Document", id));
+                
+                java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                        identityServiceClient.getPermissionContext(token).block();
+                
+                if (permissionContextOpt.isPresent()) {
+                    com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                    
+                    // Pour les non-super-admin/admin, vérifier les permissions
+                    if (!permissionContext.isSuperAdmin() && !permissionContext.isAdmin()) {
+                        // Vérifier que l'utilisateur peut modifier ce document
+                        boolean canAccess = false;
+                        
+                        // Vérifier si l'utilisateur a créé le document
+                        if (existingDocument.getCreatedBy() != null && existingDocument.getCreatedBy().equals(permissionContext.getUserId())) {
+                            canAccess = true;
+                        }
+                        
+                        // Vérifier si le document appartient à une organisation accessible
+                        if (!canAccess && existingDocument.getOrganizationId() != null) {
+                            canAccess = permissionContext.getAccessibleOrganizationIds().contains(existingDocument.getOrganizationId());
+                        }
+                        
+                        if (!canAccess) {
+                            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Si on ne peut pas récupérer le contexte, refuser l'accès
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         Document document = documentMapper.toEntity(documentDTO);
         Document updated = documentService.updateDocument(id, document);
         return ResponseEntity.ok(documentMapper.toDTO(updated));
@@ -188,8 +330,51 @@ public class DocumentController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete document", description = "Deletes a document and its file from the system")
-    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteDocument(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
         try {
+            // Vérifier les permissions si un token est fourni
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                try {
+                    Document document = documentService.getDocumentById(id)
+                            .orElseThrow(() -> new ResourceNotFoundException("Document", id));
+                    
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        
+                        // Pour les non-super-admin/admin, vérifier les permissions
+                        if (!permissionContext.isSuperAdmin() && !permissionContext.isAdmin()) {
+                            // Vérifier que l'utilisateur peut supprimer ce document
+                            boolean canAccess = false;
+                            
+                            // Vérifier si l'utilisateur a créé le document
+                            if (document.getCreatedBy() != null && document.getCreatedBy().equals(permissionContext.getUserId())) {
+                                canAccess = true;
+                            }
+                            
+                            // Vérifier si le document appartient à une organisation accessible
+                            if (!canAccess && document.getOrganizationId() != null) {
+                                canAccess = permissionContext.getAccessibleOrganizationIds().contains(document.getOrganizationId());
+                            }
+                            
+                            if (!canAccess) {
+                                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    // Si on ne peut pas récupérer le contexte, refuser l'accès
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
             documentService.deleteDocument(id);
             return ResponseEntity.noContent().build();
         } catch (IOException e) {
