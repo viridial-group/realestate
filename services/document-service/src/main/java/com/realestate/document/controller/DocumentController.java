@@ -17,10 +17,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.realestate.common.client.IdentityServiceClient;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,14 +33,17 @@ public class DocumentController {
     private final DocumentService documentService;
     private final DocumentMapper documentMapper;
     private final ImageOptimizationService imageOptimizationService;
+    private final IdentityServiceClient identityServiceClient;
 
     public DocumentController(
             DocumentService documentService, 
             DocumentMapper documentMapper,
-            ImageOptimizationService imageOptimizationService) {
+            ImageOptimizationService imageOptimizationService,
+            IdentityServiceClient identityServiceClient) {
         this.documentService = documentService;
         this.documentMapper = documentMapper;
         this.imageOptimizationService = imageOptimizationService;
+        this.identityServiceClient = identityServiceClient;
     }
 
     @PostMapping("/upload")
@@ -104,27 +109,71 @@ public class DocumentController {
     }
 
     @GetMapping
-    @Operation(summary = "List documents", description = "Returns a list of documents filtered by organization, property, or resource")
+    @Operation(summary = "List documents", description = "Returns a list of documents filtered by organization, property, or resource. Automatically filters by user permissions and accessible organizations.")
     public ResponseEntity<List<DocumentDTO>> getDocuments(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) Long propertyId,
             @RequestParam(required = false) Long resourceId) {
-        List<Document> documents;
+        try {
+            // Récupérer le contexte de permissions si un token est fourni
+            Long userId = null;
+            Set<Long> accessibleOrgIds = null;
+            boolean isSuperAdmin = false;
+            boolean isAdmin = false;
+            
+            if (authorization != null && authorization.startsWith("Bearer ") && identityServiceClient != null) {
+                String token = authorization.substring(7);
+                
+                try {
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        userId = permissionContext.getUserId();
+                        isSuperAdmin = permissionContext.isSuperAdmin();
+                        isAdmin = permissionContext.isAdmin();
+                        accessibleOrgIds = permissionContext.getAccessibleOrganizationIds();
+                    }
+                } catch (Exception e) {
+                    // Continuer sans contexte de permissions (peut être un endpoint public)
+                }
+            }
+            
+            List<Document> documents;
+            
+            // Si l'utilisateur n'est pas super admin/admin, filtrer selon ses permissions
+            if (!isSuperAdmin && !isAdmin && userId != null) {
+                // Si un organizationId est spécifié, vérifier qu'il est accessible
+                if (organizationId != null && accessibleOrgIds != null && !accessibleOrgIds.contains(organizationId)) {
+                    // L'utilisateur n'a pas accès à cette organisation
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+                
+                // Utiliser le filtrage avec permissions
+                documents = documentService.getDocumentsWithPermissions(
+                        userId, accessibleOrgIds, organizationId, propertyId, resourceId);
+            } else {
+                // Super admin ou admin : voir tous les documents (comportement original)
+                if (propertyId != null) {
+                    documents = documentService.getDocumentsByPropertyId(propertyId);
+                } else if (resourceId != null) {
+                    documents = documentService.getDocumentsByResourceId(resourceId);
+                } else if (organizationId != null) {
+                    documents = documentService.getDocumentsByOrganizationId(organizationId);
+                } else {
+                    return ResponseEntity.badRequest().build();
+                }
+            }
 
-        if (propertyId != null) {
-            documents = documentService.getDocumentsByPropertyId(propertyId);
-        } else if (resourceId != null) {
-            documents = documentService.getDocumentsByResourceId(resourceId);
-        } else if (organizationId != null) {
-            documents = documentService.getDocumentsByOrganizationId(organizationId);
-        } else {
-            return ResponseEntity.badRequest().build();
+            List<DocumentDTO> documentDTOs = documents.stream()
+                    .map(documentMapper::toDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(documentDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        List<DocumentDTO> documentDTOs = documents.stream()
-                .map(documentMapper::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(documentDTOs);
     }
 
     @PutMapping("/{id}")

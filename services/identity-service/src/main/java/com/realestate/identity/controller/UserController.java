@@ -8,6 +8,9 @@ import com.realestate.identity.entity.User;
 import com.realestate.identity.mapper.UserMapper;
 import com.realestate.identity.service.JwtService;
 import com.realestate.identity.service.UserService;
+import com.realestate.identity.service.UserTypeService;
+import com.realestate.identity.service.PermissionContextService;
+import com.realestate.identity.dto.PermissionContextDTO;
 import com.realestate.common.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,6 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/identity/users")
 @Tag(name = "Users", description = "User management API for retrieving, updating, and deleting user information")
@@ -29,12 +35,22 @@ public class UserController {
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final ObjectMapper objectMapper;
+    private final UserTypeService userTypeService;
+    private final PermissionContextService permissionContextService;
 
-    public UserController(UserService userService, JwtService jwtService, UserMapper userMapper, ObjectMapper objectMapper) {
+    public UserController(
+            UserService userService, 
+            JwtService jwtService, 
+            UserMapper userMapper, 
+            ObjectMapper objectMapper,
+            UserTypeService userTypeService,
+            PermissionContextService permissionContextService) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.userMapper = userMapper;
         this.objectMapper = objectMapper;
+        this.userTypeService = userTypeService;
+        this.permissionContextService = permissionContextService;
     }
 
     @GetMapping("/me")
@@ -44,7 +60,65 @@ public class UserController {
             String token = authorization.substring(7); // Remove "Bearer " prefix
             String email = jwtService.extractUsername(token);
             User user = userService.getCurrentUser(email);
-            return ResponseEntity.ok(userMapper.toDTO(user));
+            UserDTO userDTO = userMapper.toDTO(user);
+            
+            // Ajouter le type d'utilisateur et l'organisation principale
+            UserTypeService.UserType userType = userTypeService.determineUserType(user);
+            userDTO.setUserType(userType.name());
+            userDTO.setPrimaryOrganizationId(userTypeService.getPrimaryOrganizationId(user.getId()));
+            
+            return ResponseEntity.ok(userDTO);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    @GetMapping("/me/type")
+    @Operation(summary = "Get current user type", description = "Returns the type of the authenticated user (INDIVIDUAL or PROFESSIONAL)")
+    public ResponseEntity<Map<String, String>> getCurrentUserType(@RequestHeader("Authorization") String authorization) {
+        try {
+            String token = authorization.substring(7);
+            String email = jwtService.extractUsername(token);
+            User user = userService.getCurrentUser(email);
+            
+            UserTypeService.UserType userType = userTypeService.determineUserType(user);
+            Long organizationId = userTypeService.getPrimaryOrganizationId(user.getId());
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("type", userType.name());
+            response.put("isIndividual", String.valueOf(userType == UserTypeService.UserType.INDIVIDUAL));
+            response.put("isProfessional", String.valueOf(userType == UserTypeService.UserType.PROFESSIONAL));
+            if (organizationId != null) {
+                response.put("organizationId", organizationId.toString());
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    @GetMapping("/me/permissions")
+    @Operation(summary = "Get current user permission context", description = "Returns the permission context including accessible organizations and sub-organizations")
+    public ResponseEntity<PermissionContextDTO> getCurrentUserPermissionContext(@RequestHeader("Authorization") String authorization) {
+        try {
+            String token = authorization.substring(7);
+            String email = jwtService.extractUsername(token);
+            User user = userService.getCurrentUser(email);
+            
+            PermissionContextService.PermissionContext context = permissionContextService.getPermissionContext(user.getId());
+            
+            PermissionContextDTO dto = new PermissionContextDTO(
+                    context.getUserId(),
+                    context.getRoleNames(),
+                    context.isSuperAdmin(),
+                    context.isAdmin(),
+                    context.getAccessibleOrganizationIds(),
+                    context.getDirectOrganizationIds(),
+                    context.getUserType().name()
+            );
+            
+            return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
         }

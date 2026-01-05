@@ -28,6 +28,8 @@ public class UserDTO {
     private Set<String> roleNames; // Noms des rôles (pas les entités complètes)
     private Long organizationId; // ID de l'organisation
     private String organizationName; // Nom de l'organisation
+    private String userType; // Type d'utilisateur: INDIVIDUAL, PROFESSIONAL, UNKNOWN
+    private Long primaryOrganizationId; // ID de l'organisation principale (pour les professionnels)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
@@ -192,6 +194,22 @@ public class UserDTO {
 
     public void setNotificationPreferences(String notificationPreferences) {
         this.notificationPreferences = notificationPreferences;
+    }
+
+    public String getUserType() {
+        return userType;
+    }
+
+    public void setUserType(String userType) {
+        this.userType = userType;
+    }
+
+    public Long getPrimaryOrganizationId() {
+        return primaryOrganizationId;
+    }
+
+    public void setPrimaryOrganizationId(Long primaryOrganizationId) {
+        this.primaryOrganizationId = primaryOrganizationId;
     }
 }
 

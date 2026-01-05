@@ -9,8 +9,8 @@
         <Combobox
           v-model="localRoles[index]"
           :search-value="roleSearchValues[index]"
-          @update:search-value="(value) => handleSearchValueChange(index, value)"
-          @update:model-value="(value) => handleRoleChange(index, value)"
+          @update:search-value="(value: string) => handleSearchValueChange(index, value)"
+          @update:model-value="(value: any) => handleRoleChange(index, typeof value === 'string' ? value : String(value || ''))"
         >
           <ComboboxAnchor as-child>
             <ComboboxInput

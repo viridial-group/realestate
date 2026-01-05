@@ -26,6 +26,56 @@ public class PropertySpecification {
     }
 
     /**
+     * Filtre par plusieurs organisations (pour inclure les sous-organisations)
+     */
+    public static Specification<Property> hasAnyOrganization(java.util.Set<Long> organizationIds) {
+        return (root, query, cb) -> {
+            if (organizationIds == null || organizationIds.isEmpty()) {
+                return cb.conjunction();
+            }
+            return root.get("organizationId").in(organizationIds);
+        };
+    }
+
+    /**
+     * Filtre par créateur OU organisation accessible
+     * Utilisé pour filtrer selon les permissions utilisateur
+     */
+    public static Specification<Property> accessibleByUser(Long userId, java.util.Set<Long> accessibleOrganizationIds) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            
+            // L'utilisateur peut voir ses propres propriétés
+            if (userId != null) {
+                predicates.add(cb.equal(root.get("createdBy"), userId));
+            }
+            
+            // L'utilisateur peut voir les propriétés de ses organisations accessibles
+            if (accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
+                predicates.add(root.get("organizationId").in(accessibleOrganizationIds));
+            }
+            
+            if (predicates.isEmpty()) {
+                return cb.disjunction(); // Aucun accès si aucune condition
+            }
+            
+            return cb.or(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    /**
+     * Filtre par créateur
+     */
+    public static Specification<Property> hasCreatedBy(Long createdBy) {
+        return (root, query, cb) -> {
+            if (createdBy == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("createdBy"), createdBy);
+        };
+    }
+
+    /**
      * Filtre par utilisateur assigné
      */
     public static Specification<Property> hasAssignedUser(Long assignedUserId) {

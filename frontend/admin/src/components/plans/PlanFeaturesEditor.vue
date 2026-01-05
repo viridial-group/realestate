@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-3">
     <div
-      v-for="(feature, index) in localFeatures"
+      v-for="(_feature, index) in localFeatures"
       :key="index"
       class="flex items-center gap-2"
     >

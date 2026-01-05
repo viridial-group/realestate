@@ -96,7 +96,7 @@
                 <th v-if="selectable" class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                   <Checkbox
                     :checked="allSelected"
-                    @update:checked="(val) => $emit('select-all', val)"
+                    @update:checked="(val: boolean) => $emit('select-all', val)"
                   />
                 </th>
                 <th
@@ -141,7 +141,7 @@
                 <td v-if="selectable" class="px-6 py-4 whitespace-nowrap" @click.stop>
                   <Checkbox
                     :checked="isRowSelected(row)"
-                    @update:checked="(val) => $emit('row-select', row, val)"
+                    @update:checked="(val: boolean) => $emit('row-select', row, val)"
                   />
                 </td>
                 <td

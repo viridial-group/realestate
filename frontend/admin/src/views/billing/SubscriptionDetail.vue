@@ -127,19 +127,19 @@
               </div>
 
               <!-- Quotas -->
-              <div v-if="plan.quotas && Object.keys(plan.quotas).length > 0" class="mt-6 space-y-3">
+              <div v-if="plan && (plan as any).quotas && Object.keys((plan as any).quotas).length > 0" class="mt-6 space-y-3">
                 <h4 class="text-sm font-semibold mb-3">{{ t('billing.limitsAndQuotas') }}</h4>
                 <div class="space-y-2">
                   <div
-                    v-for="(value, key) in plan.quotas"
-                    :key="key"
+                    v-for="(value, key) in (plan as any).quotas"
+                    :key="String(key)"
                     class="flex items-center justify-between p-3 rounded-lg border"
                   >
                     <span class="text-sm font-medium capitalize">
-                      {{ formatQuotaKey(key) }}
+                      {{ formatQuotaKey(String(key)) }}
                     </span>
                     <Badge variant="outline">
-                      {{ formatQuotaValue(value, key) }}
+                      {{ formatQuotaValue(value, String(key)) }}
                     </Badge>
                   </div>
                 </div>

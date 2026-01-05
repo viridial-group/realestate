@@ -174,6 +174,39 @@ public class IdentityServiceClient {
     }
 
     /**
+     * Get permission context for current user
+     * Returns accessible organizations including sub-organizations
+     */
+    @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "getPermissionContextFallback")
+    @Retry(name = RETRY_NAME)
+    public Mono<Optional<com.realestate.common.client.dto.PermissionContextDTO>> getPermissionContext(String authToken) {
+        return webClient.get()
+                .uri("/api/identity/users/me/permissions")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + authToken)
+                .retrieve()
+                .bodyToMono(com.realestate.common.client.dto.PermissionContextDTO.class)
+                .map(Optional::of)
+                .timeout(Duration.ofSeconds(5))
+                .onErrorResume(WebClientResponseException.class, ex -> {
+                    if (ex.getStatusCode().value() == 401 || ex.getStatusCode().value() == 403) {
+                        logger.warn("Unauthorized access to permission context");
+                        return Mono.just(Optional.empty());
+                    }
+                    logger.error("Error fetching permission context: {}", ex.getMessage());
+                    return Mono.just(Optional.empty());
+                })
+                .onErrorResume(ex -> {
+                    logger.error("Unexpected error fetching permission context: {}", ex.getMessage());
+                    return Mono.just(Optional.empty());
+                });
+    }
+
+    private Mono<Optional<com.realestate.common.client.dto.PermissionContextDTO>> getPermissionContextFallback(String authToken, Exception ex) {
+        logger.error("Circuit breaker opened for getPermissionContext", ex);
+        return Mono.just(Optional.empty());
+    }
+
+    /**
      * Get all active organizations (public endpoint, no auth required)
      */
     @CircuitBreaker(name = CIRCUIT_BREAKER_NAME, fallbackMethod = "getAllOrganizationsFallback")

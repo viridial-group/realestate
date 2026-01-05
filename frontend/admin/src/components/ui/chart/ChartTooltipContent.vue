@@ -20,20 +20,6 @@ withDefaults(defineProps<{
   indicator: 'dot'
 })
 
-const props = defineProps<{
-  label?: string
-  payload?: Array<{
-    name: string
-    value: any
-    color?: string
-  }>
-  labelKey?: string
-  nameKey?: string
-  hideLabel?: boolean
-  hideIndicator?: boolean
-  indicator?: 'dot' | 'line' | 'dashed'
-}>()
-
 const chartConfig = inject<{ value: ChartConfig }>('chartConfig', { value: {} })
 
 const getColor = (name: string) => {

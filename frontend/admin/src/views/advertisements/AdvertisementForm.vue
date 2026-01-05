@@ -297,7 +297,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { advertisementService, type Advertisement, type AdvertisementCreate, type AdvertisementUpdate } from '@viridial/shared'
 import { useAuthStore } from '@viridial/shared'
 

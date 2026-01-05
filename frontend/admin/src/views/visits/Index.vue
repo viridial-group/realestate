@@ -261,7 +261,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router' // Non utilisé
 import { visitAppointmentService, propertyService } from '@viridial/shared'
 import type { VisitAppointment, Property } from '@viridial/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -295,7 +295,7 @@ import VisitCalendar from '@/components/visits/VisitCalendar.vue'
 import VisitModal from '@/components/visits/VisitModal.vue'
 import { useToast } from '@/components/ui/toast/use-toast'
 
-const router = useRouter()
+// const router = useRouter() // Non utilisé
 const { toast } = useToast()
 
 const visits = ref<VisitAppointment[]>([])
@@ -474,8 +474,8 @@ const resetFilters = () => {
   selectedPropertyId.value = 'all'
 }
 
-const getStatusVariant = (status: string): string => {
-  const variants: Record<string, string> = {
+const getStatusVariant = (status: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
+  const variants: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
     PENDING: 'secondary',
     CONFIRMED: 'default',
     CANCELLED: 'destructive',

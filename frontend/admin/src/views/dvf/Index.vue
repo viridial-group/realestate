@@ -247,7 +247,7 @@ const startImport = async () => {
 
   importing.value = true
   try {
-    const response = await httpClient.post(
+    await httpClient.post(
       `/api/admin/dvf/import/${importForm.value.year}/${importForm.value.department}`
     )
     
@@ -261,8 +261,8 @@ const startImport = async () => {
       year: importForm.value.year,
       department: importForm.value.department,
       status: 'EN_COURS',
-      date: new Date().toISOString()
-    })
+      createdAt: new Date().toISOString()
+    } as any)
 
     showImportDialog.value = false
     importForm.value.department = ''

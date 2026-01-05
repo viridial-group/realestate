@@ -54,7 +54,7 @@
                 <Checkbox
                   :id="`role-${role.id}`"
                   :checked="selectedRoleIds.includes(role.id)"
-                  @update:checked="(checked) => toggleRole(role.id, checked)"
+                  @update:checked="(checked: boolean) => toggleRole(role.id, checked)"
                 />
                 <Label
                   :for="`role-${role.id}`"
@@ -184,7 +184,7 @@ const loadRoles = async () => {
 const loadUsers = async () => {
   try {
     const page = await userService.getAll({ size: 1000 })
-    users.value = page.content
+    users.value = page.users || []
   } catch (error: any) {
     toast({
       title: 'Erreur',
@@ -197,7 +197,7 @@ const loadUsers = async () => {
 const loadOrganizations = async () => {
   try {
     const page = await organizationService.getAll({ size: 1000 })
-    organizations.value = page.content
+    organizations.value = page.organizations || []
   } catch (error: any) {
     // Organizations might not be available, ignore error
   }

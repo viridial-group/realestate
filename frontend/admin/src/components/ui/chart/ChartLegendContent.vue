@@ -11,10 +11,10 @@ withDefaults(defineProps<{
 const chartConfig = inject<{ value: ChartConfig }>('chartConfig', { value: {} })
 
 const items = computed(() => {
-  return Object.entries(chartConfig.value).map(([key, config]) => ({
+  return Object.entries(chartConfig.value).map(([key, config]: [string, any]) => ({
     key,
-    label: config.label || key,
-    color: config.theme?.light || config.color || 'hsl(var(--chart-1))'
+    label: config?.label || key,
+    color: config?.theme?.light || config?.color || 'hsl(var(--chart-1))'
   }))
 })
 </script>

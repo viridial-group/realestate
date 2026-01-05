@@ -7,7 +7,7 @@ import { useAuthStore, UserRole } from '@viridial/shared'
 export function roleGuard(...allowedRoles: UserRole[]) {
   return (
     to: RouteLocationNormalized,
-    from: RouteLocationNormalized,
+    _from: RouteLocationNormalized,
     next: NavigationGuardNext
   ): void => {
     const authStore = useAuthStore()

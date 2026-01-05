@@ -234,7 +234,7 @@ const loadMarketData = async () => {
     
     toast({
       title: 'Erreur',
-      description: error.value,
+      description: error.value || undefined,
       variant: 'destructive'
     })
   } finally {
@@ -268,7 +268,7 @@ const formatDate = (dateString: string): string => {
   })
 }
 
-const getComparisonVariant = (evaluation?: string): string => {
+const getComparisonVariant = (evaluation?: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
   switch (evaluation) {
     case 'SURESTIMÉ':
       return 'destructive'

@@ -5,6 +5,7 @@ import com.realestate.billing.entity.Invoice;
 import com.realestate.billing.mapper.InvoiceMapper;
 import com.realestate.billing.service.InvoiceService;
 import com.realestate.common.exception.ResourceNotFoundException;
+import com.realestate.common.client.IdentityServiceClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,12 +35,17 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
     private final InvoiceMapper invoiceMapper;
     private final com.realestate.billing.service.InvoicePdfService invoicePdfService;
+    private final IdentityServiceClient identityServiceClient;
 
-    public InvoiceController(InvoiceService invoiceService, InvoiceMapper invoiceMapper, 
-                           com.realestate.billing.service.InvoicePdfService invoicePdfService) {
+    public InvoiceController(
+            InvoiceService invoiceService, 
+            InvoiceMapper invoiceMapper, 
+            com.realestate.billing.service.InvoicePdfService invoicePdfService,
+            IdentityServiceClient identityServiceClient) {
         this.invoiceService = invoiceService;
         this.invoiceMapper = invoiceMapper;
         this.invoicePdfService = invoicePdfService;
+        this.identityServiceClient = identityServiceClient;
     }
 
     @PostMapping
@@ -69,23 +77,67 @@ public class InvoiceController {
     }
 
     @GetMapping
-    @Operation(summary = "List invoices", description = "Returns a paginated list of invoices with optional filters")
+    @Operation(summary = "List invoices", description = "Returns a paginated list of invoices with optional filters. Automatically filters by user permissions and accessible organizations.")
     public ResponseEntity<Page<InvoiceDTO>> getInvoices(
-            @RequestParam Long organizationId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> invoices;
-        
-        if (status != null) {
-            invoices = invoiceService.getInvoicesByOrganizationIdAndStatus(organizationId, status, pageable);
-        } else {
-            invoices = invoiceService.getInvoicesByOrganizationId(organizationId, pageable);
+        try {
+            // Récupérer le contexte de permissions si un token est fourni
+            Set<Long> accessibleOrgIds = null;
+            boolean isSuperAdmin = false;
+            boolean isAdmin = false;
+            
+            if (authorization != null && authorization.startsWith("Bearer ") && identityServiceClient != null) {
+                String token = authorization.substring(7);
+                
+                try {
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        isSuperAdmin = permissionContext.isSuperAdmin();
+                        isAdmin = permissionContext.isAdmin();
+                        accessibleOrgIds = permissionContext.getAccessibleOrganizationIds();
+                    }
+                } catch (Exception e) {
+                    // Continuer sans contexte de permissions
+                }
+            }
+            
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Invoice> invoices;
+            
+            // Si l'utilisateur n'est pas super admin/admin, filtrer selon ses permissions
+            if (!isSuperAdmin && !isAdmin && accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+                // Si un organizationId est spécifié, vérifier qu'il est accessible
+                if (organizationId != null && !accessibleOrgIds.contains(organizationId)) {
+                    // L'utilisateur n'a pas accès à cette organisation
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+                
+                // Utiliser le filtrage avec permissions
+                invoices = invoiceService.getInvoicesWithPermissions(accessibleOrgIds, organizationId, status, pageable);
+            } else {
+                // Super admin ou admin : voir toutes les factures
+                if (organizationId == null) {
+                    return ResponseEntity.badRequest().build();
+                }
+                if (status != null) {
+                    invoices = invoiceService.getInvoicesByOrganizationIdAndStatus(organizationId, status, pageable);
+                } else {
+                    invoices = invoiceService.getInvoicesByOrganizationId(organizationId, pageable);
+                }
+            }
+            
+            Page<InvoiceDTO> invoiceDTOs = invoices.map(invoiceMapper::toDTO);
+            return ResponseEntity.ok(invoiceDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        
-        Page<InvoiceDTO> invoiceDTOs = invoices.map(invoiceMapper::toDTO);
-        return ResponseEntity.ok(invoiceDTOs);
     }
 
     @GetMapping("/subscription/{subscriptionId}")

@@ -162,7 +162,6 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {

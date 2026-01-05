@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -142,10 +143,21 @@ public class PropertyController {
             }
             
             Long userId = currentUser.getId();
+            Long organizationId = currentUser.getOrganizationId();
             
-            // Récupérer les propriétés avec pagination en filtrant par createdBy
+            // Déterminer le type d'utilisateur et filtrer en conséquence
+            // - Individuel : seulement ses propres propriétés (createdBy = userId)
+            // - Professionnel : propriétés de son organisation (organizationId = userOrganizationId)
             Pageable pageable = PageRequest.of(page, size);
-            Page<Property> propertyPage = propertyService.getPropertiesByCreatedBy(userId, status, pageable);
+            Page<Property> propertyPage;
+            
+            if (organizationId != null) {
+                // Utilisateur professionnel : récupérer les propriétés de son organisation
+                propertyPage = propertyService.getPropertiesByOrganizationId(userId, organizationId, status, pageable);
+            } else {
+                // Utilisateur individuel : récupérer seulement ses propres propriétés
+                propertyPage = propertyService.getPropertiesByCreatedBy(userId, status, pageable);
+            }
             
             // Convertir en DTO
             Page<PropertyDTO> dtoPage = propertyPage.map(propertyMapper::toDTO);
@@ -184,8 +196,9 @@ public class PropertyController {
     }
 
     @GetMapping
-    @Operation(summary = "List properties", description = "Returns a list of properties filtered by various criteria using JPA Specifications")
+    @Operation(summary = "List properties", description = "Returns a list of properties filtered by various criteria using JPA Specifications. Automatically filters by user permissions and accessible organizations.")
     public ResponseEntity<List<PropertyDTO>> getProperties(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) Long assignedUserId,
             @RequestParam(required = false) Long teamId,
@@ -203,31 +216,109 @@ public class PropertyController {
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "1000") int size) {
         
-        // Si aucun filtre n'est spécifié et qu'on veut toutes les propriétés, utiliser getAllPropertiesWithFilters
-        // Sinon, utiliser la pagination si size < 1000
-        List<Property> properties;
-        
-        if (size >= 1000 || (organizationId == null && assignedUserId == null && teamId == null 
-                && status == null && type == null && city == null && country == null 
-                && minPrice == null && maxPrice == null && minSurface == null && maxSurface == null
-                && bedrooms == null && bathrooms == null && search == null)) {
-            // Récupérer toutes les propriétés sans pagination
-            properties = propertyService.getAllPropertiesWithFilters(
-                    organizationId, assignedUserId, teamId, status, type, city, country,
-                    minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search);
-        } else {
-            // Utiliser la pagination
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Property> propertyPage = propertyService.getPropertiesWithFilters(
-                    organizationId, assignedUserId, teamId, status, type, city, country,
-                    minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search, pageable);
-            properties = propertyPage.getContent();
-        }
+        try {
+            // Récupérer le contexte de permissions si un token est fourni
+            Long userId = null;
+            Set<Long> accessibleOrgIds = null;
+            boolean isSuperAdmin = false;
+            boolean isAdmin = false;
+            
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                WebClient webClient = WebClient.builder()
+                        .baseUrl(identityServiceUrl)
+                        .build();
+                
+                try {
+                    com.realestate.common.client.dto.PermissionContextDTO permissionContext = webClient
+                            .get()
+                            .uri("/api/identity/users/me/permissions")
+                            .header("Authorization", "Bearer " + token)
+                            .retrieve()
+                            .bodyToMono(com.realestate.common.client.dto.PermissionContextDTO.class)
+                            .block();
+                    
+                    if (permissionContext != null) {
+                        userId = permissionContext.getUserId();
+                        isSuperAdmin = permissionContext.isSuperAdmin();
+                        isAdmin = permissionContext.isAdmin();
+                        accessibleOrgIds = permissionContext.getAccessibleOrganizationIds();
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to fetch permission context: {}", e.getMessage());
+                    // Continuer sans contexte de permissions (peut être un endpoint public)
+                }
+            }
+            
+            // Déclarer la variable properties
+            List<Property> properties;
+            
+            // Si l'utilisateur n'est pas super admin/admin, filtrer selon ses permissions
+            if (!isSuperAdmin && !isAdmin && userId != null) {
+                // Si un organizationId est spécifié, vérifier qu'il est accessible
+                if (organizationId != null && accessibleOrgIds != null && !accessibleOrgIds.contains(organizationId)) {
+                    // L'utilisateur n'a pas accès à cette organisation
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+                
+                // Si aucun organizationId n'est spécifié, utiliser les organisations accessibles
+                if (organizationId == null && accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+                    // Filtrer par les organisations accessibles (incluant sous-organisations)
+                    // On va utiliser une specification spéciale pour cela
+                    if (size >= 1000) {
+                        properties = propertyService.getAllPropertiesWithFiltersAndPermissions(
+                                userId, accessibleOrgIds, assignedUserId, teamId, status, type, city, country,
+                                minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search);
+                    } else {
+                        Pageable pageable = PageRequest.of(page, size);
+                        Page<Property> propertyPage = propertyService.getPropertiesWithFiltersAndPermissions(
+                                userId, accessibleOrgIds, assignedUserId, teamId, status, type, city, country,
+                                minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search, pageable);
+                        properties = propertyPage.getContent();
+                    }
+                } else {
+                    // Utiliser le filtre normal si organizationId est spécifié et accessible
+                    if (size >= 1000 || (organizationId == null && assignedUserId == null && teamId == null 
+                            && status == null && type == null && city == null && country == null 
+                            && minPrice == null && maxPrice == null && minSurface == null && maxSurface == null
+                            && bedrooms == null && bathrooms == null && search == null)) {
+                        properties = propertyService.getAllPropertiesWithFilters(
+                                organizationId, assignedUserId, teamId, status, type, city, country,
+                                minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search);
+                    } else {
+                        Pageable pageable = PageRequest.of(page, size);
+                        Page<Property> propertyPage = propertyService.getPropertiesWithFilters(
+                                organizationId, assignedUserId, teamId, status, type, city, country,
+                                minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search, pageable);
+                        properties = propertyPage.getContent();
+                    }
+                }
+            } else {
+                // Super admin ou admin : voir toutes les propriétés
+                if (size >= 1000 || (organizationId == null && assignedUserId == null && teamId == null 
+                        && status == null && type == null && city == null && country == null 
+                        && minPrice == null && maxPrice == null && minSurface == null && maxSurface == null
+                        && bedrooms == null && bathrooms == null && search == null)) {
+                    properties = propertyService.getAllPropertiesWithFilters(
+                            organizationId, assignedUserId, teamId, status, type, city, country,
+                            minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search);
+                } else {
+                    Pageable pageable = PageRequest.of(page, size);
+                    Page<Property> propertyPage = propertyService.getPropertiesWithFilters(
+                            organizationId, assignedUserId, teamId, status, type, city, country,
+                            minPrice, maxPrice, minSurface, maxSurface, bedrooms, bathrooms, search, pageable);
+                    properties = propertyPage.getContent();
+                }
+            }
 
-        List<PropertyDTO> propertyDTOs = properties.stream()
-                .map(propertyMapper::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(propertyDTOs);
+            List<PropertyDTO> propertyDTOs = properties.stream()
+                    .map(propertyMapper::toDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(propertyDTOs);
+        } catch (Exception e) {
+            logger.error("Error fetching properties", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PutMapping("/{id}")

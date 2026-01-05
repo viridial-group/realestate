@@ -638,7 +638,7 @@ const getStatusLabel = (status: string): string => {
 }
 
 // Créer une icône pour les POI avec le nom affiché directement
-const createPOIIcon = (type: string, color: string, name: string, iconSvg: string, typeName: string) => {
+const createPOIIcon = (_type: string, color: string, name: string, iconSvg: string, typeName: string) => {
   const iconSize = 28
   const padding = 8
   const textHeight = 20
@@ -837,7 +837,6 @@ const loadPOI = async () => {
 
   // Calculer une zone de recherche limitée autour des propriétés
   const bounds = map.getBounds()
-  const zoom = map.getZoom()
   
   // Utiliser les bounds de la carte mais limiter si trop large
   let south = bounds.getSouth()

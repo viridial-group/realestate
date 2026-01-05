@@ -22,7 +22,7 @@
           <CardContent class="space-y-4">
             <div class="flex items-center space-x-4">
               <Avatar class="h-20 w-20">
-                <AvatarImage :src="profile.avatarUrl || profile.avatar" v-if="profile.avatarUrl || profile.avatar" />
+                <AvatarImage :src="(profile.avatarUrl || profile.avatar) || ''" v-if="profile.avatarUrl || profile.avatar" />
                 <AvatarFallback class="text-2xl">
                   {{ (profile.name || profile.email || 'U').charAt(0).toUpperCase() }}
                 </AvatarFallback>
@@ -136,7 +136,7 @@
                     <Checkbox
                       id="notifEmail"
                       :checked="notificationPrefs.email"
-                      @update:checked="(val) => notificationPrefs.email = val as boolean"
+                      @update:checked="(val: boolean) => notificationPrefs.email = val"
                     />
                   </div>
                   <div class="flex items-center justify-between">
@@ -147,7 +147,7 @@
                     <Checkbox
                       id="notifPush"
                       :checked="notificationPrefs.push"
-                      @update:checked="(val) => notificationPrefs.push = val as boolean"
+                      @update:checked="(val: boolean) => notificationPrefs.push = val"
                     />
                   </div>
                   <div class="flex items-center justify-between">
@@ -158,7 +158,7 @@
                     <Checkbox
                       id="notifSms"
                       :checked="notificationPrefs.sms"
-                      @update:checked="(val) => notificationPrefs.sms = val as boolean"
+                      @update:checked="(val: boolean) => notificationPrefs.sms = val"
                     />
                   </div>
                   <div class="flex items-center justify-between">
@@ -169,7 +169,7 @@
                     <Checkbox
                       id="notifMarketing"
                       :checked="notificationPrefs.marketing"
-                      @update:checked="(val) => notificationPrefs.marketing = val as boolean"
+                      @update:checked="(val: boolean) => notificationPrefs.marketing = val"
                     />
                   </div>
                 </div>
@@ -248,7 +248,7 @@
         <div class="space-y-4">
           <div class="flex justify-center">
             <Avatar class="h-32 w-32">
-              <AvatarImage :src="avatarPreview || profile?.avatarUrl || profile?.avatar" />
+              <AvatarImage :src="(avatarPreview || profile?.avatarUrl || profile?.avatar) || ''" />
               <AvatarFallback class="text-4xl">
                 {{ (profile?.name || profile?.email || 'U').charAt(0).toUpperCase() }}
               </AvatarFallback>
@@ -280,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/components/ui/toast'
 import { userService, type UserProfile, UserStatus } from '@viridial/shared'

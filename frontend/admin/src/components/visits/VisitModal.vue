@@ -434,8 +434,8 @@ const handleDelete = async () => {
   }
 }
 
-const getStatusVariant = (status: string): string => {
-  const variants: Record<string, string> = {
+const getStatusVariant = (status: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
+  const variants: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
     PENDING: 'secondary',
     CONFIRMED: 'default',
     CANCELLED: 'destructive',
@@ -473,8 +473,8 @@ const handleProposeExchange = async () => {
   exchanging.value = true
   try {
     await visitAppointmentService.proposeExchange(props.visit.id, {
-      visitId: props.visit.id,
-      proposedDate: new Date(exchangeForm.value.proposedDate).toISOString(),
+      newAgentId: props.visit.agentId || 0,
+      newAppointmentDate: new Date(exchangeForm.value.proposedDate).toISOString(),
       message: exchangeForm.value.message
     })
     

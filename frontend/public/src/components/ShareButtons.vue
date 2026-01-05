@@ -190,8 +190,40 @@ function trackShare(platform: string) {
   
   // Envoyer au backend pour les statistiques (si propertyId fourni)
   if (props.propertyId) {
-    // TODO: Appel API pour incrémenter le compteur de partages
-    // userPropertyService.trackShare(props.propertyId, platform)
+    trackShare(props.propertyId, platform)
+  }
+}
+
+// Fonction pour tracker les partages
+async function trackShare(propertyId: number, platform: string) {
+  try {
+    // Import dynamique pour éviter les erreurs si le service n'est pas disponible
+    const { userPropertyService } = await import('@/api/user-property.service')
+    
+    // Appel API pour incrémenter le compteur de partages
+    // Note: Cette méthode doit être implémentée dans userPropertyService
+    if (userPropertyService && typeof (userPropertyService as any).trackShare === 'function') {
+      await (userPropertyService as any).trackShare(propertyId, platform)
+    } else {
+      // Fallback: appel direct à l'API si la méthode n'existe pas encore
+      const axios = (await import('axios')).default
+      const { tokenUtils } = await import('@viridial/shared')
+      
+      const token = tokenUtils.getToken()
+      await axios.post(
+        `/api/user-properties/${propertyId}/stats/share`,
+        { platform },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }
+      ).catch(() => {
+        // Ignorer les erreurs silencieusement pour ne pas perturber l'UX
+        console.debug('Impossible de tracker le partage')
+      })
+    }
+  } catch (error) {
+    // Ignorer les erreurs silencieusement pour ne pas perturber l'UX
+    console.debug('Erreur lors du tracking du partage:', error)
   }
 }
 </script>

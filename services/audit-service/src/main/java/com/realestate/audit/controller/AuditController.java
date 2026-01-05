@@ -5,6 +5,7 @@ import com.realestate.audit.entity.AuditLog;
 import com.realestate.audit.mapper.AuditLogMapper;
 import com.realestate.audit.service.AuditService;
 import com.realestate.common.exception.ResourceNotFoundException;
+import com.realestate.common.client.IdentityServiceClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,10 +30,15 @@ public class AuditController {
 
     private final AuditService auditService;
     private final AuditLogMapper auditLogMapper;
+    private final IdentityServiceClient identityServiceClient;
 
-    public AuditController(AuditService auditService, AuditLogMapper auditLogMapper) {
+    public AuditController(
+            AuditService auditService, 
+            AuditLogMapper auditLogMapper,
+            IdentityServiceClient identityServiceClient) {
         this.auditService = auditService;
         this.auditLogMapper = auditLogMapper;
+        this.identityServiceClient = identityServiceClient;
     }
 
     @PostMapping
@@ -78,9 +85,10 @@ public class AuditController {
     }
 
     @GetMapping
-    @Operation(summary = "List audit logs", description = "Returns a paginated list of audit logs with various filters")
+    @Operation(summary = "List audit logs", description = "Returns a paginated list of audit logs with various filters. Automatically filters by user permissions and accessible organizations.")
     public ResponseEntity<Page<AuditLogDTO>> getAuditLogs(
-            @RequestParam Long organizationId,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(required = false) Long organizationId,
             @RequestParam(required = false) Long actorId,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String status,
@@ -88,23 +96,67 @@ public class AuditController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<AuditLog> auditLogs;
+        try {
+            // Récupérer le contexte de permissions si un token est fourni
+            Set<Long> accessibleOrgIds = null;
+            boolean isSuperAdmin = false;
+            boolean isAdmin = false;
+            
+            if (authorization != null && authorization.startsWith("Bearer ") && identityServiceClient != null) {
+                String token = authorization.substring(7);
+                
+                try {
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        isSuperAdmin = permissionContext.isSuperAdmin();
+                        isAdmin = permissionContext.isAdmin();
+                        accessibleOrgIds = permissionContext.getAccessibleOrganizationIds();
+                    }
+                } catch (Exception e) {
+                    // Continuer sans contexte de permissions
+                }
+            }
+            
+            Pageable pageable = PageRequest.of(page, size);
+            Page<AuditLog> auditLogs;
+            
+            // Si l'utilisateur n'est pas super admin/admin, filtrer selon ses permissions
+            if (!isSuperAdmin && !isAdmin && accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+                // Si un organizationId est spécifié, vérifier qu'il est accessible
+                if (organizationId != null && !accessibleOrgIds.contains(organizationId)) {
+                    // L'utilisateur n'a pas accès à cette organisation
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+                
+                // Utiliser le filtrage avec permissions
+                auditLogs = auditService.getAuditLogsWithPermissions(
+                        accessibleOrgIds, organizationId, actorId, action, status, startDate, endDate, pageable);
+            } else {
+                // Super admin ou admin : voir tous les logs
+                if (organizationId == null) {
+                    return ResponseEntity.badRequest().build();
+                }
+                if (actorId != null) {
+                    auditLogs = auditService.getAuditLogsByActorIdAndOrganizationId(actorId, organizationId, pageable);
+                } else if (action != null) {
+                    auditLogs = auditService.getAuditLogsByActionAndOrganizationId(action, organizationId, pageable);
+                } else if (status != null) {
+                    auditLogs = auditService.getAuditLogsByStatusAndOrganizationId(status, organizationId, pageable);
+                } else if (startDate != null && endDate != null) {
+                    auditLogs = auditService.getAuditLogsByDateRange(organizationId, startDate, endDate, pageable);
+                } else {
+                    auditLogs = auditService.getAuditLogsByOrganizationId(organizationId, pageable);
+                }
+            }
 
-        if (actorId != null) {
-            auditLogs = auditService.getAuditLogsByActorIdAndOrganizationId(actorId, organizationId, pageable);
-        } else if (action != null) {
-            auditLogs = auditService.getAuditLogsByActionAndOrganizationId(action, organizationId, pageable);
-        } else if (status != null) {
-            auditLogs = auditService.getAuditLogsByStatusAndOrganizationId(status, organizationId, pageable);
-        } else if (startDate != null && endDate != null) {
-            auditLogs = auditService.getAuditLogsByDateRange(organizationId, startDate, endDate, pageable);
-        } else {
-            auditLogs = auditService.getAuditLogsByOrganizationId(organizationId, pageable);
+            Page<AuditLogDTO> auditLogDTOs = auditLogs.map(auditLogMapper::toDTO);
+            return ResponseEntity.ok(auditLogDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        Page<AuditLogDTO> auditLogDTOs = auditLogs.map(auditLogMapper::toDTO);
-        return ResponseEntity.ok(auditLogDTOs);
     }
 
     @GetMapping("/target")

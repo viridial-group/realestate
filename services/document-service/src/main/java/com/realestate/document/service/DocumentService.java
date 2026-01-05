@@ -5,6 +5,8 @@ import com.realestate.document.entity.Document;
 import com.realestate.document.entity.Storage;
 import com.realestate.document.repository.DocumentRepository;
 import com.realestate.document.repository.StorageRepository;
+import com.realestate.document.specification.DocumentSpecification;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,6 +230,46 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public List<Document> getDocumentsByResourceId(Long resourceId) {
         return documentRepository.findActiveByResourceId(resourceId);
+    }
+
+    /**
+     * Récupérer les documents avec filtres et permissions utilisateur
+     * Filtre automatiquement selon les organisations accessibles (incluant sous-organisations)
+     */
+    @Transactional(readOnly = true)
+    public List<Document> getDocumentsWithPermissions(
+            Long userId,
+            Set<Long> accessibleOrganizationIds,
+            Long organizationId,
+            Long propertyId,
+            Long resourceId) {
+        
+        Specification<Document> spec = Specification.where(null);
+
+        // Si l'utilisateur n'est pas super admin, appliquer les filtres de permissions
+        if (userId != null && accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
+            // Filtrer selon les permissions : documents créés par l'utilisateur OU dans ses organisations
+            spec = spec.and(DocumentSpecification.accessibleByUser(userId, accessibleOrganizationIds));
+        } else if (userId != null) {
+            // Si pas d'organisations, seulement les documents créés par l'utilisateur
+            spec = spec.and(DocumentSpecification.hasCreatedBy(userId));
+        }
+
+        // Appliquer les autres filtres
+        if (organizationId != null) {
+            spec = spec.and(DocumentSpecification.hasOrganization(organizationId));
+        }
+        if (propertyId != null) {
+            spec = spec.and(DocumentSpecification.hasProperty(propertyId));
+        }
+        if (resourceId != null) {
+            spec = spec.and(DocumentSpecification.hasResource(resourceId));
+        }
+
+        // Seulement les documents actifs
+        spec = spec.and(DocumentSpecification.isActive(true));
+
+        return documentRepository.findAll(spec);
     }
 
     @Transactional(readOnly = true)

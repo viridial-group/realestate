@@ -4,11 +4,14 @@ import com.realestate.workflow.entity.ApprovalWorkflow;
 import com.realestate.workflow.entity.Task;
 import com.realestate.workflow.repository.ApprovalWorkflowRepository;
 import com.realestate.workflow.repository.TaskRepository;
+import com.realestate.workflow.specification.WorkflowSpecification;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class WorkflowService {
@@ -103,6 +106,50 @@ public class WorkflowService {
 
         workflow.setTargetId(targetId);
         return workflowRepository.save(workflow);
+    }
+
+    /**
+     * Récupérer les workflows avec filtres et permissions utilisateur
+     * Filtre automatiquement selon les organisations accessibles (incluant sous-organisations)
+     */
+    @Transactional(readOnly = true)
+    public List<ApprovalWorkflow> getWorkflowsWithPermissions(
+            Long userId,
+            Set<Long> accessibleOrganizationIds,
+            Long organizationId,
+            String action,
+            String targetType,
+            Long targetId) {
+        
+        Specification<ApprovalWorkflow> spec = Specification.where(null);
+
+        // Si l'utilisateur n'est pas super admin, appliquer les filtres de permissions
+        if (userId != null && accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
+            // Filtrer selon les permissions : workflows créés par l'utilisateur OU dans ses organisations
+            spec = spec.and(WorkflowSpecification.accessibleByUser(userId, accessibleOrganizationIds));
+        } else if (userId != null) {
+            // Si pas d'organisations, seulement les workflows créés par l'utilisateur
+            spec = spec.and(WorkflowSpecification.hasCreatedBy(userId));
+        }
+
+        // Appliquer les autres filtres
+        if (organizationId != null) {
+            spec = spec.and(WorkflowSpecification.hasOrganization(organizationId));
+        }
+        if (action != null && !action.isEmpty()) {
+            spec = spec.and(WorkflowSpecification.hasAction(action));
+        }
+        if (targetType != null && !targetType.isEmpty()) {
+            spec = spec.and(WorkflowSpecification.hasTargetType(targetType));
+        }
+        if (targetId != null) {
+            spec = spec.and(WorkflowSpecification.hasTargetId(targetId));
+        }
+
+        // Seulement les workflows actifs
+        spec = spec.and(WorkflowSpecification.isActive(true));
+
+        return workflowRepository.findAll(spec);
     }
 }
 

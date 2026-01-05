@@ -5,6 +5,7 @@ import com.realestate.billing.entity.Subscription;
 import com.realestate.billing.mapper.SubscriptionMapper;
 import com.realestate.billing.service.SubscriptionService;
 import com.realestate.common.exception.ResourceNotFoundException;
+import com.realestate.common.client.IdentityServiceClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,26 +26,68 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
     private final SubscriptionMapper subscriptionMapper;
+    private final IdentityServiceClient identityServiceClient;
 
-    public SubscriptionController(SubscriptionService subscriptionService, SubscriptionMapper subscriptionMapper) {
+    public SubscriptionController(
+            SubscriptionService subscriptionService, 
+            SubscriptionMapper subscriptionMapper,
+            IdentityServiceClient identityServiceClient) {
         this.subscriptionService = subscriptionService;
         this.subscriptionMapper = subscriptionMapper;
+        this.identityServiceClient = identityServiceClient;
     }
 
     @GetMapping
-    @Operation(summary = "List all subscriptions", description = "Returns a list of all subscriptions with optional status filter")
+    @Operation(summary = "List all subscriptions", description = "Returns a list of all subscriptions with optional status filter. Automatically filters by user permissions and accessible organizations.")
     public ResponseEntity<List<SubscriptionDTO>> getAllSubscriptions(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam(required = false) String status) {
-        List<Subscription> subscriptions;
-        if (status != null && !status.isEmpty()) {
-            subscriptions = subscriptionService.getSubscriptionsByStatus(status);
-        } else {
-            subscriptions = subscriptionService.getAllSubscriptions();
+        try {
+            // Récupérer le contexte de permissions si un token est fourni
+            Set<Long> accessibleOrgIds = null;
+            boolean isSuperAdmin = false;
+            boolean isAdmin = false;
+            
+            if (authorization != null && authorization.startsWith("Bearer ") && identityServiceClient != null) {
+                String token = authorization.substring(7);
+                
+                try {
+                    java.util.Optional<com.realestate.common.client.dto.PermissionContextDTO> permissionContextOpt = 
+                            identityServiceClient.getPermissionContext(token).block();
+                    
+                    if (permissionContextOpt.isPresent()) {
+                        com.realestate.common.client.dto.PermissionContextDTO permissionContext = permissionContextOpt.get();
+                        isSuperAdmin = permissionContext.isSuperAdmin();
+                        isAdmin = permissionContext.isAdmin();
+                        accessibleOrgIds = permissionContext.getAccessibleOrganizationIds();
+                    }
+                } catch (Exception e) {
+                    // Continuer sans contexte de permissions
+                }
+            }
+            
+            List<Subscription> subscriptions;
+            
+            // Si l'utilisateur n'est pas super admin/admin, filtrer selon ses permissions
+            if (!isSuperAdmin && !isAdmin && accessibleOrgIds != null && !accessibleOrgIds.isEmpty()) {
+                // Utiliser le filtrage avec permissions
+                subscriptions = subscriptionService.getSubscriptionsWithPermissions(accessibleOrgIds, status);
+            } else {
+                // Super admin ou admin : voir tous les abonnements
+                if (status != null && !status.isEmpty()) {
+                    subscriptions = subscriptionService.getSubscriptionsByStatus(status);
+                } else {
+                    subscriptions = subscriptionService.getAllSubscriptions();
+                }
+            }
+            
+            List<SubscriptionDTO> subscriptionDTOs = subscriptions.stream()
+                    .map(subscriptionMapper::toDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(subscriptionDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        List<SubscriptionDTO> subscriptionDTOs = subscriptions.stream()
-                .map(subscriptionMapper::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(subscriptionDTOs);
     }
 
     @PostMapping

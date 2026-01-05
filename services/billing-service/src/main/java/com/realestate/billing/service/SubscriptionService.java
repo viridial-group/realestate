@@ -4,14 +4,17 @@ import com.realestate.billing.entity.Plan;
 import com.realestate.billing.entity.Subscription;
 import com.realestate.billing.repository.PlanRepository;
 import com.realestate.billing.repository.SubscriptionRepository;
+import com.realestate.billing.specification.SubscriptionSpecification;
 import com.realestate.common.exception.BadRequestException;
 import com.realestate.common.exception.ResourceNotFoundException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class SubscriptionService {

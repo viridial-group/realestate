@@ -99,7 +99,7 @@
             <Label>Aperçu</Label>
             <div class="border rounded-lg p-4">
               <img
-                :src="previewUrl"
+                :src="previewUrl || undefined"
                 :alt="file.name"
                 class="max-w-full max-h-64 mx-auto rounded"
               />
@@ -261,9 +261,7 @@ const loadOrganizations = async () => {
 const loadProperties = async () => {
   try {
     const result = await propertyService.getAll()
-    if (result.properties && Array.isArray(result.properties)) {
-      properties.value = result.properties
-    }
+    properties.value = Array.isArray(result) ? result : []
   } catch (error) {
     console.error('Error loading properties:', error)
   }

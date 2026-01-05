@@ -100,8 +100,7 @@ const { handleSubmit, defineField, errors, setValues, resetForm } = useForm({
 const [name, nameAttrs] = defineField('name')
 const [description, descriptionAttrs] = defineField('description')
 const [domain, domainAttrs] = defineField('domain')
-const [active, activeAttrs] = defineField('active', { type: 'checkbox' })
-const [parentId, parentIdAttrs] = defineField('parentId', { type: 'number' })
+const [active, activeAttrs] = defineField('active')
 
 watch(() => props.organization, (org) => {
   if (org) {

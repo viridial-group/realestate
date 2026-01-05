@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -339,6 +340,31 @@ public class PropertyService {
     }
 
     /**
+     * Récupérer les propriétés d'une organisation avec pagination
+     * Utilisé pour les utilisateurs professionnels
+     * 
+     * @param userId ID de l'utilisateur (pour vérification)
+     * @param organizationId ID de l'organisation
+     * @param status Statut de la propriété (optionnel)
+     * @param pageable Pagination
+     * @return Page de propriétés
+     */
+    @Transactional(readOnly = true)
+    public Page<Property> getPropertiesByOrganizationId(Long userId, Long organizationId, String status, Pageable pageable) {
+        Specification<Property> spec = Specification.where(PropertySpecification.hasOrganization(organizationId));
+        
+        // Filtrer par statut si fourni
+        if (status != null && !status.trim().isEmpty()) {
+            spec = spec.and(PropertySpecification.hasStatus(status));
+        }
+        
+        // Seulement les propriétés actives
+        spec = spec.and(PropertySpecification.isActive(true));
+        
+        return propertyRepository.findAll(spec, pageable);
+    }
+
+    /**
      * Récupérer les propriétés avec filtres multiples en utilisant JPA Specifications
      */
     @Transactional(readOnly = true)
@@ -452,6 +478,149 @@ public class PropertyService {
         if (organizationId != null) {
             spec = spec.and(PropertySpecification.hasOrganization(organizationId));
         }
+        if (assignedUserId != null) {
+            spec = spec.and(PropertySpecification.hasAssignedUser(assignedUserId));
+        }
+        if (teamId != null) {
+            spec = spec.and(PropertySpecification.hasTeam(teamId));
+        }
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasStatus(status));
+        }
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasType(type));
+        }
+        if (city != null && !city.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCity(city));
+        }
+        if (country != null && !country.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCountry(country));
+        }
+        if (minPrice != null || maxPrice != null) {
+            spec = spec.and(PropertySpecification.hasPriceRange(minPrice, maxPrice));
+        }
+        if (minSurface != null || maxSurface != null) {
+            spec = spec.and(PropertySpecification.hasSurfaceRange(minSurface, maxSurface));
+        }
+        if (bedrooms != null) {
+            spec = spec.and(PropertySpecification.hasBedrooms(bedrooms));
+        }
+        if (bathrooms != null) {
+            spec = spec.and(PropertySpecification.hasBathrooms(bathrooms));
+        }
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(PropertySpecification.searchByText(search));
+        }
+
+        spec = spec.and(PropertySpecification.isActive(true));
+
+        return propertyRepository.findAll(spec);
+    }
+
+    /**
+     * Récupérer les propriétés avec filtres et permissions utilisateur
+     * Filtre automatiquement selon les organisations accessibles (incluant sous-organisations)
+     */
+    @Transactional(readOnly = true)
+    public Page<Property> getPropertiesWithFiltersAndPermissions(
+            Long userId,
+            Set<Long> accessibleOrganizationIds,
+            Long assignedUserId,
+            Long teamId,
+            String status,
+            String type,
+            String city,
+            String country,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            BigDecimal minSurface,
+            BigDecimal maxSurface,
+            Integer bedrooms,
+            Integer bathrooms,
+            String search,
+            Pageable pageable) {
+        
+        Specification<Property> spec = Specification.where(null);
+
+        // Filtrer selon les permissions : propriétés créées par l'utilisateur OU dans ses organisations
+        if (accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
+            spec = spec.and(PropertySpecification.accessibleByUser(userId, accessibleOrganizationIds));
+        } else {
+            // Si pas d'organisations, seulement les propriétés créées par l'utilisateur
+            spec = spec.and(PropertySpecification.hasCreatedBy(userId));
+        }
+
+        // Appliquer les autres filtres
+        if (assignedUserId != null) {
+            spec = spec.and(PropertySpecification.hasAssignedUser(assignedUserId));
+        }
+        if (teamId != null) {
+            spec = spec.and(PropertySpecification.hasTeam(teamId));
+        }
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasStatus(status));
+        }
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasType(type));
+        }
+        if (city != null && !city.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCity(city));
+        }
+        if (country != null && !country.isEmpty()) {
+            spec = spec.and(PropertySpecification.hasCountry(country));
+        }
+        if (minPrice != null || maxPrice != null) {
+            spec = spec.and(PropertySpecification.hasPriceRange(minPrice, maxPrice));
+        }
+        if (minSurface != null || maxSurface != null) {
+            spec = spec.and(PropertySpecification.hasSurfaceRange(minSurface, maxSurface));
+        }
+        if (bedrooms != null) {
+            spec = spec.and(PropertySpecification.hasBedrooms(bedrooms));
+        }
+        if (bathrooms != null) {
+            spec = spec.and(PropertySpecification.hasBathrooms(bathrooms));
+        }
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(PropertySpecification.searchByText(search));
+        }
+
+        spec = spec.and(PropertySpecification.isActive(true));
+
+        return propertyRepository.findAll(spec, pageable);
+    }
+
+    /**
+     * Récupérer toutes les propriétés avec filtres et permissions (sans pagination)
+     */
+    @Transactional(readOnly = true)
+    public List<Property> getAllPropertiesWithFiltersAndPermissions(
+            Long userId,
+            Set<Long> accessibleOrganizationIds,
+            Long assignedUserId,
+            Long teamId,
+            String status,
+            String type,
+            String city,
+            String country,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            BigDecimal minSurface,
+            BigDecimal maxSurface,
+            Integer bedrooms,
+            Integer bathrooms,
+            String search) {
+        
+        Specification<Property> spec = Specification.where(null);
+
+        // Filtrer selon les permissions
+        if (accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
+            spec = spec.and(PropertySpecification.accessibleByUser(userId, accessibleOrganizationIds));
+        } else {
+            spec = spec.and(PropertySpecification.hasCreatedBy(userId));
+        }
+
+        // Appliquer les autres filtres
         if (assignedUserId != null) {
             spec = spec.and(PropertySpecification.hasAssignedUser(assignedUserId));
         }

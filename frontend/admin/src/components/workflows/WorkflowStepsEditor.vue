@@ -37,8 +37,8 @@
           <Combobox
             v-model="step.role"
             :search-value="stepSearchValues[index]"
-            @update:search-value="(value) => handleStepRoleSearchChange(index, value)"
-            @update:model-value="(value) => handleStepRoleChange(index, value)"
+            @update:search-value="(value: string) => handleStepRoleSearchChange(index, value)"
+            @update:model-value="(value: any) => handleStepRoleChange(index, typeof value === 'string' ? value : String(value || ''))"
           >
             <ComboboxAnchor as-child>
               <ComboboxInput
@@ -163,7 +163,6 @@ const getRoleLabel = (role: string): string => {
 
 const filteredStepRoles = (index: number) => {
   const searchValue = stepSearchValues.value[index] || ''
-  const currentRole = localSteps.value[index]?.role || ''
   
   if (!searchValue) {
     return availableRoles

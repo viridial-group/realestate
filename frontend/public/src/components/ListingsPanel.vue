@@ -113,7 +113,10 @@ const router = useRouter()
     
     function handleVisualiser(item: Listing) {
       emit('listing-click', item.id)
-      // TODO: Center map on listing
+        // Centrer la map sur la propriété
+      if (item.lat && item.lng) {
+        emit('center-on-listing', item.id)
+      }
     }
 
     // Highlighting des termes de recherche

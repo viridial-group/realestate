@@ -65,7 +65,7 @@ const router = createRouter({
 })
 
 // Global navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   // Mettre à jour le titre de la page
   if (to.meta.title) {
     document.title = `${to.meta.title} - Real Estate Admin`

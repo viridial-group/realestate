@@ -74,7 +74,7 @@
                     <Checkbox
                       :id="`perm-${permission.id}`"
                       :checked="selectedPermissions.includes(permission.id)"
-                      @update:checked="(checked) => togglePermission(permission.id, checked)"
+                      @update:checked="(checked: boolean) => togglePermission(permission.id, checked)"
                     />
                     <Label
                       :for="`perm-${permission.id}`"

@@ -439,7 +439,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/components/ui/toast'
-import { useUser, UserRole, UserStatus, userService, organizationService, type Organization } from '@viridial/shared'
+import { useUser, UserRole, userService, organizationService, type Organization } from '@viridial/shared'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -484,7 +484,7 @@ const router = useRouter()
 const { toast } = useToast()
 const {
   loadUser,
-  updateUser,
+  // updateUser, // Non utilisé directement
   deleteUser,
   activateUser,
   deactivateUser,

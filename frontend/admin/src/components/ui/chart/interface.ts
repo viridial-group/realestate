@@ -62,3 +62,5 @@ export interface BaseChartProps<T extends Record<string, any>> {
    */
   showGridLine?: boolean
 }
+
+export type ChartConfig = Record<string, any>

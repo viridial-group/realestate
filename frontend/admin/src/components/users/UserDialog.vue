@@ -108,7 +108,7 @@
                 <Checkbox
                   :id="`role-${role.value}`"
                   :checked="(roles || []).includes(role.value)"
-                  @update:checked="(checked) => toggleRole(role.value, checked)"
+                  @update:checked="(checked: boolean) => toggleRole(role.value, checked)"
                 />
                 <Label :for="`role-${role.value}`" class="cursor-pointer text-sm">
                   {{ role.label }}
@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useUser, UserStatus, UserRole } from '@viridial/shared'
@@ -198,7 +198,7 @@ const [lastName, lastNameAttrs] = defineField('lastName')
 const [phone, phoneAttrs] = defineField('phone')
 const [password, passwordAttrs] = defineField('password')
 const [status, statusAttrs] = defineField('status')
-const [roles, rolesAttrs] = defineField('roles')
+const [roles] = defineField('roles')
 
 watch(() => props.user, (user) => {
   if (user) {

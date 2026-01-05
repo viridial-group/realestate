@@ -174,10 +174,10 @@
                   <div class="text-sm text-muted-foreground">{{ subscription.organizationEmail }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <Badge>{{ subscription.plan }}</Badge>
+                  <Badge>{{ subscription.planName || 'Plan inconnu' }}</Badge>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {{ formatCurrency(subscription.amount) }}
+                  {{ formatCurrency(subscription.amount || 0) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <Badge :variant="getStatusVariant(subscription.status)">

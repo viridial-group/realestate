@@ -52,7 +52,23 @@ if command -v docker &> /dev/null; then
             fi
         fi
         
+        # Vérifier que Zookeeper est prêt
+        echo "⏳ Attente que Zookeeper soit prêt..."
+        for i in {1..30}; do
+            if docker exec realestate-zookeeper nc -z localhost 2181 2>/dev/null; then
+                echo "✅ Zookeeper est prêt"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo "❌ Zookeeper n'est pas prêt après 30 secondes"
+                docker logs realestate-zookeeper 2>/dev/null | tail -20
+                exit 1
+            fi
+            sleep 1
+        done
+        
         # Démarrer Kafka
+        echo "🔄 Démarrage de Kafka..."
         docker run -d \
             --name realestate-kafka \
             --network realestate-network \
@@ -63,18 +79,43 @@ if command -v docker &> /dev/null; then
             -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
             -e KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1 \
             -e KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1 \
+            -e KAFKA_AUTO_CREATE_TOPICS_ENABLE=true \
             confluentinc/cp-kafka:7.5.0
         
-        echo "⏳ Attente du démarrage de Kafka (10 secondes)..."
-        sleep 10
+        # Attendre que Kafka démarre
+        echo "⏳ Attente du démarrage de Kafka (20 secondes)..."
+        sleep 20
         
         # Vérifier que Kafka est démarré
         if docker ps | grep -q "realestate-kafka"; then
-            echo "✅ Kafka démarré avec succès (Docker)"
-            echo "📍 Bootstrap servers: localhost:9092"
+            # Vérifier que Kafka répond
+            echo "🔍 Vérification de la santé de Kafka..."
+            for i in {1..30}; do
+                if docker exec realestate-kafka kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1; then
+                    echo "✅ Kafka démarré avec succès (Docker)"
+                    echo "📍 Bootstrap servers: localhost:9092"
+                    break
+                fi
+                if [ $i -eq 30 ]; then
+                    echo "⚠️  Kafka est démarré mais ne répond pas encore"
+                    echo "   Les logs peuvent indiquer le problème:"
+                    docker logs realestate-kafka 2>/dev/null | tail -30
+                fi
+                sleep 1
+            done
         else
             echo "❌ Erreur lors du démarrage de Kafka"
-            docker logs realestate-kafka 2>/dev/null || echo "   (logs non disponibles)"
+            echo ""
+            echo "📋 Logs du conteneur Kafka:"
+            docker logs realestate-kafka 2>/dev/null | tail -50 || echo "   (logs non disponibles)"
+            echo ""
+            echo "📋 Statut des conteneurs:"
+            docker ps -a | grep -E "realestate-kafka|realestate-zookeeper" || true
+            echo ""
+            echo "💡 Solutions possibles:"
+            echo "   1. Vérifier que Zookeeper est bien démarré: docker ps | grep zookeeper"
+            echo "   2. Vérifier les logs de Zookeeper: docker logs realestate-zookeeper"
+            echo "   3. Nettoyer et redémarrer: ./scripts/stop-kafka.sh && ./scripts/start-kafka.sh"
             exit 1
         fi
     fi

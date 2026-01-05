@@ -604,7 +604,7 @@ import { useToast } from '@/components/ui/toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import {
   ArrowLeft,
   ArrowRight,

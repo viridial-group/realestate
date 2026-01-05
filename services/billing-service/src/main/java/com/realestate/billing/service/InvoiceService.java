@@ -4,9 +4,11 @@ import com.realestate.billing.entity.Invoice;
 import com.realestate.billing.entity.Subscription;
 import com.realestate.billing.repository.InvoiceRepository;
 import com.realestate.billing.repository.SubscriptionRepository;
+import com.realestate.billing.specification.InvoiceSpecification;
 import com.realestate.common.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service

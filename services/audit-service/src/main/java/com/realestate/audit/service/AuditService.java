@@ -2,14 +2,17 @@ package com.realestate.audit.service;
 
 import com.realestate.audit.entity.AuditLog;
 import com.realestate.audit.repository.AuditLogRepository;
+import com.realestate.audit.specification.AuditLogSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class AuditService {
@@ -92,6 +95,47 @@ public class AuditService {
     @Transactional(readOnly = true)
     public Page<AuditLog> getAuditLogsByStatusAndOrganizationId(String status, Long organizationId, Pageable pageable) {
         return auditLogRepository.findByOrganizationIdAndStatusOrderByCreatedAtDesc(organizationId, status, pageable);
+    }
+
+    /**
+     * Récupérer les logs d'audit avec filtres et permissions utilisateur
+     * Filtre automatiquement selon les organisations accessibles (incluant sous-organisations)
+     */
+    @Transactional(readOnly = true)
+    public Page<AuditLog> getAuditLogsWithPermissions(
+            Set<Long> accessibleOrganizationIds,
+            Long organizationId,
+            Long actorId,
+            String action,
+            String status,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable) {
+        
+        Specification<AuditLog> spec = Specification.where(null);
+
+        // Filtrer selon les organisations accessibles
+        if (accessibleOrganizationIds != null && !accessibleOrganizationIds.isEmpty()) {
+            spec = spec.and(AuditLogSpecification.hasAnyOrganization(accessibleOrganizationIds));
+        } else if (organizationId != null) {
+            spec = spec.and(AuditLogSpecification.hasOrganization(organizationId));
+        }
+
+        // Appliquer les autres filtres
+        if (actorId != null) {
+            spec = spec.and(AuditLogSpecification.hasActor(actorId));
+        }
+        if (action != null && !action.isEmpty()) {
+            spec = spec.and(AuditLogSpecification.hasAction(action));
+        }
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and(AuditLogSpecification.hasStatus(status));
+        }
+        if (startDate != null || endDate != null) {
+            spec = spec.and(AuditLogSpecification.createdBetween(startDate, endDate));
+        }
+
+        return auditLogRepository.findAll(spec, pageable);
     }
 }
 

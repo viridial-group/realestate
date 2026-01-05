@@ -125,8 +125,8 @@ const handleVisitDeleted = () => {
   modalOpen.value = false
 }
 
-const getStatusVariant = (status: string): string => {
-  const variants: Record<string, string> = {
+const getStatusVariant = (status: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
+  const variants: Record<string, "default" | "destructive" | "outline" | "secondary"> = {
     PENDING: 'secondary',
     CONFIRMED: 'default',
     CANCELLED: 'destructive',

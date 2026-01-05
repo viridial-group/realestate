@@ -106,7 +106,7 @@
                     <Checkbox
                       :id="`perm-${permission.id}`"
                       :checked="selectedPermissions.includes(permission.id)"
-                      @update:checked="(checked) => togglePermission(permission.id, checked)"
+                      @update:checked="(checked: boolean) => togglePermission(permission.id, checked)"
                     />
                     <Label
                       :for="`perm-${permission.id}`"
@@ -146,7 +146,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { roleService, type Role, type Permission, type RoleCreate, type RoleUpdate } from '@viridial/shared'
+import { roleService, type Permission, type RoleCreate, type RoleUpdate } from '@viridial/shared'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

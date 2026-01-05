@@ -6,7 +6,7 @@ import { useAuthStore, tokenUtils } from '@viridial/shared'
  */
 export async function authGuard(
   to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
   next: NavigationGuardNext
 ): Promise<void> {
   const authStore = useAuthStore()
@@ -63,8 +63,8 @@ export async function authGuard(
  * Guard pour rediriger les utilisateurs authentifiés (ex: login page)
  */
 export function guestGuard(
-  to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
+  _to: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
   next: NavigationGuardNext
 ): void {
   const authStore = useAuthStore()

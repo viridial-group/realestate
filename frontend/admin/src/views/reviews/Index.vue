@@ -209,7 +209,7 @@
                       >
                         {{ getStatusLabel(review.status) }}
                       </Badge>
-                      <Badge v-if="review.isVerifiedBuyer" variant="outline" class="text-xs">
+                      <Badge v-if="(review as any).isVerifiedBuyer" variant="outline" class="text-xs">
                         <CheckCircle class="mr-1 h-3 w-3" />
                         Achat vérifié
                       </Badge>
@@ -230,7 +230,7 @@
                         <Clock class="h-3 w-3" />
                         <span>{{ formatDate(review.createdAt) }}</span>
                       </div>
-                      <div v-if="review.helpfulCount > 0" class="flex items-center gap-1">
+                      <div v-if="(review.helpfulCount ?? 0) > 0" class="flex items-center gap-1">
                         <ThumbsUp class="h-3 w-3" />
                         <span>{{ review.helpfulCount }} {{ review.helpfulCount === 1 ? 'utile' : 'utiles' }}</span>
                       </div>
@@ -255,7 +255,7 @@
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       v-if="review.status === 'PENDING'"
-                      @click="updateReviewStatus(review.id, 'APPROVED')"
+                      @click="updateReviewStatus(review.id, 'APPROVED' as ReviewStatus)"
                       class="text-green-600"
                     >
                       <CheckCircle class="mr-2 h-4 w-4" />
@@ -263,7 +263,7 @@
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       v-if="review.status === 'PENDING'"
-                      @click="updateReviewStatus(review.id, 'REJECTED')"
+                      @click="updateReviewStatus(review.id, 'REJECTED' as ReviewStatus)"
                       class="text-red-600"
                     >
                       <XCircle class="mr-2 h-4 w-4" />
@@ -271,7 +271,7 @@
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       v-if="review.status === 'APPROVED'"
-                      @click="updateReviewStatus(review.id, 'REJECTED')"
+                      @click="updateReviewStatus(review.id, 'REJECTED' as ReviewStatus)"
                       class="text-red-600"
                     >
                       <XCircle class="mr-2 h-4 w-4" />
@@ -279,7 +279,7 @@
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       v-if="review.status === 'REJECTED'"
-                      @click="updateReviewStatus(review.id, 'APPROVED')"
+                      @click="updateReviewStatus(review.id, 'APPROVED' as ReviewStatus)"
                       class="text-green-600"
                     >
                       <CheckCircle class="mr-2 h-4 w-4" />
@@ -502,7 +502,7 @@ const loadReviews = async () => {
 const loadProperties = async () => {
   try {
     const data = await propertyService.search({ page: 0, size: 1000 })
-    properties.value = data.content || []
+    properties.value = Array.isArray(data) ? data : (data as any).content || []
   } catch (error) {
     console.error('Error loading properties:', error)
   }
@@ -585,7 +585,7 @@ const goToPage = (page: number) => {
   // La pagination est gérée côté client avec filteredReviews
 }
 
-const getStatusVariant = (status: string): string => {
+const getStatusVariant = (status: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
   switch (status) {
     case 'APPROVED':
       return 'default'
